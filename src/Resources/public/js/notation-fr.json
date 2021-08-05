@@ -1,0 +1,32 @@
+var json_locale_data = {
+   "js-messages" : {
+      "" : {
+         "Project-Id-Version" : " ChessTempo PGNViewer - Notation in französisch"
+      },
+      "K" : [
+         null,
+         "R"
+      ],
+      "Q" : [
+         null,
+         "D"
+      ],
+      "R" : [
+         null,
+         "T"
+      ],
+		"B" : [
+         null,
+         "F"
+      ],
+      "N" : [
+         null,
+         "C"
+      ],
+		"P" : [
+         null,
+         "P"
+      ]
+   }
+}
+;

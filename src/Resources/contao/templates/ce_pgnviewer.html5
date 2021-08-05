@@ -1,0 +1,169 @@
+<!-- indexer::stop -->
+<div class="<?php echo $this->class; ?> block" <?php echo $this->cssID; ?><?php if ($this->style): ?> style="<?php echo $this->style; ?>"<?php endif; ?>>
+	<?php if ($this->headline): ?>
+		<<?php echo $this->hl; ?>><?php echo $this->headline ; ?></<?php echo $this->hl; ?>>
+	<?php endif; ?>
+	<?php
+   	$boardname = "board".$this->id;
+	?>             
+	<!-- Vorschau des PGN Viewers erstellen -->
+	<script>
+		if(typeof(_partiedaten) == 'undefined'){
+			_partiedaten = new Array();
+		}
+		_partiedaten["<?php echo $boardname; ?>"] = JSON.parse ('<?php echo json_encode($this->partiedaten); ?>');	/* Array partiedaten in JS überführen */
+		new PgnViewer({
+			boardName : '<?php echo $boardname; ?>',
+			pgnFile : '<?php echo $this->pgn_file; ?>',
+			pieceSet : '<?php echo $this->pgn_pieceset; ?>',
+			movesFormat : '<?php echo $this->moveformat; ?>',
+			pauseBetweenMoves : <?php echo $this->pgn_pause; ?>,
+			pieceSize : <?php echo $this->pgn_piecesize; ?>,
+			showCoordinates : '<?php echo $this->show_coordinates; ?>',
+			autoScrollMoves : '<?php echo $this->autoscroll; ?>',
+			boardImagePath : 'system/modules/pgnviewer/assets',
+			soundEnabled :	'<?php echo $this->sound; ?>'		
+		});
+		
+		/* Die Daten (Tags) der neuen Partie auslesen und falls das Element vorhanden ist anzeigen */
+		function neuePartie (element) {
+			/* Name des Board ermitteln */			
+			var boardname = element.replace('-problemSelector','');			/* Name des Board ermitteln */			
+			var _x = document.getElementById(boardname + "-problemSelector").value;
+			var _ce = YAHOO.util.Dom.get(boardname + "-date_tl");
+			if (_ce) {
+				_ce.innerHTML = _partiedaten[boardname][_x]["date"];
+			}
+			var _ce = YAHOO.util.Dom.get(boardname + "-eco_tl");
+			if (_ce) {
+				_ce.innerHTML = _partiedaten[boardname][_x]["eco"];
+			}
+			var _ce = YAHOO.util.Dom.get(boardname + "-annotator_tl");
+			if (_ce) {
+				if (_partiedaten[boardname][_x]["annotator"]) {
+					_ce.innerHTML = "[" + _partiedaten[boardname][_x]["annotator"] + "]";
+				} else {
+					_ce.innerHTML = "";
+				}
+			}
+			var _ce = YAHOO.util.Dom.get(boardname + "-eco_tl");
+			if (_ce) {
+				_ce.innerHTML = _partiedaten[boardname][_x]["eco"];
+			}
+		}		
+
+		/* alle <select> Elemente der Seite suchen und onchange zuweisen */
+		window.onload = function()
+		{
+			// Select-Array mit allen Selectelementen erstellen
+			var arrSel = document.getElementsByTagName("select");
+ 			// Select-Array durchlaufen
+			for(var i=0; i<arrSel.length; i++)
+			{
+				if(typeof arrSel[i].onchange != "function")
+				{
+					// onchange-Event eine Funktion zuweisen
+					arrSel[i].onchange = function()
+					{
+						neuePartie(this.id);
+					}
+				}
+			}			
+		}
+	</script>
+	
+	<!-- Brett und Notation ausgeben -->
+	<!-- zuerst das Brett ?!-->
+	<?php
+	if ($this->pgn_boardfirst == 1)
+	{
+		echo '<div class="pgn_board_container"><div id="'.$boardname.'-container" class="pgn_board"></div>';
+		// Link auf ChessTempo.com 
+		if ($this->pgn_backlink)
+		{
+			echo '<p class="pgn_backlink">PGN Viewer powered by <a href="http://chesstempo.com/" target="_blank">chesstempo.com</a></p>';
+   	}
+   	echo '</div>';	    
+	}
+	?>
+	<div class="pgn_notation_container">
+	   <!-- Partiedaten ausgeben -->
+		<?php
+		if ($this->showwhite || $this->showblack || $this->showresult || $this->showeco ||
+		$this->showevent || $this->showround || $this->showsite || $this->showdate || 
+		$this->showplycount || $this->showannotator)
+		{
+			echo '<div class="pgn_gametags">';    
+			echo '<span class="pgn_gametags_header">';
+			if ($this->showwhite)
+			{
+				echo '<span id="'.$boardname.'-whitePlayer" class="pgn_white"></span>';
+				if ($this->showeloWhite)
+				{
+					echo '<span id="'.$boardname.'-whiteElo" class="pgn_elowhite"></span>';
+				}
+			}
+	    	if ($this->showblack)
+			{
+				echo '<span>-</span><span id="'.$boardname.'-blackPlayer" class="pgn_black"></span>';
+				if ($this->showeloBlack)
+				{
+					echo '<span id="'.$boardname.'-blackElo" class="pgn_eloblack"></span>';
+				}
+			}
+			if ($this->showresult)
+			{
+				echo '<span id="'.$boardname.'-result" class="pgn_result"></span>';
+			}
+	   		echo '</span>';
+			echo '<div>';
+			if ($this->showeco) {echo '<span id="'.$boardname.'-eco_tl" class="pgn_eco">'.$this->partiedaten[0]['eco'].'</span>';}	/* bei der ersten Partie Daten eintragen */
+			if ($this->showevent) {echo '<span id="'.$boardname.'-event" class="pgn_event"></span>';}
+			if ($this->showround) {echo '<span id="'.$boardname.'-round" class="pgn_round"></span>';}
+			if ($this->showsite) {echo '<span id="'.$boardname.'-site" class="pgn_site"></span>';}
+			if ($this->showdate) {echo '<span id="'.$boardname.'-date_tl" class="pgn_date">'.$this->partiedaten[0]['date'].'</span>';}	/* bei der ersten Partie Daten eintragen */
+			if ($this->showplycount) {echo '<span id="'.$boardname.'-plycount_tl" class="pgn_plycount">'.$this->partiedaten[0]['plycount'].'</span>';}	/* bei der ersten Partie Daten eintragen */
+			/* bei der ersten Partie Daten eintragen */
+			/* Kommentator mit Klammer anzeigen, wenn vorhanden */
+			if ($this->showannotator)
+			{
+				$annotator_before = '';
+				$annotator_after = '';					
+				if($this->partiedaten[0]['annotator'])
+				{
+					$annotator_before = '[';
+					$annotator_after = ']';					
+				}
+				echo '<span id="'.$boardname.'-annotator_tl" class="pgn_annotator">'.$annotator_before.$this->partiedaten[0]['annotator'].$annotator_after.'</span>';
+			}
+			echo '</div>';
+			echo '</div>';
+		}
+		?>
+		<!-- Darstellung der Züge -->
+		<div id="<?php echo $boardname; ?>-moves" class="pgn_notation"<?php if ($this->autoscroll == true  && $this->pgn_notationsize !=0){echo ' style="overflow:auto; max-height:'.$this->pgn_notationsize.'px"';}?>></div>
+
+	</div>	
+	<!-- jetzt das Brett ?!-->
+	<?php
+	if ($this->pgn_boardfirst != 1)
+	{
+		echo '<div class="pgn_board_container"><div id="'.$boardname.'-container" class="pgn_board"></div>';
+		?><!-- Link auf ChessTempo.com --><?php
+		if ($this->pgn_backlink)
+		{
+			echo '<p class="pgn_backlink">PGN Viewer powered by <a href="http://chesstempo.com/" target="_blank">chesstempo.com</a></p>';
+   	}
+   	echo '</div>';	    
+	}
+	?>
+	<!--  Dateidownload -->
+	<?php
+	if ($this->pgn_download == 1)	{ ?>
+		<div class="pgn_download">
+  			<img src="<?php echo $this->icon; ?>" width="18" height="18" alt="" class="mime_icon">
+  			<a href="<?php echo $this->href; ?>" title="<?php echo $this->title; ?>"><?php echo $this->link; ?> <span class="size">(<?php echo $this->filesize; ?>)</span></a>
+		</div>
+	<?php } ?>
+</div>
+<!-- indexer::continue -->

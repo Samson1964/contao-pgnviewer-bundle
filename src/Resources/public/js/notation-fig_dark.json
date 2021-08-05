@@ -1,0 +1,32 @@
+var json_locale_data = {
+   "js-messages" : {
+      "" : {
+         "Project-Id-Version" : " ChessTempo PGNViewer - Notation in Symbole dunkel"
+      },
+      "K" : [
+         null,
+         "♚"
+      ],
+      "Q" : [
+         null,
+         "♛"
+      ],
+      "R" : [
+         null,
+         "♜"
+      ],
+		"B" : [
+         null,
+         "♝"
+      ],
+      "N" : [
+         null,
+         "♞"
+      ],
+		"P" : [
+         null,
+         "♟"
+      ]
+   }
+}
+;

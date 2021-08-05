@@ -1,0 +1,32 @@
+var json_locale_data = {
+   "js-messages" : {
+      "" : {
+         "Project-Id-Version" : " ChessTempo PGNViewer - Notation in tschechisch"
+      },
+      "K" : [
+         null,
+         "K"
+      ],
+      "Q" : [
+         null,
+         "D"
+      ],
+      "R" : [
+         null,
+         "V"
+      ],
+		"B" : [
+         null,
+         "S"
+      ],
+      "N" : [
+         null,
+         "J"
+      ],
+		"P" : [
+         null,
+         "P"
+      ]
+   }
+}
+;
