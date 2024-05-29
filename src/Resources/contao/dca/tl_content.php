@@ -143,7 +143,7 @@ $GLOBALS['TL_DCA']['tl_content']['fields']['pgn_sound'] = array
     'eval'      => array('tl_class' => 'w50', 'disabled' => false),
     'sql'       => "char(1) NOT NULL default ''"
 );
-if ($GLOBALS['TL_CONFIG']['pgnviewer_sound'] == false)
+if(isset($GLOBALS['TL_CONFIG']['pgnviewer_sound']) == false)
 {
 	$GLOBALS['TL_DCA']['tl_content']['fields']['pgn_sound']['eval']['disabled'] = true;
 }

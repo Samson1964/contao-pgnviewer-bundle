@@ -1,8220 +1,4743 @@
-/* Copyright 2007-2012 Richard Jones
+/* Copyright 2007-2015 Richard Jones
 This work is licensed under the Creative Commons Attribution-Noncommercial-No Derivative Works License. To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-nd/2.5/au/
 */
-Gettext=function(_1){
-this.domain="messages";
-this.locale_data=undefined;
-var _2=["domain","locale_data"];
-if(this.isValidObject(_1)){
-for(var i in _1){
-for(var j=0;j<_2.length;j++){
-if(i==_2[j]){
-if(this.isValidObject(_1[i])){
-this[i]=_1[i];
-}
-}
-}
-}
-}
-this.try_load_lang();
-return this;
-};
-Gettext.context_glue="\x04";
-Gettext._locale_data={};
-Gettext.prototype.try_load_lang=function(){
-if(typeof (this.locale_data)!="undefined"){
-var _5=this.locale_data;
-this.locale_data=undefined;
-this.parse_locale_data(_5);
-if(typeof (Gettext._locale_data[this.domain])=="undefined"){
-throw new Error("Error: Gettext 'locale_data' does not contain the domain '"+this.domain+"'");
-}
-}
-var _6=this.get_lang_refs();
-if(typeof (_6)=="object"&&_6.length>0){
-for(var i=0;i<_6.length;i++){
-var _8=_6[i];
-if(_8.type=="application/json"){
-if(!this.try_load_lang_json(_8.href)){
-throw new Error("Error: Gettext 'try_load_lang_json' failed. Unable to exec xmlhttprequest for link ["+_8.href+"]");
-}
-}else{
-if(_8.type=="application/x-po"){
-if(!this.try_load_lang_po(_8.href)){
-throw new Error("Error: Gettext 'try_load_lang_po' failed. Unable to exec xmlhttprequest for link ["+_8.href+"]");
-}
-}else{
-throw new Error("TODO: link type ["+_8.type+"] found, and support is planned, but not implemented at this time.");
-}
-}
-}
-}
-};
-Gettext.prototype.parse_locale_data=function(_9){
-if(typeof (Gettext._locale_data)=="undefined"){
-Gettext._locale_data={};
-}
-for(var _a in _9){
-if((!_9.hasOwnProperty(_a))||(!this.isValidObject(_9[_a]))){
-continue;
-}
-var _b=false;
-for(var _c in _9[_a]){
-_b=true;
-break;
-}
-if(!_b){
-continue;
-}
-var _d=_9[_a];
-if(_a==""){
-_a="messages";
-}
-if(!this.isValidObject(Gettext._locale_data[_a])){
-Gettext._locale_data[_a]={};
-}
-if(!this.isValidObject(Gettext._locale_data[_a].head)){
-Gettext._locale_data[_a].head={};
-}
-if(!this.isValidObject(Gettext._locale_data[_a].msgs)){
-Gettext._locale_data[_a].msgs={};
-}
-for(var _e in _d){
-if(_e==""){
-var _f=_d[_e];
-for(var _10 in _f){
-var h=_10.toLowerCase();
-Gettext._locale_data[_a].head[h]=_f[_10];
-}
-}else{
-Gettext._locale_data[_a].msgs[_e]=_d[_e];
-}
-}
-}
-for(var _a in Gettext._locale_data){
-if(this.isValidObject(Gettext._locale_data[_a].head["plural-forms"])&&typeof (Gettext._locale_data[_a].head.plural_func)=="undefined"){
-var _12=Gettext._locale_data[_a].head["plural-forms"];
-var _13=new RegExp("^(\\s*nplurals\\s*=\\s*[0-9]+\\s*;\\s*plural\\s*=\\s*(?:\\s|[-\\?\\|&=!<>+*/%:;a-zA-Z0-9_()])+)","m");
-if(_13.test(_12)){
-var pf=Gettext._locale_data[_a].head["plural-forms"];
-if(!/;\s*$/.test(pf)){
-pf=pf.concat(";");
-}
-var _15="var plural; var nplurals; "+pf+" return { \"nplural\" : nplurals, \"plural\" : (plural === true ? 1 : plural ? plural : 0) };";
-Gettext._locale_data[_a].head.plural_func=new Function("n",_15);
-}else{
-throw new Error("Syntax error in language file. Plural-Forms header is invalid ["+_12+"]");
-}
-}else{
-if(typeof (Gettext._locale_data[_a].head.plural_func)=="undefined"){
-Gettext._locale_data[_a].head.plural_func=function(n){
-var p=(n!=1)?1:0;
-return {"nplural":2,"plural":p};
-};
-}
-}
-}
-return;
-};
-Gettext.prototype.try_load_lang_po=function(uri){
-var _19=this.sjax(uri);
-if(!_19){
-return;
-}
-var _1a=this.uri_basename(uri);
-var _1b=this.parse_po(_19);
-var rv={};
-if(_1b){
-if(!_1b[""]){
-_1b[""]={};
-}
-if(!_1b[""]["domain"]){
-_1b[""]["domain"]=_1a;
-}
-_1a=_1b[""]["domain"];
-rv[_1a]=_1b;
-this.parse_locale_data(rv);
-}
-return 1;
-};
-Gettext.prototype.uri_basename=function(uri){
-var rv;
-if(rv=uri.match(/^(.*\/)?(.*)/)){
-var _1f;
-if(_1f=rv[2].match(/^(.*)\..+$/)){
-return _1f[1];
-}else{
-return rv[2];
-}
-}else{
-return "";
-}
-};
-Gettext.prototype.parse_po=function(_20){
-var rv={};
-var _22={};
-var _23="";
-var _24=[];
-var _25=_20.split("\n");
-for(var i=0;i<_25.length;i++){
-_25[i]=_25[i].replace(/(\n|\r)+$/,"");
-var _27;
-if(/^$/.test(_25[i])){
-if(typeof (_22["msgid"])!="undefined"){
-var _28=(typeof (_22["msgctxt"])!="undefined"&&_22["msgctxt"].length)?_22["msgctxt"]+Gettext.context_glue+_22["msgid"]:_22["msgid"];
-var _29=(typeof (_22["msgid_plural"])!="undefined"&&_22["msgid_plural"].length)?_22["msgid_plural"]:null;
-var _2a=[];
-for(var str in _22){
-var _27;
-if(_27=str.match(/^msgstr_(\d+)/)){
-_2a[parseInt(_27[1])]=_22[str];
-}
-}
-_2a.unshift(_29);
-if(_2a.length>1){
-rv[_28]=_2a;
-}
-_22={};
-_23="";
-}
-}else{
-if(/^#/.test(_25[i])){
-continue;
-}else{
-if(_27=_25[i].match(/^msgctxt\s+(.*)/)){
-_23="msgctxt";
-_22[_23]=this.parse_po_dequote(_27[1]);
-}else{
-if(_27=_25[i].match(/^msgid\s+(.*)/)){
-_23="msgid";
-_22[_23]=this.parse_po_dequote(_27[1]);
-}else{
-if(_27=_25[i].match(/^msgid_plural\s+(.*)/)){
-_23="msgid_plural";
-_22[_23]=this.parse_po_dequote(_27[1]);
-}else{
-if(_27=_25[i].match(/^msgstr\s+(.*)/)){
-_23="msgstr_0";
-_22[_23]=this.parse_po_dequote(_27[1]);
-}else{
-if(_27=_25[i].match(/^msgstr\[0\]\s+(.*)/)){
-_23="msgstr_0";
-_22[_23]=this.parse_po_dequote(_27[1]);
-}else{
-if(_27=_25[i].match(/^msgstr\[(\d+)\]\s+(.*)/)){
-_23="msgstr_"+_27[1];
-_22[_23]=this.parse_po_dequote(_27[2]);
-}else{
-if(/^"/.test(_25[i])){
-_22[_23]+=this.parse_po_dequote(_25[i]);
-}else{
-_24.push("Strange line ["+i+"] : "+_25[i]);
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-if(typeof (_22["msgid"])!="undefined"){
-var _28=(typeof (_22["msgctxt"])!="undefined"&&_22["msgctxt"].length)?_22["msgctxt"]+Gettext.context_glue+_22["msgid"]:_22["msgid"];
-var _29=(typeof (_22["msgid_plural"])!="undefined"&&_22["msgid_plural"].length)?_22["msgid_plural"]:null;
-var _2a=[];
-for(var str in _22){
-var _27;
-if(_27=str.match(/^msgstr_(\d+)/)){
-_2a[parseInt(_27[1])]=_22[str];
-}
-}
-_2a.unshift(_29);
-if(_2a.length>1){
-rv[_28]=_2a;
-}
-_22={};
-_23="";
-}
-if(rv[""]&&rv[""][1]){
-var cur={};
-var _2d=rv[""][1].split(/\\n/);
-for(var i=0;i<_2d.length;i++){
-if(!_2d.length){
-continue;
-}
-var pos=_2d[i].indexOf(":",0);
-if(pos!=-1){
-var key=_2d[i].substring(0,pos);
-var val=_2d[i].substring(pos+1);
-var _31=key.toLowerCase();
-if(cur[_31]&&cur[_31].length){
-_24.push("SKIPPING DUPLICATE HEADER LINE: "+_2d[i]);
-}else{
-if(/#-#-#-#-#/.test(_31)){
-_24.push("SKIPPING ERROR MARKER IN HEADER: "+_2d[i]);
-}else{
-val=val.replace(/^\s+/,"");
-cur[_31]=val;
-}
-}
-}else{
-_24.push("PROBLEM LINE IN HEADER: "+_2d[i]);
-cur[_2d[i]]="";
-}
-}
-rv[""]=cur;
-}else{
-rv[""]={};
-}
-return rv;
-};
-Gettext.prototype.parse_po_dequote=function(str){
-var _33;
-if(_33=str.match(/^"(.*)"/)){
-str=_33[1];
-}
-str=str.replace(/\\"/,"");
-return str;
-};
-Gettext.prototype.try_load_lang_json=function(uri){
-var _35=this.sjax(uri);
-if(!_35){
-return;
-}
-var rv=this.JSON(_35);
-this.parse_locale_data(rv);
-return 1;
-};
-Gettext.prototype.get_lang_refs=function(){
-var _37=new Array();
-var _38=document.getElementsByTagName("link");
-for(var i=0;i<_38.length;i++){
-if(_38[i].rel=="gettext"&&_38[i].href){
-if(typeof (_38[i].type)=="undefined"||_38[i].type==""){
-if(/\.json$/i.test(_38[i].href)){
-_38[i].type="application/json";
-}else{
-if(/\.js$/i.test(_38[i].href)){
-_38[i].type="application/json";
-}else{
-if(/\.po$/i.test(_38[i].href)){
-_38[i].type="application/x-po";
-}else{
-if(/\.mo$/i.test(_38[i].href)){
-_38[i].type="application/x-mo";
-}else{
-throw new Error("LINK tag with rel=gettext found, but the type and extension are unrecognized.");
-}
-}
-}
-}
-}
-_38[i].type=_38[i].type.toLowerCase();
-if(_38[i].type=="application/json"){
-_38[i].type="application/json";
-}else{
-if(_38[i].type=="text/javascript"){
-_38[i].type="application/json";
-}else{
-if(_38[i].type=="application/x-po"){
-_38[i].type="application/x-po";
-}else{
-if(_38[i].type=="application/x-mo"){
-_38[i].type="application/x-mo";
-}else{
-throw new Error("LINK tag with rel=gettext found, but the type attribute ["+_38[i].type+"] is unrecognized.");
-}
-}
-}
-}
-_37.push(_38[i]);
-}
-}
-return _37;
-};
-Gettext.prototype.textdomain=function(_3a){
-if(_3a&&_3a.length){
-this.domain=_3a;
-}
-return this.domain;
-};
-Gettext.prototype.gettext=function(_3b){
-var _3c;
-var _3d;
-var n;
-var _3f;
-return this.dcnpgettext(null,_3c,_3b,_3d,n,_3f);
-};
-Gettext.prototype.dgettext=function(_40,_41){
-var _42;
-var _43;
-var n;
-var _45;
-return this.dcnpgettext(_40,_42,_41,_43,n,_45);
-};
-Gettext.prototype.dcgettext=function(_46,_47,_48){
-var _49;
-var _4a;
-var n;
-return this.dcnpgettext(_46,_49,_47,_4a,n,_48);
-};
-Gettext.prototype.ngettext=function(_4c,_4d,n){
-var _4f;
-var _50;
-return this.dcnpgettext(null,_4f,_4c,_4d,n,_50);
-};
-Gettext.prototype.dngettext=function(_51,_52,_53,n){
-var _55;
-var _56;
-return this.dcnpgettext(_51,_55,_52,_53,n,_56);
-};
-Gettext.prototype.dcngettext=function(_57,_58,_59,n,_5b){
-var _5c;
-return this.dcnpgettext(_57,_5c,_58,_59,n,_5b,_5b);
-};
-Gettext.prototype.pgettext=function(_5d,_5e){
-var _5f;
-var n;
-var _61;
-return this.dcnpgettext(null,_5d,_5e,_5f,n,_61);
-};
-Gettext.prototype.dpgettext=function(_62,_63,_64){
-var _65;
-var n;
-var _67;
-return this.dcnpgettext(_62,_63,_64,_65,n,_67);
-};
-Gettext.prototype.dcpgettext=function(_68,_69,_6a,_6b){
-var _6c;
-var n;
-return this.dcnpgettext(_68,_69,_6a,_6c,n,_6b);
-};
-Gettext.prototype.npgettext=function(_6e,_6f,_70,n){
-var _72;
-return this.dcnpgettext(null,_6e,_6f,_70,n,_72);
-};
-Gettext.prototype.dnpgettext=function(_73,_74,_75,_76,n){
-var _78;
-return this.dcnpgettext(_73,_74,_75,_76,n,_78);
-};
-Gettext.prototype.dcnpgettext=function(_79,_7a,_7b,_7c,n,_7e){
-if(!this.isValidObject(_7b)){
-return "";
-}
-var _7f=this.isValidObject(_7c);
-var _80=this.isValidObject(_7a)?_7a+Gettext.context_glue+_7b:_7b;
-var _81=this.isValidObject(_79)?_79:this.isValidObject(this.domain)?this.domain:"messages";
-var _82="LC_MESSAGES";
-var _7e=5;
-var _83=new Array();
-if(typeof (Gettext._locale_data)!="undefined"&&this.isValidObject(Gettext._locale_data[_81])){
-_83.push(Gettext._locale_data[_81]);
-}else{
-if(typeof (Gettext._locale_data)!="undefined"){
-for(var dom in Gettext._locale_data){
-_83.push(Gettext._locale_data[dom]);
-}
-}
-}
-var _85=[];
-var _86=false;
-var _87;
-if(_83.length){
-for(var i=0;i<_83.length;i++){
-var _89=_83[i];
-if(this.isValidObject(_89.msgs[_80])){
-for(var j=0;j<_89.msgs[_80].length;j++){
-_85[j]=_89.msgs[_80][j];
-}
-_85.shift();
-_87=_89;
-_86=true;
-if(_85.length>0&&_85[0].length!=0){
-break;
-}
-}
-}
-}
-if(_85.length==0||_85[0].length==0){
-_85=[_7b,_7c];
-}
-var _8b=_85[0];
-if(_7f){
-var p;
-if(_86&&this.isValidObject(_87.head.plural_func)){
-var rv=_87.head.plural_func(n);
-if(!rv.plural){
-rv.plural=0;
-}
-if(!rv.nplural){
-rv.nplural=0;
-}
-if(rv.nplural<=rv.plural){
-rv.plural=0;
-}
-p=rv.plural;
-}else{
-p=(n!=1)?1:0;
-}
-if(this.isValidObject(_85[p])){
-_8b=_85[p];
-}
-}
-return _8b;
-};
-Gettext.strargs=function(str,_8f){
-if(null==_8f||"undefined"==typeof (_8f)){
-_8f=[];
-}else{
-if(_8f.constructor!=Array){
-_8f=[_8f];
-}
-}
-var _90="";
-while(true){
-var i=str.indexOf("%");
-var _92;
-if(i==-1){
-_90+=str;
-break;
-}
-_90+=str.substr(0,i);
-if(str.substr(i,2)=="%%"){
-_90+="%";
-str=str.substr((i+2));
-}else{
-if(_92=str.substr(i).match(/^%(\d+)/)){
-var _93=parseInt(_92[1]);
-var _94=_92[1].length;
-if(_93>0&&_8f[_93-1]!=null&&typeof (_8f[_93-1])!="undefined"){
-_90+=_8f[_93-1];
-}
-str=str.substr((i+1+_94));
-}else{
-_90+="%";
-str=str.substr((i+1));
-}
-}
-}
-return _90;
-};
-Gettext.prototype.strargs=function(str,_96){
-return Gettext.strargs(str,_96);
-};
-Gettext.prototype.isArray=function(_97){
-return this.isValidObject(_97)&&_97.constructor==Array;
-};
-Gettext.prototype.isValidObject=function(_98){
-if(null==_98){
-return false;
-}else{
-if("undefined"==typeof (_98)){
-return false;
-}else{
-return true;
-}
-}
-};
-Gettext.prototype.sjax=function(uri){
-var _9a;
-if(window.XMLHttpRequest){
-_9a=new XMLHttpRequest();
-}else{
-if(navigator.userAgent.toLowerCase().indexOf("msie 5")!=-1){
-_9a=new ActiveXObject("Microsoft.XMLHTTP");
-}else{
-_9a=new ActiveXObject("Msxml2.XMLHTTP");
-}
-}
-if(!_9a){
-throw new Error("Your browser doesn't do Ajax. Unable to support external language files.");
-}
-_9a.open("GET",uri,false);
-try{
-_9a.send(null);
-}
-catch(e){
-return;
-}
-var _9b=_9a.status;
-if(_9b==200||_9b==0){
-return _9a.responseText;
-}else{
-var _9c=_9a.statusText+" (Error "+_9a.status+")";
-if(_9a.responseText.length){
-_9c+="\n"+_9a.responseText;
-}
-alert(_9c);
-return;
-}
-};
-Gettext.prototype.JSON=function(_9d){
-return eval("("+_9d+")");
-};
-
-CTSound=function(_1){
-this.sounds=[];
-this.soundPath=_1.soundPath;
-var _2=!!((myAudioTag=document.createElement("audio")).canPlayType);
-var _3=null;
-if(typeof Audio!="undefined"){
-_3=new Audio("");
-}
-this.haveAudio=_3&&!!(_3.canPlayType);
-if(this.haveAudio){
-this.canPlayOgg=(("no"!=_3.canPlayType("audio/ogg"))&&(""!=_3.canPlayType("audio/ogg")));
-this.canPlayMp3=(("no"!=_3.canPlayType("audio/mpeg"))&&(""!=_3.canPlayType("audio/mpeg")));
-this.canPlayWav=(("no"!=_3.canPlayType("audio/wav"))&&(""!=_3.canPlayType("audio/wav")));
-}
-};
-CTSound.prototype.createSound=function(_4,_5){
-if(!this.haveAudio){
-return;
-}
-var _6=null;
-var _7="";
-if(this.canPlayMp3){
-_7=this.soundPath+"/"+_4+".mp3";
-}else{
-if(this.canPlayOgg){
-_7=this.soundPath+"/"+_4+".ogg";
-}else{
-if(this.canPlayWav){
-_7=this.soundPath+"/"+_4+".wav";
-}
-}
-}
-if(_7){
-_6=new Audio(_7);
-}
-if(_6){
-_6.id=_5+"-"+_4;
-this.sounds[_4]=_6;
-if(_5){
-this.sounds[_5]=_6;
-}
-}
-};
-CTSound.prototype.playSound=function(_8){
-var _9=this.sounds[_8];
-if(_9){
-_9.play();
-}
-};
-
-function getLocale(){
-if(navigator){
-if(navigator.language){
-return navigator.language;
-}else{
-if(navigator.browserLanguage){
-return navigator.browserLanguage;
-}else{
-if(navigator.systemLanguage){
-return navigator.systemLanguage;
-}else{
-if(navigator.userLanguage){
-return navigator.userLanguage;
-}
-}
-}
-}
-}
-}
-var gt=null;
-function init_gettext(){
-if(typeof json_locale_data!=="undefined"){
-var _1={"domain":"js-messages","locale_data":json_locale_data};
-gt=new Gettext(_1);
-}
-}
+(Gettext = function (t) {
+	(this.domain = "messages"), (this.locale_data = void 0);
+	var e = ["domain", "locale_data"];
+	if (this.isValidObject(t)) for (var a in t) for (var r = 0; r < e.length; r++) a == e[r] && this.isValidObject(t[a]) && (this[a] = t[a]);
+	return this.try_load_lang(), this;
+}),
+	(Gettext.context_glue = ""),
+	(Gettext._locale_data = {}),
+	(Gettext.prototype.try_load_lang = function () {
+		if (void 0 !== this.locale_data) {
+			var t = this.locale_data;
+			if (((this.locale_data = void 0), this.parse_locale_data(t), void 0 === Gettext._locale_data[this.domain])) throw new Error("Error: Gettext 'locale_data' does not contain the domain '" + this.domain + "'");
+		}
+		var e = this.get_lang_refs();
+		if ("object" == typeof e && e.length > 0)
+			for (var a = 0; a < e.length; a++) {
+				var r = e[a];
+				if ("application/json" == r.type) {
+					if (!this.try_load_lang_json(r.href)) throw new Error("Error: Gettext 'try_load_lang_json' failed. Unable to exec xmlhttprequest for link [" + r.href + "]");
+				} else {
+					if ("application/x-po" != r.type) throw new Error("TODO: link type [" + r.type + "] found, and support is planned, but not implemented at this time.");
+					if (!this.try_load_lang_po(r.href)) throw new Error("Error: Gettext 'try_load_lang_po' failed. Unable to exec xmlhttprequest for link [" + r.href + "]");
+				}
+			}
+	}),
+	(Gettext.prototype.parse_locale_data = function (t) {
+		void 0 === Gettext._locale_data && (Gettext._locale_data = {});
+		for (var e in t)
+			if (t.hasOwnProperty(e) && this.isValidObject(t[e])) {
+				var a = !1;
+				for (var r in t[e]) {
+					a = !0;
+					break;
+				}
+				if (a) {
+					var i = t[e];
+					"" == e && (e = "messages"),
+						this.isValidObject(Gettext._locale_data[e]) || (Gettext._locale_data[e] = {}),
+						this.isValidObject(Gettext._locale_data[e].head) || (Gettext._locale_data[e].head = {}),
+						this.isValidObject(Gettext._locale_data[e].msgs) || (Gettext._locale_data[e].msgs = {});
+					for (var o in i)
+						if ("" == o) {
+							var s = i[o];
+							for (var n in s) {
+								var l = n.toLowerCase();
+								Gettext._locale_data[e].head[l] = s[n];
+							}
+						} else Gettext._locale_data[e].msgs[o] = i[o];
+				}
+			}
+		for (var e in Gettext._locale_data)
+			if (this.isValidObject(Gettext._locale_data[e].head["plural-forms"]) && void 0 === Gettext._locale_data[e].head.plural_func) {
+				var p = Gettext._locale_data[e].head["plural-forms"];
+				if (!new RegExp("^(\\s*nplurals\\s*=\\s*[0-9]+\\s*;\\s*plural\\s*=\\s*(?:\\s|[-\\?\\|&=!<>+*/%:;a-zA-Z0-9_()])+)", "m").test(p)) throw new Error("Syntax error in language file. Plural-Forms header is invalid [" + p + "]");
+				var d = Gettext._locale_data[e].head["plural-forms"];
+				/;\s*$/.test(d) || (d = d.concat(";"));
+				var u = "var plural; var nplurals; " + d + ' return { "nplural" : nplurals, "plural" : (plural === true ? 1 : plural ? plural : 0) };';
+				Gettext._locale_data[e].head.plural_func = new Function("n", u);
+			} else
+				void 0 === Gettext._locale_data[e].head.plural_func &&
+					(Gettext._locale_data[e].head.plural_func = function (t) {
+						return { nplural: 2, plural: 1 != t ? 1 : 0 };
+					});
+	}),
+	(Gettext.prototype.try_load_lang_po = function (t) {
+		var e = this.sjax(t);
+		if (e) {
+			var a = this.uri_basename(t),
+				r = this.parse_po(e),
+				i = {};
+			return r && (r[""] || (r[""] = {}), r[""].domain || (r[""].domain = a), (i[(a = r[""].domain)] = r), this.parse_locale_data(i)), 1;
+		}
+	}),
+	(Gettext.prototype.uri_basename = function (t) {
+		var e;
+		if ((e = t.match(/^(.*\/)?(.*)/))) {
+			var a;
+			return (a = e[2].match(/^(.*)\..+$/)) ? a[1] : e[2];
+		}
+		return "";
+	}),
+	(Gettext.prototype.parse_po = function (t) {
+		for (var e = {}, a = {}, r = "", i = [], o = t.split("\n"), s = 0; s < o.length; s++) {
+			o[s] = o[s].replace(/(\n|\r)+$/, "");
+			if (/^$/.test(o[s])) {
+				if (void 0 !== a.msgid) {
+					var n = void 0 !== a.msgctxt && a.msgctxt.length ? a.msgctxt + Gettext.context_glue + a.msgid : a.msgid,
+						l = void 0 !== a.msgid_plural && a.msgid_plural.length ? a.msgid_plural : null,
+						p = [];
+					for (var d in a) {
+						(u = d.match(/^msgstr_(\d+)/)) && (p[parseInt(u[1])] = a[d]);
+					}
+					p.unshift(l), p.length > 1 && (e[n] = p), (a = {}), (r = "");
+				}
+			} else {
+				if (/^#/.test(o[s])) continue;
+				(u = o[s].match(/^msgctxt\s+(.*)/))
+					? (a[(r = "msgctxt")] = this.parse_po_dequote(u[1]))
+					: (u = o[s].match(/^msgid\s+(.*)/))
+					? (a[(r = "msgid")] = this.parse_po_dequote(u[1]))
+					: (u = o[s].match(/^msgid_plural\s+(.*)/))
+					? (a[(r = "msgid_plural")] = this.parse_po_dequote(u[1]))
+					: (u = o[s].match(/^msgstr\s+(.*)/))
+					? (a[(r = "msgstr_0")] = this.parse_po_dequote(u[1]))
+					: (u = o[s].match(/^msgstr\[0\]\s+(.*)/))
+					? (a[(r = "msgstr_0")] = this.parse_po_dequote(u[1]))
+					: (u = o[s].match(/^msgstr\[(\d+)\]\s+(.*)/))
+					? (a[(r = "msgstr_" + u[1])] = this.parse_po_dequote(u[2]))
+					: /^"/.test(o[s])
+					? (a[r] += this.parse_po_dequote(o[s]))
+					: i.push("Strange line [" + s + "] : " + o[s]);
+			}
+		}
+		if (void 0 !== a.msgid) {
+			var n = void 0 !== a.msgctxt && a.msgctxt.length ? a.msgctxt + Gettext.context_glue + a.msgid : a.msgid,
+				l = void 0 !== a.msgid_plural && a.msgid_plural.length ? a.msgid_plural : null,
+				p = [];
+			for (var d in a) {
+				var u;
+				(u = d.match(/^msgstr_(\d+)/)) && (p[parseInt(u[1])] = a[d]);
+			}
+			p.unshift(l), p.length > 1 && (e[n] = p), (a = {}), (r = "");
+		}
+		if (e[""] && e[""][1]) {
+			for (var c = {}, h = e[""][1].split(/\\n/), s = 0; s < h.length; s++)
+				if (h.length) {
+					var _ = h[s].indexOf(":", 0);
+					if (-1 != _) {
+						var f = h[s].substring(0, _),
+							x = h[s].substring(_ + 1),
+							g = f.toLowerCase();
+						c[g] && c[g].length ? i.push("SKIPPING DUPLICATE HEADER LINE: " + h[s]) : /#-#-#-#-#/.test(g) ? i.push("SKIPPING ERROR MARKER IN HEADER: " + h[s]) : ((x = x.replace(/^\s+/, "")), (c[g] = x));
+					} else i.push("PROBLEM LINE IN HEADER: " + h[s]), (c[h[s]] = "");
+				}
+			e[""] = c;
+		} else e[""] = {};
+		return e;
+	}),
+	(Gettext.prototype.parse_po_dequote = function (t) {
+		var e;
+		return (e = t.match(/^"(.*)"/)) && (t = e[1]), (t = t.replace(/\\"/, ""));
+	}),
+	(Gettext.prototype.try_load_lang_json = function (t) {
+		var e = this.sjax(t);
+		if (e) {
+			var a = this.JSON(e);
+			return this.parse_locale_data(a), 1;
+		}
+	}),
+	(Gettext.prototype.get_lang_refs = function () {
+		for (var t = new Array(), e = document.getElementsByTagName("link"), a = 0; a < e.length; a++)
+			if ("gettext" == e[a].rel && e[a].href) {
+				if (void 0 === e[a].type || "" == e[a].type)
+					if (/\.json$/i.test(e[a].href)) e[a].type = "application/json";
+					else if (/\.js$/i.test(e[a].href)) e[a].type = "application/json";
+					else if (/\.po$/i.test(e[a].href)) e[a].type = "application/x-po";
+					else {
+						if (!/\.mo$/i.test(e[a].href)) throw new Error("LINK tag with rel=gettext found, but the type and extension are unrecognized.");
+						e[a].type = "application/x-mo";
+					}
+				if (((e[a].type = e[a].type.toLowerCase()), "application/json" == e[a].type)) e[a].type = "application/json";
+				else if ("text/javascript" == e[a].type) e[a].type = "application/json";
+				else if ("application/x-po" == e[a].type) e[a].type = "application/x-po";
+				else {
+					if ("application/x-mo" != e[a].type) throw new Error("LINK tag with rel=gettext found, but the type attribute [" + e[a].type + "] is unrecognized.");
+					e[a].type = "application/x-mo";
+				}
+				t.push(e[a]);
+			}
+		return t;
+	}),
+	(Gettext.prototype.textdomain = function (t) {
+		return t && t.length && (this.domain = t), this.domain;
+	}),
+	(Gettext.prototype.gettext = function (t) {
+		return this.dcnpgettext(null, void 0, t, void 0, void 0, void 0);
+	}),
+	(Gettext.prototype.dgettext = function (t, e) {
+		return this.dcnpgettext(t, void 0, e, void 0, void 0, void 0);
+	}),
+	(Gettext.prototype.dcgettext = function (t, e, a) {
+		return this.dcnpgettext(t, void 0, e, void 0, void 0, a);
+	}),
+	(Gettext.prototype.ngettext = function (t, e, a) {
+		return this.dcnpgettext(null, void 0, t, e, a, void 0);
+	}),
+	(Gettext.prototype.dngettext = function (t, e, a, r) {
+		return this.dcnpgettext(t, void 0, e, a, r, void 0);
+	}),
+	(Gettext.prototype.dcngettext = function (t, e, a, r, i) {
+		return this.dcnpgettext(t, void 0, e, a, r, i, i);
+	}),
+	(Gettext.prototype.pgettext = function (t, e) {
+		return this.dcnpgettext(null, t, e, void 0, void 0, void 0);
+	}),
+	(Gettext.prototype.dpgettext = function (t, e, a) {
+		return this.dcnpgettext(t, e, a, void 0, void 0, void 0);
+	}),
+	(Gettext.prototype.dcpgettext = function (t, e, a, r) {
+		return this.dcnpgettext(t, e, a, void 0, void 0, r);
+	}),
+	(Gettext.prototype.npgettext = function (t, e, a, r) {
+		return this.dcnpgettext(null, t, e, a, r, void 0);
+	}),
+	(Gettext.prototype.dnpgettext = function (t, e, a, r, i) {
+		return this.dcnpgettext(t, e, a, r, i, void 0);
+	}),
+	(Gettext.prototype.dcnpgettext = function (t, e, a, r, i, o) {
+		if (!this.isValidObject(a)) return "";
+		var s = this.isValidObject(r),
+			n = this.isValidObject(e) ? e + Gettext.context_glue + a : a,
+			l = this.isValidObject(t) ? t : this.isValidObject(this.domain) ? this.domain : "messages",
+			p = new Array();
+		if (void 0 !== Gettext._locale_data && this.isValidObject(Gettext._locale_data[l])) p.push(Gettext._locale_data[l]);
+		else if (void 0 !== Gettext._locale_data) for (var d in Gettext._locale_data) p.push(Gettext._locale_data[d]);
+		var u,
+			c = [],
+			h = !1;
+		if (p.length)
+			for (var _ = 0; _ < p.length; _++) {
+				var f = p[_];
+				if (this.isValidObject(f.msgs[n])) {
+					for (var x = 0; x < f.msgs[n].length; x++) c[x] = f.msgs[n][x];
+					if ((c.shift(), (u = f), (h = !0), c.length > 0 && 0 != c[0].length)) break;
+				}
+			}
+		(0 != c.length && 0 != c[0].length) || (c = [a, r]);
+		var g = c[0];
+		if (s) {
+			var v;
+			if (h && this.isValidObject(u.head.plural_func)) {
+				var m = u.head.plural_func(i);
+				m.plural || (m.plural = 0), m.nplural || (m.nplural = 0), m.nplural <= m.plural && (m.plural = 0), (v = m.plural);
+			} else v = 1 != i ? 1 : 0;
+			this.isValidObject(c[v]) && (g = c[v]);
+		}
+		return g;
+	}),
+	(Gettext.strargs = function (t, e) {
+		null == e || void 0 === e ? (e = []) : e.constructor != Array && (e = [e]);
+		for (var a = ""; ; ) {
+			var r,
+				i = t.indexOf("%");
+			if (-1 == i) {
+				a += t;
+				break;
+			}
+			if (((a += t.substr(0, i)), "%%" == t.substr(i, 2))) (a += "%"), (t = t.substr(i + 2));
+			else if ((r = t.substr(i).match(/^%(\d+)/))) {
+				var o = parseInt(r[1]),
+					s = r[1].length;
+				o > 0 && null != e[o - 1] && void 0 !== e[o - 1] && (a += e[o - 1]), (t = t.substr(i + 1 + s));
+			} else (a += "%"), (t = t.substr(i + 1));
+		}
+		return a;
+	}),
+	(Gettext.prototype.strargs = function (t, e) {
+		return Gettext.strargs(t, e);
+	}),
+	(Gettext.prototype.isArray = function (t) {
+		return this.isValidObject(t) && t.constructor == Array;
+	}),
+	(Gettext.prototype.isValidObject = function (t) {
+		return null != t && void 0 !== t;
+	}),
+	(Gettext.prototype.sjax = function (t) {
+		var e;
+		if (!(e = window.XMLHttpRequest ? new XMLHttpRequest() : -1 != navigator.userAgent.toLowerCase().indexOf("msie 5") ? new ActiveXObject("Microsoft.XMLHTTP") : new ActiveXObject("Msxml2.XMLHTTP")))
+			throw new Error("Your browser doesn't do Ajax. Unable to support external language files.");
+		e.open("GET", t, !1);
+		try {
+			e.send(null);
+		} catch (t) {
+			return;
+		}
+		var a = e.status;
+		if (200 == a || 0 == a) return e.responseText;
+		var r = e.statusText + " (Error " + e.status + ")";
+		return e.responseText.length && (r += "\n" + e.responseText), void alert(r);
+	}),
+	(Gettext.prototype.JSON = function (data) {
+		return eval("(" + data + ")");
+	});
+(CTSound = function (a) {
+	(this.sounds = []), (this.soundPath = a.soundPath);
+	(myAudioTag = document.createElement("audio")).canPlayType;
+	var n = null;
+	"undefined" != typeof Audio && (n = new Audio("")),
+		(this.haveAudio = n && !!n.canPlayType),
+		this.haveAudio &&
+			((this.canPlayOgg = "no" != n.canPlayType("audio/ogg") && "" != n.canPlayType("audio/ogg")),
+			(this.canPlayMp3 = "no" != n.canPlayType("audio/mpeg") && "" != n.canPlayType("audio/mpeg")),
+			(this.canPlayWav = "no" != n.canPlayType("audio/wav") && "" != n.canPlayType("audio/wav")));
+}),
+	(CTSound.prototype.createSound = function (a, n) {
+		if (this.haveAudio) {
+			var o = null,
+				i = "";
+			this.canPlayMp3 ? (i = this.soundPath + "/" + a + ".mp3") : this.canPlayOgg ? (i = this.soundPath + "/" + a + ".ogg") : this.canPlayWav && (i = this.soundPath + "/" + a + ".wav"),
+				i && (o = new Audio(i)),
+				o && ((o.id = n + "-" + a), (this.sounds[a] = o), n && (this.sounds[n] = o));
+		}
+	}),
+	(CTSound.prototype.playSound = function (a) {
+		var n = this.sounds[a];
+		n && n.play();
+	});
+function getLocale() {
+	if (navigator) {
+		if (navigator.language) return navigator.language;
+		if (navigator.browserLanguage) return navigator.browserLanguage;
+		if (navigator.systemLanguage) return navigator.systemLanguage;
+		if (navigator.userLanguage) return navigator.userLanguage;
+	}
+}
+function init_gettext() {
+	if ("undefined" != typeof json_locale_data) {
+		var n = { domain: "js-messages", locale_data: json_locale_data };
+		gt = new Gettext(n);
+	}
+}
+function _js(n) {
+	return gt ? gt.gettext(n) : n;
+}
+function _has_translation(n) {
+	var t = getLocale();
+	return !t || "en" == t.substring(0, 2) || n != _js(n);
+}
+function __js(n, t) {
+	for (var n = _js(n), a = 0; a < t.length; a++) {
+		var e = new RegExp("{" + t[a][0] + "}", "g");
+		n = n.replace(e, t[a][1]);
+	}
+	return n;
+}
+function _jn(n, t, a) {
+	return gt ? gt.ngettext(n, t, a) : 0 == a || a > 1 ? t : n;
+}
+function __jn(n, t, a, e) {
+	var r = _jn(n, t, a);
+	return __gt_expand(r, e);
+}
+function __gt_expand(n, t) {
+	for (var a = 0; a < t.length; a++) {
+		var e = new RegExp("{" + t[a][0] + "}", "g");
+		n = n.replace(e, t[a][1]);
+	}
+	return n;
+}
+var gt = null;
 init_gettext();
-function _js(_2){
-if(gt){
-return gt.gettext(_2);
-}else{
-return _2;
-}
-}
-function _has_translation(s){
-var l=getLocale();
-if(l){
-var _5=l.substring(0,2);
-return (_5=="en"||s!=_js(s));
-}
-return true;
-}
-function __js(_6,a){
-var _6=_js(_6);
-for(var i=0;i<a.length;i++){
-var re=new RegExp("{"+a[i][0]+"}","g");
-_6=_6.replace(re,a[i][1]);
-}
-return _6;
-}
-function _jn(_a,_b,_c){
-var _d;
-if(gt){
-_d=gt.ngettext(_a,_b,_c);
-}else{
-if(_c==0||_c>1){
-_d=_b;
-}else{
-_d=_a;
-}
-}
-return _d;
-}
-function __jn(_e,_f,num,a){
-var msg=_jn(_e,_f,num);
-return __gt_expand(msg,a);
-return msg;
-}
-function __gt_expand(msg,a){
-for(var i=0;i<a.length;i++){
-var re=new RegExp("{"+a[i][0]+"}","g");
-msg=msg.replace(re,a[i][1]);
-}
-return msg;
-}
-
-PgnViewer=function(_1,_2){
-var _3=new BoardConfig();
-if(_1){
-_3.applyConfig(_1);
-}
-if(!window._pvObject){
-window._pvObject=new Array();
-}
-window._pvObject[_3.boardName]=this;
-_1=_3;
-_1.pgnMode=true;
-_1.scrollVariations=true;
-this.chessapp=new ChessApp(_1);
-this.finishedCallback=_2;
-if(_1.loadImmediately){
-this.chessapp.init(null,null,null,this,true);
-this.board=this.chessapp.board;
-}else{
-YAHOO.util.Event.onDOMReady(this.setup,this,true);
-}
-};
-PgnViewer.prototype.setup=function(){
-this.chessapp.init(null,null,null,this,true);
-this.board=this.chessapp.board;
-};
-PgnViewer.prototype.updatePieceCallback=function(_4,_5,_6,_7,_8,_9,_a,_b,_c,_d,_e,_f){
-var _10=new Object();
-var _11=_e;
-var _12=false;
-var _13=Board.getVarMove(_11,_7,_6,_5,_4);
-if(_11.fromColumn==_5.column&&_11.fromRow==_5.row&&_11.toRow==_7&&_11.toColumn==_6&&(_4==""||(_4==_11.promotion))){
-_12=true;
-}else{
-if(_13){
-_11=_13;
-_12=true;
-}
-}
-_10.move=_11;
-_10.allowMove=_12;
-_10.dontMakeOpponentMove=false;
-return _10;
-};
-PgnViewer.prototype.setupFromPgn=function(pgn,_15){
-this.chessapp.pgn.setupFromPGN(pgn,_15);
-};
-PgnViewer.prototype.setupFromFen=function(fen,_17,_18,_19){
-this.chessapp.pgn.board.setupFromFen(fen,_17,_18,_19);
-};
-PGNGame=function(_1a,_1b,_1c,_1d,_1e,_1f,_20,_21,_22,_23,_24,_25,eco){
-this.movesseq=_1a;
-this.startFen=_1b;
-this.blackPlayer=_1c;
-this.whitePlayer=_1d;
-this.pgn_result=_1e;
-this.event=_1f;
-this.site=_20;
-this.date=_21;
-this.round=_22;
-this.start_movenum=_23;
-this.whitePlayerElo=_24;
-this.blackPlayerElo=_25;
-this.eco=eco;
-};
-PGN=function(_27){
-this.board=_27;
-this.pgnGames=new Array();
-this.lastShownGame=0;
-};
-PGN.prototype.pollPGNFromURL=function(url,_29,_2a){
-var _2b=this;
-this.getPGNFromURL(url,_29);
-if(this.foundResult){
-_2a=this.board.pollPGNMillisecondsPostResult;
-this.foundResultPolls++;
-}
-if(this.foundResultPolls>=this.board.numberPollsAfterResult){
-this.finishedPolling=true;
-return;
-}
-this.pollTime=_2a;
-this.lastPoll=new Date().getTime();
-setTimeout(function(){
-_2b.pollPGNFromURL(url,_29,_2a);
-},_2a);
-};
-PGN.prototype.getPGNFromURL=function(url,_2d){
-var _2e=(new Date()).getTime()+"-"+parseInt(Math.random()*99999);
-YAHOO.util.Connect.asyncRequest("GET",url+"?rs="+_2e,{success:function(o){
-var _30="";
-var _31="";
-var _32="";
-var re=eval("/\\n[^[]/");
-if(o.responseText.indexOf("\r")>=0){
-eval("/\\r[^[]/");
-}
-var ind=o.responseText.search(re);
-if(ind>=0){
-_32=o.responseText.substring(ind);
-}
-re=eval("/\\[Result /");
-ind=o.responseText.search(re);
-if(ind>=0){
-var _35=o.responseText.indexOf("\n",ind);
-if(_35<0){
-_35=o.responseText.indexOf("\r",ind);
-}
-if(_35>=0){
-_30=o.responseText.substring(ind,_35);
-}
-}
-re=eval("/\\[Site /");
-ind=o.responseText.search(re);
-if(ind>=0){
-var _35=o.responseText.indexOf("]",ind);
-if(_35>=0){
-_31=o.responseText.substring(ind+6,_35-1);
-}
-}
-if(_31){
-if(this.board.fideClock){
-var _36=YAHOO.util.Dom.get(this.board.boardName+"-whitePlayerClock");
-var _37=YAHOO.util.Dom.get(this.board.boardName+"-blackPlayerClock");
-var ss=_31.split("-");
-var _39=ss[0];
-var _3a="0";
-if(_39.charAt(0)=="\""){
-_39=_39.substr(1);
-}
-if(ss.length>1){
-_3a=ss[1];
-}
-if(_36){
-_36.innerHTML=_39;
-}
-if(_37){
-_37.innerHTML=_3a;
-}
-}else{
-var _3b=YAHOO.util.Dom.get(this.board.boardName+"-site");
-if(_3b){
-_3b.innerHTML=_31;
-}
-}
-}
-if(this.currentMoveText==_32&&this.currentResultTag==_30){
-return;
-}
-this.currentMoveText=_32;
-this.currentResultTag=_30;
-this.setupFromPGN(o.responseText,_2d);
-},failure:function(o){
-if(!this.board.hidePGNErrors){
-alert("pgn load failed:"+o.statusText+" for file:"+url);
-}
-},scope:this},"rs2="+_2e);
-};
-PGN.prototype.getMoveFromPGNMove=function(_3d,_3e,_3f){
-var _40=false;
-var _41=false;
-var _42=false;
-var _43;
-var _44=null;
-var _45=false;
-var _46=null;
-if(_3d.charAt(_3d.length-1)=="#"){
-_41=true;
-_40=true;
-_3d=_3d.substr(0,_3d.length-1);
-}else{
-if(_3d.charAt(_3d.length-1)=="+"){
-_41=true;
-if(_3d.length>1&&_3d.charAt(_3d.length-2)=="+"){
-_40=true;
-_3d=_3d.substr(0,_3d.length-2);
-}else{
-_3d=_3d.substr(0,_3d.length-1);
-}
-}
-}
-if(_3d=="O-O-O"){
-if(_3e=="w"){
-return this.board.createMoveFromString("e1c1");
-}else{
-return this.board.createMoveFromString("e8c8");
-}
-}else{
-if(_3d=="O-O"){
-if(_3e=="w"){
-return this.board.createMoveFromString("e1g1");
-}else{
-return this.board.createMoveFromString("e8g8");
-}
-}
-}
-var _47=_3d.indexOf("=");
-if(_47>=0){
-var _48;
-_44=_3d.substr(_47+1,1);
-_48=_44.charAt(0);
-_43=this.board.pieceCharToPieceNum(_48);
-_42=true;
-_3d=_3d.substr(0,_47);
-}
-var _49=_3d.charAt(_3d.length-1);
-if(_49=="Q"||_49=="R"||_49=="N"||_49=="B"){
-_44=_49+"";
-_43=this.board.pieceCharToPieceNum(_44);
-_42=true;
-_3d=_3d.substr(0,_3d.length-1);
-}
-var _4a=_3d.substr(_3d.length-2,2);
-var _4b=_4a.charCodeAt(0)-"a".charCodeAt(0);
-var _4c=_4a.charCodeAt(1)-"1".charCodeAt(0);
-if(_4b>7||_4b<0||_4c>7||_4c<0){
-this.lastMoveFromError=__js("Error processing to Square:{TO_SQUARE} on move:{MOVE}",[["TO_SQUARE",_4a],["MOVE",_3d]]);
-return null;
-}
-if(_3d.length>2){
-if(_3d.charAt(_3d.length-3)=="x"){
-_45=true;
-_46=_3d.substr(0,_3d.length-3);
-}else{
-_46=_3d.substr(0,_3d.length-2);
-}
-}
-var _4d=new Array();
-var _4e=0;
-var _4f=null;
-var _50=(_3e=="w")?ChessPiece.WHITE:ChessPiece.BLACK;
-switch(_3d.charAt(0)){
-case "K":
-case "k":
-_4f=ChessPiece.KING;
-break;
-case "Q":
-case "q":
-_4f=ChessPiece.QUEEN;
-break;
-case "R":
-case "r":
-_4f=ChessPiece.ROOK;
-break;
-case "B":
-_4f=ChessPiece.BISHOP;
-break;
-case "N":
-case "n":
-_4f=ChessPiece.KNIGHT;
-break;
-case "P":
-case "p":
-_4f=ChessPiece.PAWN;
-break;
-default:
-_4f=ChessPiece.PAWN;
-}
-var _51=null;
-var _52=null;
-if(_46){
-var _53=_46.toLowerCase().charAt(0);
-if(_53==_46.charAt(0)&&_53>="a"&&_53<="h"){
-_52=_53;
-if(_46.length==2){
-_51=_46.charAt(1);
-}
-}else{
-if(_46.length>1){
-if(_46.length==2){
-var c=_46.charAt(1);
-if(c>="1"&&c<="8"){
-_51=c;
-}else{
-_52=c;
-}
-}else{
-if(_46.length==3){
-_52=_46.charAt(1);
-_51=_46.charAt(2);
-if(_52>="1"&&_52<="9"){
-var tmp=_52;
-_52=_51;
-_51=tmp;
-}
-}else{
-this.lastMoveFromError=__js("Error: unhandled fromChars:{FROM_CHARS}",[["FROM_CHARS",_46]]);
-return null;
-}
-}
-}
-}
-}
-for(var i=0;i<8;i++){
-for(var j=0;j<8;j++){
-var bp=this.board.boardPieces[i][j];
-if(bp!=null&&bp.colour==_50&&bp.piece==_4f){
-if(this.board.canMove(bp,_4b,_4c,_3f,true)){
-var _59=String.fromCharCode("a".charCodeAt(0)+i).charAt(0);
-var _5a=String.fromCharCode("1".charCodeAt(0)+j).charAt(0);
-if((_52==null||_52==_59)&&(_51==null||_51==_5a)){
-_4d[_4e++]=bp;
-}else{
-}
-}
-}
-}
-}
-if(_4e==0){
-this.lastMoveFromError=__js("no candidate pieces for:{MOVE}",[["MOVE",_3d]]);
-return null;
-}
-if(_4e>1){
-this.lastMoveFromError=__js("Ambiguous:{MOVE} with fromChars:{FROM_CHARS} disambigRow:{DISAMBIG_ROW} disambigCol:{DISAMBIG_COL}",[["MOVE",_3d],["FROM_CHARS",_46],["DISAMBIG_ROW",_51],["DISAMBIG_COL",_52]]);
-return null;
-}
-var _5b=_4d[0];
-var _5c="";
-_5c+=String.fromCharCode("a".charCodeAt(0)+_5b.column);
-_5c+=String.fromCharCode("1".charCodeAt(0)+_5b.row);
-if(_45){
-_5c+="x";
-}
-_5c+=_4a;
-if(_44){
-_5c+=_44;
-}
-var _5d=this.board.createMoveFromString(_5c);
-return _5d;
-};
-PGN.prototype.parseTag=function(_5e,pgn,_60){
-if(pgn.substr(_60,_5e.length+3)=="["+_5e+" \""){
-var _61=pgn.indexOf("\"",_60+_5e.length+3);
-if(_61>=0){
-return pgn.substring(_60+_5e.length+3,_61);
-}
-}
-return null;
-};
-PGN.prototype.parsePGN=function(pgn,_63,_64){
-if(ctime){
-console.time("parsePGN");
-}
-pgn=pgn.replace(/&nbsp;/g," ");
-pgn=pgn.replace(/^\s+|\s+$/g,"");
-var _65=0;
-this.pgn=pgn;
-var _66=new Array();
-var _67=1;
-var _68=0;
-this.pgnGames=new Array();
-this.finishedParseCallback=_63;
-this.startParseTime=new Date().getTime();
-var ret=this.parsePGN_cont(_66,_67,_68,_65,_64);
-var _6a=new Object();
-if(!ret){
-_6a.parsedOk=true;
-_6a.pgnGames=this.pgnGames;
-}else{
-_6a.parsedOk=false;
-_6a.errorString=ret;
-_6a.pgnGames=null;
-}
-if(ctime){
-console.timeEnd("parsePGN");
-}
-return _6a;
-};
-PGN.prototype.parsePGN_cont=function(_6b,_6c,_6d,_6e,_6f){
-var pgn=this.pgn;
-var _71=this.board.boardName+"-progress";
-var _72=YAHOO.util.Dom.get(_71);
-while(_6e<pgn.length){
-var _73="";
-var _74="";
-var _75="";
-var _76="";
-var _77="";
-var _78="?";
-var _79="";
-var _7a="?";
-var _7b="?";
-var eco="";
-var _7d="w";
-var _7e=0;
-var _7f=0;
-var _80=new Array();
-var _81=0;
-var _82="";
-var _83=null;
-var _84=null;
-var _85=new Array();
-var _86=new Array();
-var _87=new Array();
-var _88=new Array();
-var _89=new Array();
-this.board.pieceMoveDisabled=true;
-if(this.board.initialFen){
-this.board.startFen=this.board.initialFen;
-}else{
-this.board.startFen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-}
-var i=0;
-for(i=_6e;i<pgn.length;i++){
-var tag=this.parseTag("FEN",pgn,i);
-if(tag&&tag!="?"){
-this.board.startFen=tag;
-}else{
-tag=this.parseTag("White",pgn,i);
-if(tag&&tag!="?"){
-_79=tag;
-}else{
-tag=this.parseTag("Black",pgn,i);
-if(tag&&tag!="?"){
-_74=tag;
-}else{
-tag=this.parseTag("Result",pgn,i);
-if(tag&&tag!="?"){
-_73=tag;
-}else{
-tag=this.parseTag("Event",pgn,i);
-if(tag&&tag!="?"){
-_75=tag;
-}else{
-tag=this.parseTag("Site",pgn,i);
-if(tag&&tag!="?"){
-_76=tag;
-}else{
-tag=this.parseTag("Date",pgn,i);
-if(tag&&tag!="?"){
-_77=tag;
-}else{
-tag=this.parseTag("Round",pgn,i);
-if(tag&&tag!="?"){
-_78=tag;
-}else{
-tag=this.parseTag("WhiteElo",pgn,i);
-if(tag&&tag!="?"){
-_7a=tag;
-}else{
-tag=this.parseTag("BlackElo",pgn,i);
-if(tag&&tag!="?"){
-_7b=tag;
-}else{
-tag=this.parseTag("ECO",pgn,i);
-if(tag&&tag!="?"){
-eco=tag;
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-if(pgn.charAt(i)=="["){
-var j=pgn.indexOf;
-for(j=i+1;j<pgn.length&&pgn.charAt(j)!="]";j++){
-}
-if(j==pgn.length){
-var err=_js("PgnViewer: Error parsing PGN. Found unclosed [");
-if(this.finishedParseCallback){
-this.finishedParseCallback(_6f,err);
-}
-return err;
-}
-i=j-1;
-continue;
-}
-if(pgn.charAt(i)=="{"){
-var _8e=pgn.indexOf("}",i+1);
-if(_8e>=0){
-var _8f=pgn.substring(i+1,_8e);
-i=_8e;
-_82+="{ "+_8f+" } ";
-}else{
-var err=_js("PgnViewer: Error parsing PGN. Found unclosed {");
-if(this.finishedParseCallback){
-this.finishedParseCallback(_6f,err);
-}
-return err;
-}
-continue;
-}
-if(pgn.substr(i,1)=="."){
-var j=i-1;
-while(j>=0&&pgn.charAt(j)>="0"&&pgn.charAt(j)<="9"){
-j--;
-}
-j++;
-if(pgn.charAt(j)>="0"&&pgn.charAt(j)<="9"){
-_6c=parseInt(pgn.substring(j,i));
-}
-break;
-}
-}
-if(pgn.substr(i,1)!="."){
-}
-this.board.prev_move=null;
-this.board.setupFromFen(this.board.startFen,false,false,true,true);
-_83=this.board.prev_move;
-var _90=i;
-var _91=null;
-for(i=i;i<pgn.length;i++){
-var _92=-1;
-if(pgn.substr(i,3)=="1-0"||pgn.substr(i,3)=="0-1"){
-_92=3;
-}else{
-if(pgn.substr(i,7)=="1/2-1/2"){
-_92=7;
-}else{
-if(pgn.substr(i,1)=="*"){
-_92=1;
-}
-}
-}
-if(_92>0){
-_91=pgn.substr(i,_92);
-_6e=i+_92;
-break;
-}
-if(pgn.charAt(i)=="["){
-_6e=i;
-break;
-}
-if(pgn.charAt(i)==" "||pgn.charAt(i)=="\t"||pgn.charAt(i)=="\n"||pgn.charAt(i)=="\r"){
-_90=i+1;
-continue;
-}
-if(pgn.charAt(i)>="0"&&pgn.charAt(i)<="9"){
-continue;
-}
-if(pgn.charAt(i)=="."){
-var _93=pgn.substring(_90,i).replace(/^\s+|\s+$/g,"");
-_90=i;
-while(i+1<pgn.length&&pgn.charAt(i+1)=="."){
-i++;
-}
-if(_90!=i){
-_7d="b";
-}else{
-_7d="w";
-}
-_90=i+1;
-}else{
-if(pgn.charAt(i)=="{"){
-var _8e=pgn.indexOf("}",i+1);
-if(_8e>=0){
-var _8f=pgn.substring(i+1,_8e);
-i=_8e;
-_82+="{ "+_8f+" } ";
-}
-_90=i+1;
-}else{
-if(pgn.charAt(i)=="("){
-_85[_7e]=this.board.boardPieces;
-_86[_7e]=_7d;
-_88[_7e]=_83;
-_89[_7e]=_84;
-this.board.boardPieces=_87[_7e];
-this.board.boardPieces=this.board.copyBoardPieces(false);
-_83=_84;
-_7e++;
-_90=i+1;
-_82+="( ";
-}else{
-if(pgn.charAt(i)==")"){
-boardPool.putObject(_85[_7e]);
-_7e--;
-this.board.boardPieces=_85[_7e];
-_7d=_86[_7e];
-_83=_88[_7e];
-_84=_89[_7e];
-_90=i+1;
-_82+=") ";
-}else{
-if(pgn.charAt(i)=="$"){
-var j;
-for(j=i+1;j<pgn.length&&pgn.charAt(j)>="0"&&pgn.charAt(j)<="9";j++){
-}
-j--;
-if(j>i){
-var _94=parseInt(pgn.substr(i+1,j+1));
-if(_94<=9){
-switch(_94){
-case 1:
-_82=_82.substr(0,_82.length-1)+"! ";
-break;
-case 2:
-_82=_82.substr(0,_82.length-1)+"? ";
-break;
-case 3:
-_82=_82.substr(0,_82.length-1)+"!! ";
-break;
-case 4:
-_82=_82.substr(0,_82.length-1)+"?? ";
-break;
-case 5:
-_82=_82.substr(0,_82.length-1)+"!? ";
-break;
-case 6:
-_82=_82.substr(0,_82.length-1)+"?! ";
-break;
-case 7:
-case 8:
-case 9:
-case 0:
-default:
-}
-}else{
-_82+=pgn.substring(i,j+1)+" ";
-}
-i=j;
-}
-continue;
-}else{
-var _95=-1;
-for(var j=i+1;j<pgn.length;j++){
-if(pgn.charAt(j)==")"||pgn.charAt(j)=="("||pgn.charAt(j)=="{"||pgn.charAt(j)=="}"||pgn.charAt(j)==" "||pgn.charAt(j)=="\t"||pgn.charAt(j)=="\n"||pgn.charAt(j)=="\r"){
-_95=j;
-break;
-}
-}
-if(_95==-1){
-_95=pgn.length;
-}
-var _96=_90;
-var _97=pgn.substring(_90,_95).replace(/^\s+|\s+$/g,"");
-_90=_95;
-i=_90-1;
-if(_97.length>=4&&_97.substring(0,4)=="e.p."){
-continue;
-}
-if(_97.length==0){
-var err=__js("PgnViewer: Error: got empty move endMoveInd:{ENDMOVE_INDEX} upto:{UPTO} from:{FROM}",[["ENDMOVE_INDEX",_95],["UPTO",_96],["FROM",pgn.substr(_96)]]);
-if(this.finishedParseCallback){
-this.finishedParseCallback(_6f,err);
-}
-return err;
-}
-var _98=_97.length-1;
-while(_98>=0){
-if(_97.charAt(_98)=="?"){
-_98--;
-}else{
-if(_97.charAt(_98)=="!"){
-_98--;
-}else{
-break;
-}
-}
-}
-var _99=_97.substring(0,_98+1);
-var _9a=this.getMoveFromPGNMove(_99,_7d,_83);
-if(_9a==null){
-_82+="unknown ";
-var err=__js("PgnViewer: Error parsing:{MOVE}, {ERROR_REASON}",[["MOVE",_97],["ERROR_REASON",this.lastMoveFromError]]);
-if(this.finishedParseCallback){
-this.finishedParseCallback(_6f,err);
-}
-return err;
-}
-_84=_83;
-_83=_9a;
-var _9b=this.board.boardPieces[_9a.fromColumn][_9a.fromRow];
-boardPool.putObject(_87[_7e]);
-_87[_7e]=this.board.copyBoardPieces(false);
-if(_9b){
-this.board.makeMove(_9a,_9b,false,0.5,false,false);
-}
-_7f=_7e;
-_81++;
-_7d=this.board.flipToMove(_7d);
-_82+=_9a.moveString+"|"+_97+" ";
-}
-}
-}
-}
-}
-}
-if(_6e<i){
-_6e=i;
-}
-var _9c=pgn.indexOf("{",_6e);
-var _9d=pgn.indexOf("[",_6e);
-if(_9c>=0){
-if(_9d==-1||_9c<_9d){
-var _9e=pgn.indexOf("}",_9c+1);
-if(_9e>=0){
-var _8f=pgn.substring(_9c+1,_9e);
-_6e=_9e+1;
-_82+="{ "+_8f+" } ";
-}else{
-var err=_js("PgnViewer: Error: Unclosed {");
-if(this.finishedParseCallback){
-this.finishedParseCallback(_6f,err);
-}
-return err;
-}
-}
-}
-_82=_82.replace(/^\s+|\s+$/g,"");
-this.board.pieceMoveDisabled=false;
-if(_91!=null){
-if(_73.length==0||_73=="?"){
-_73=_91;
-}
-}
-if(this.board.ignoreMultipleGames){
-if(_91&&_73&&_73=="*"&&_91!="*"&&_91!="?"&&_91!=""){
-_73=_91;
-}
-}
-this.pgnGames[_6d++]=new PGNGame(_82,this.board.startFen,_74,_79,_73,_75,_76,_77,_78,_6c,_7a,_7b,eco);
-if(_72){
-_72.innerHTML="Loaded "+_6d+" games";
-}
-if(this.board.ignoreMultipleGames){
-break;
-}
-if(this.finishedParseCallback&&new Date().getTime()-this.startParseTime>500){
-this.startParseTime=new Date().getTime();
-setTimeout("window._pvObject[\""+this.board.boardName+"\"].chessapp.pgn.parsePGN_cont(\""+_6b+"\",\""+_6c+"\",\""+_6d+"\",\""+_6e+"\","+_6f+");",0);
-return;
-}
-}
-if(this.finishedParseCallback){
-this.finishedParseCallback(_6f);
-}
-return false;
-};
-PGN.prototype.setupFromPGN=function(pgn,_a0){
-this.parsePGN(pgn,this.setupFromPGNCallback,_a0);
-};
-PGN.prototype.setupFromPGNCallback=function(_a1,err){
-var _a3=this.board.boardName+"-progress";
-var _a4=YAHOO.util.Dom.get(_a3);
-if(err){
-if(!this.board.hidePGNErrors){
-var _a5=YAHOO.util.Dom.get(this.board.boardName+"-pgnError");
-if(_a5){
-_a5.innerHTML=err;
-}else{
-alert(err);
-}
-}
-return false;
-}
-if(this.pgnGames.length==0){
-if(!this.board.hidePGNErrors){
-alert("PgnViewer: Error: Unable to find any pgn games in:"+pgn);
-}
-return false;
-}
-if(this.pgnGames.length==1||this.board.ignoreMultipleGames){
-var _a6=0;
-if(_a1){
-_a6=-1;
-}
-this.showGame(0,_a6);
-}else{
-var _a7=this.board.boardName+"-container";
-var _a8=YAHOO.util.Dom.get(_a7);
-var _a9=YAHOO.util.Dom.get(this.board.boardName+"-problemSelector");
-var _aa=document.createElement("div");
-var _ab="<form id=\""+this.board.boardName+"-problemSelectorForm\" action=\"\" method=\"\">";
-var _ac="<select id=\""+this.board.boardName+"-problemSelector\" name=\""+this.board.boardName+"-problemSelector\" style=\"width: "+this.board.pieceSize*8+"px;\">";
-var _ad="";
-for(i=0;i<this.pgnGames.length;i++){
-var _ae=this.pgnGames[i];
-var _af=this.board.boardName+"-game-"+i;
-var _b0=(i+1)+". "+_ae.whitePlayer+" vs "+_ae.blackPlayer;
-if(_ae.pgn_result.length>0&&_ae.pgn_result!="?"&&this.board.showResult==1){
-_b0+=" "+_ae.pgn_result;
-}
-if(_ae.event.length>0&&_ae.event!="?"&&this.board.showEvent==1){
-_b0+=" "+_ae.event;
-}
-if(_ae.round.length>0&&_ae.round!="?"&&this.board.showRound==1){
-_b0+=" Rnd:"+_ae.round;
-}
-if(_ae.site.length>0&&_ae.site!="?"&&this.board.showSite==1){
-_b0+=" "+_ae.site;
-}
-if(_ae.date.length>0&&_ae.date!="?"&&this.board.showDate==1){
-_b0+=" "+_ae.date;
-}
-var sel="";
-if(i==this.lastShownGame){
-sel="selected=\"\"";
-}
-_ad+="<option "+sel+" id=\""+_af+"\" value=\""+i+"\">"+_b0+"</option>";
-}
-if(_a9){
-if(this.board.selectorBody!=_ad){
-_a9.innerHTML=_ad;
-this.board.selectorBody=_ad;
-}
-}else{
-_ab+=_ac+_ad+"</select></form>";
-_aa.innerHTML=_ab;
-_a8.insertBefore(_aa,_a8.firstChild);
-this.board.selectorBody=_ad;
-}
-var _a9=YAHOO.util.Dom.get(this.board.boardName+"-problemSelector");
-YAHOO.util.Event.addListener(_a9,"change",this.selectGame,this,true);
-var _a6=0;
-var _b2=0;
-if(_a1){
-_a6=-1;
-_b2=this.lastShownGame;
-}
-this.showGame(_b2,_a6);
-}
-if(_a4){
-YAHOO.util.Dom.setStyle(_a4,"visibility","hidden");
-}
-if(window._pvObject[this.board.boardName].finishedCallback){
-window._pvObject[this.board.boardName].finishedCallback();
-}
-return;
-};
-PGN.prototype.selectGame=function(e){
-var _b4=YAHOO.util.Event.getTarget(e).selectedIndex;
-var _b5=0;
-if(this.board.gotoEndOnRefresh){
-_b5=-1;
-}
-this.showGame(_b4,_b5);
-var _b6=this.board.boardName+"-piecestaken";
-var _b7=YAHOO.util.Dom.get(_b6);
-if(_b7){
-_b7.innerHTML="";
-}
-this.board.resetMoveListScrollPosition();
-};
-PGN.prototype.showGame=function(_b8,_b9){
-_b9=(typeof _b9=="undefined")?0:_b9;
-var _ba=this.lastShownGame;
-this.lastShownGame=_b8;
-var _bb=this.board.moveArray;
-var _bc=this.board.currentMove;
-var _bd=false;
-if(_bc&&_bc.atEnd){
-_bd=true;
-}
-var _be=this.pgnGames[_b8];
-var _bf=_be.pgn_result;
-if(_bf&&(_bf=="1/2-1/2"||_bf=="0-1"||_bf=="1-0")){
-this.foundResult=true;
-}else{
-this.foundResult=false;
-this.foundResultPolls=0;
-}
-this.board.startFen=_be.startFen;
-this.board.setupFromFen(_be.startFen,false,false,false);
-this.board.setMoveSequence(_be.movesseq,"NA",_be.start_movenum,_be.pgn_result);
-var _c0=true;
-var _c1=-1;
-if(_b8==_ba&&_bd){
-_c1=this.board.moveArray.length-1;
-}
-if(!Move.moveArraysEqual(_bb,this.board.moveArray)){
-_c0=false;
-}else{
-var _c2=Move.findMoveInNewArray(_bb,this.board.moveArray,_bc);
-if(_c2&&_c2.prev){
-_c1=_c2.prev.index;
-}
-}
-this.board.displayPendingMoveList();
-if(this.board.moveArray.length>0){
-this.board.setCurrentMove(this.board.moveArray[0]);
-}
-if(_c0){
-if(_c1>0&&_c1<this.board.moveArray.length){
-if(clog){
-console.log("going to currMoveIndex:"+_c1);
-}
-this.board.gotoMoveIndex(_c1,false,true);
-}else{
-}
-}else{
-if(_b9==-1){
-var _c3=this.board.moveArray.length-1;
-if(_c3>=0){
-this.board.gotoMoveIndex(_c3,false,true);
-}
-}else{
-if(_b9!=0){
-this.board.gotoMoveIndex(_b9);
-}
-}
-if(_b9!=-1&&this.board.autoplayFirst){
-this.board.forwardMove();
-}
-}
-this.board.displayMode=true;
-var _c4=this.board.boardName;
-var _c5=YAHOO.util.Dom.get(_c4+"-whitePlayer");
-if(_c5){
-_c5.innerHTML=_be.whitePlayer;
-}
-var _c6=YAHOO.util.Dom.get(_c4+"-blackPlayer");
-if(_c6){
-_c6.innerHTML=_be.blackPlayer;
-}
-var _c7=YAHOO.util.Dom.get(_c4+"-event");
-if(_c7){
-_c7.innerHTML=_be.event;
-}
-var _c8=YAHOO.util.Dom.get(_c4+"-site");
-if(_c8){
-_c8.innerHTML=_be.site;
-}
-var _c9=YAHOO.util.Dom.get(_c4+"-date");
-if(_c9){
-_c9.innerHTML=_be.date;
-}
-var _ca=YAHOO.util.Dom.get(_c4+"-round");
-if(_ca){
-_ca.innerHTML=_be.round;
-}
-var _cb=YAHOO.util.Dom.get(_c4+"-whiteElo");
-if(_cb){
-_cb.innerHTML=_be.whitePlayerElo;
-}
-var _cc=YAHOO.util.Dom.get(_c4+"-blackElo");
-if(_cc){
-_cc.innerHTML=_be.blackPlayerElo;
-}
-var _cd=YAHOO.util.Dom.get(_c4+"-result");
-if(_cd){
-_cd.innerHTML=_be.pgn_result;
-}
-if(clog){
-if(this.board.currentMove){
-console.log("after show game currentMove:"+this.board.currentMove.output());
-}else{
-console.log("after show game currentMove is null");
-}
-}
-};
-
-var SITE_VERSION=1;
-var clog=false;
-var ctime=false;
-var cprof=false;
-var move_obj_id_counter=0;
-var activeBoard=null;
-var boardSounds=new CTSound({soundPath:"/sounds"});
-if(!window.console){
-window.console={};
-}
-if(!window.console.log){
-window.console.log=function(){
-};
-}
-YAHOO.util.Event.onDOMReady(function(){
-boardSounds.createSound("takesounds/78263__SuGu14__Metall01","takePiece1");
-boardSounds.createSound("movesounds/77971__SuGu14__Fusta_0_05","movePiece3");
-boardSounds.createSound("movesounds/10537__batchku__Hit_knuckle_15_004","movePiece7");
-boardSounds.createSound("analysis/76426__spazzo_1493__Finished","finished");
-});
-function isMouseOver(_1,e){
-var el=YAHOO.util.Dom.get(_1);
-if(!el){
-return false;
-}
-var _4=YAHOO.util.Dom.getRegion(el);
-if(!_4){
-return false;
-}
-var _5=_4.top;
-var _6=_4.left;
-var _7=_4.bottom;
-var _8=_4.right;
-var _9=YAHOO.util.Event.getXY(e);
-var mX=_9[0];
-var mY=_9[1];
-var _c=(mX>_6&&mX<_8&&mY>_5&&mY<_7);
-}
-function trimStr(_d){
-if(!_d){
-return "";
-}
-var _d=_d.replace(/^\s\s*/,"");
-var ws=/\s/;
-var i=_d.length;
-while(ws.test(_d.charAt(--i))){
-}
-return _d.slice(0,i+1);
-}
-BoardConfig=function(){
-this.boardName="board";
-this.puzzle=false;
-this.showToMoveIndicators=false;
-this.scrollVariations=false;
-this.pgnString=null;
-this.pgnDiv=null;
-this.pgnFile=null;
-this.scrollOffsetCorrection=0;
-this.handleCommentClicks=false;
-this.pollPGNMilliseconds=0;
-this.pollPGNMillisecondsPostResult=30000;
-this.numberPollsAfterResult=5;
-this.gotoEndOnRefresh=false;
-this.allowPreMoveSelection=false;
-this.pieceSet="merida";
-this.pieceSize=46;
-this.isEndgame=false;
-this.tr=false;
-this.ie6FixCoordsOffsetSize=4;
-this.allIeFixCoordsOffsetSize=0;
-this.addVersion=true;
-this.ignoreMultipleGames=false;
-this.ml=9999;
-this.r=false;
-this.g=false;
-this.g2=false;
-this.canPasteFen=false;
-this.makeActive=false;
-this.showSolutionButton=false;
-this.avoidMouseoverActive=false;
-this.autoScrollMoves=false;
-this.moveAnimationLength=0.5;
-this.showBracketsOnVariation=true;
-this.hideBracketsOnTopLevelVariation=false;
-this.variationStartString=" ( ";
-this.variationEndString=" ) ";
-this.ignoreCommentRegex=null;
-this.newlineForEachMainMove=true;
-this.useDivClearForNewline=false;
-this.showNPS=false;
-this.squareColorClass="";
-this.analysisWindowName="analysis_window";
-this.pieceTakenSize=this.pieceSize;
-this.pauseBetweenMoves=800;
-this.pgnMode=false;
-this.hidePGNErrors=false;
-this.previewMode=false;
-this.movesFormat="default";
-this.boardImagePath="http://chesstempo.com";
-this.showCoordinates=false;
-this.highlightFromTo=false;
-this.highlightValidSquares=false;
-this.fideClock=false;
-this.disableFlipper=false;
-this.showResult=1;
-this.showEvent=1;
-this.showRound=1;
-this.showSite=1;
-this.showDate=1;
-this.ignoreFlipping=false;
-this.reverseFlip=false;
-this.autoplayFirst=false;
-this.dontOutputNavButtons=false;
-this.dontCheckLeavingPage=false;
-this.clickAndClick=false;
-this.clickAndClickDisabled=false;
-this.whiteMoveSoundName="movePiece3";
-this.blackMoveSoundName="movePiece7";
-this.whiteTakeSoundName="takePiece1";
-this.blackTakeSoundName="takePiece1";
-this.finishedSoundName="finished";
-this.soundEnabled=false;
-this.gamedb=false;
-};
-BoardConfig.prototype.applyConfig=function(_10){
-for(var _11 in _10){
-this[_11]=_10[_11];
-}
-};
-ChessApp=function(_12){
-this.displayMode=false;
-this.config=_12;
-this.board=null;
-};
-ChessApp.prototype.setDisplayMode=function(_13){
-this.displayMode=_13;
-};
-ChessApp.prototype.setProblemNumber=function(_14,_15){
-this.problemNumber=_14;
-this.attId=_15;
-};
-ChessApp.prototype.init=function(e,_17,_18,us,_1a){
-ChessPiece.init();
-this.board=new Board(this.config.boardName);
-if(_1a){
-this.board.addUpdatePieceListener(us);
-}
-this.board.moveArray=new Array();
-if(!this.hideOnInit){
-YAHOO.util.Dom.setStyle(this.config.boardName+"-container","display","block");
-YAHOO.util.Dom.setStyle("toPlaySpan","display","inline");
-}
-this.tactics=(this.displayMode||this.config.pgnMode||this.config.previewMode||this.config.fenBoard)?null:new TacticsUI(this.board);
-this.problem=(this.config.pgnMode||this.config.previewMode||this.config.fenBoard)?null:new ProblemUI(this.board,this.tactics);
-this.board.tactics=this.tactics;
-this.board.problem=this.problem;
-this.board.puzzle=this.config.puzzle;
-if(this.problem){
-this.problem.autoPlayOpponent=1;
-}
-this.pgn=(this.config.pgnMode)?new PGN(this.board):null;
-var _1b=MovesDisplay.DEFAULT_DISPLAY_TYPE;
-if(this.config.movesFormat=="main_on_own_line"){
-_1b=MovesDisplay.MAIN_ON_OWN_LINE;
-}
-this.movesDisplay=new MovesDisplay(this.board,_1b);
-this.movesDisplay.variationOnOwnLine=this.config.variationOnOwnLine;
-this.board.movesDisplay=this.movesDisplay;
-this.board.boardImagePath=this.config.boardImagePath;
-this.board.showNPS=this.config.showNPS;
-this.board.showSolutionButton=this.config.showSolutionButton;
-this.board.analysisWindowName=this.config.analysisWindowName;
-this.board.squareColorClass=this.config.squareColorClass;
-this.board.tr=this.config.tr;
-this.board.scrollToBoardTop=this.config.scrollToBoardTop;
-this.board.ml=this.config.ml;
-this.board.r=this.config.r;
-this.board.g=this.config.g;
-this.board.g2=this.config.g2;
-this.board.canPasteFen=this.config.canPasteFen;
-this.board.addVersion=this.config.addVersion;
-this.board.ignoreMultipleGames=this.config.ignoreMultipleGames;
-this.board.ie6FixCoordsOffsetSize=this.config.ie6FixCoordsOffsetSize;
-this.board.allIeFixCoordsOffsetSize=this.config.allIeFixCoordsOffsetSize;
-this.board.allowingFreeMovement=this.config.allowingFreeMovement;
-this.board.autoScrollMoves=this.config.autoScrollMoves;
-this.board.moveAnimationLength=this.config.moveAnimationLength;
-this.board.showBracketsOnVariation=this.config.showBracketsOnVariation;
-this.board.hideBracketsOnTopLevelVariation=this.config.hideBracketsOnTopLevelVariation;
-this.board.variationStartString=this.config.variationStartString;
-this.board.variationEndString=this.config.variationEndString;
-this.board.ignoreCommentRegex=this.config.ignoreCommentRegex;
-this.board.newlineForEachMainMove=this.config.newlineForEachMainMove;
-this.board.useDivClearForNewline=this.config.useDivClearForNewline;
-this.board.pieceSize=this.config.pieceSize;
-this.board.showToMoveIndicators=this.config.showToMoveIndicators;
-this.board.handleCommentClicks=this.config.handleCommentClicks;
-this.board.scrollOffsetCorrection=this.config.scrollOffsetCorrection;
-this.board.pollPGNMilliseconds=this.config.pollPGNMilliseconds;
-this.board.pollPGNMillisecondsPostResult=this.config.pollPGNMillisecondsPostResult;
-this.board.numberPollsAfterResult=this.config.numberPollsAfterResult;
-this.board.gotoEndOnRefresh=this.config.gotoEndOnRefresh;
-this.board.allowPreMoveSelection=this.config.allowPreMoveSelection;
-this.board.pieceTakenSize=this.config.pieceTakenSize;
-this.board.pieceSet=this.config.pieceSet;
-this.board.pauseBetweenMoves=this.config.pauseBetweenMoves;
-this.board.showCoordinates=this.config.showCoordinates;
-this.board.highlightFromTo=this.config.highlightFromTo;
-this.board.highlightValidSquares=this.config.highlightValidSquares;
-this.board.fideClock=this.config.fideClock;
-this.board.disableFlipper=this.config.disableFlipper;
-this.board.showDate=this.config.showDate;
-this.board.showEvent=this.config.showEvent;
-this.board.showGame=this.config.showGame;
-this.board.showResult=this.config.showResult;
-this.board.showRound=this.config.showRound;
-this.board.showSite=this.config.showSite;
-this.board.ignoreFlipping=this.config.ignoreFlipping;
-this.board.reverseFlip=this.config.reverseFlip;
-this.board.autoplayFirst=this.config.autoplayFirst;
-this.board.scrollVariations=this.config.scrollVariations;
-this.board.dontOutputNavButtons=this.config.dontOutputNavButtons;
-this.board.clickAndClick=this.config.clickAndClick;
-this.board.clickAndClickDisabled=this.config.clickAndClickDisabled;
-this.board.avoidMouseoverActive=this.config.avoidMouseoverActive;
-this.board.dontCheckLeavingPage=this.config.dontCheckLeavingPage;
-this.board.whiteMoveSoundName=this.config.whiteMoveSoundName;
-this.board.whiteTakeSoundName=this.config.whiteTakeSoundName;
-this.board.blackMoveSoundName=this.config.blackMoveSoundName;
-this.board.blackTakeSoundName=this.config.blackTakeSoundName;
-this.board.soundEnabled=this.config.soundEnabled;
-this.board.hidePGNErrors=this.config.hidePGNErrors;
-this.board.gamedb=this.config.gamedb;
-if(this.config.makeActive){
-activeBoard=this.board;
-}
-if(this.problem){
-this.problem.isEndgame=this.config.isEndgame;
-}
-if(!this.board.puzzle&&typeof loginManager!="undefined"){
-if(this.tactics){
-loginManager.setLoginCallback(this.tactics.loginCallback,this.tactics);
-loginManager.setLogoutCallback(this.tactics.logoutCallback,this.tactics);
-}
-if(this.problem){
-loginManager.setSessionCallback(this.problem.sessionCallback,this.problem);
-}
-}
-YAHOO.util.DragDropMgr.clickTimeThresh=50;
-YAHOO.util.DragDropMgr.clickPixelThresh=1;
-this.board.createBoardUI();
-if(!this.board.puzzle){
-if(this.problem){
-this.problem.createProblemUI();
-}
-if(this.tactics){
-this.tactics.initProblemCompleteOverlay();
-}
-if(this.problem){
-this.problem.initLoadingOverlay();
-}
-if(this.config.pgnMode){
-if(this.config.pgnFile){
-if(this.config.pollPGNMilliseconds){
-this.pgn.foundResult=false;
-this.pgn.foundResultPolls=0;
-var _1c=this;
-function timeToNextPollDisplay(){
-var _1d=YAHOO.util.Dom.get(_1c.config.boardName+"-nextUpdate");
-if(_1d){
-if(_1c.pgn.finishedPolling||_1c.pgn.foundResult){
-var _1e="00";
-var _1f="00";
-_1d.innerHTML="<span id=\"minutes\">"+_1e+"</span>:<span id=\"seconds\">"+_1f+"</span>";
-}else{
-var _20=new Date().getTime();
-var _21=(_1c.pgn.lastPoll+_1c.pgn.pollTime-_20)/1000;
-if(_21<0){
-_21=0;
-}
-var _22=_21;
-var _23=parseInt(_22/60);
-var _24=parseInt(_22%60);
-if(_23<10){
-_1e="0"+_23;
-}else{
-_1e=_23;
-}
-if(_24<10){
-_1f="0"+_24;
-}else{
-_1f=_24;
-}
-_1d.innerHTML="<span id=\"minutes\">"+_1e+"</span>:<span id=\"seconds\">"+_1f+"</span>";
-setTimeout(timeToNextPollDisplay,1000);
-}
-}
-}
-this.pgn.pollTime=this.config.pollPGNMilliseconds;
-this.pgn.pollPGNFromURL(this.config.pgnFile,this.config.gotoEndOnRefresh,this.config.pollPGNMilliseconds);
-setTimeout(timeToNextPollDisplay,1000);
-}else{
-this.pgn.getPGNFromURL(this.config.pgnFile,this.config.gotoEndOnRefresh);
-}
-}else{
-if(this.config.pgnString){
-this.pgn.setupFromPGN(this.config.pgnString);
-}else{
-if(this.config.pgnDiv){
-var _25=YAHOO.util.Dom.get(this.config.pgnDiv);
-if(_25){
-this.pgn.setupFromPGN(_25.innerHTML);
-}
-}
-}
-}
-}else{
-if(!this.board.dontCheckLeavingPage&&this.tactics){
-YAHOO.util.Event.addListener(window,"beforeunload",this.tactics.checkLeavingPage,this.tactics,true);
-YAHOO.util.Event.addListener(window,"unload",this.tactics.leavingPage,this.tactics,true);
-this.tactics.updateSessionDisplay(0,0);
-if(typeof showingStart!="undefined"&&showingStart){
-var _1c=this;
-var _26="";
-if(loggedIn){
-if(this.config.isEndgame){
-_26=_js("Endgame Problem Set")+": <span id=\"startProblemSetStr\">"+_js(startEndgameSetName)+"</span>";
-}else{
-_26=_js("Tactics Problem Set")+": <span id=\"startProblemSetStr\">"+_js(startTacticsSetName)+"</span>";
-}
-}
-this.board.preloadPieces();
-var _27=new YAHOO.widget.SimpleDialog("starttacticdialog1",{width:"300px",fixedcenter:true,modal:false,visible:true,draggable:true,close:false,text:"<div style=\"color:black\">"+_26+"</div><br/>"+"<div style=\"color:black\">"+_js("Click start to begin solving problems")+"</div>",icon:YAHOO.widget.SimpleDialog.ICON_INFO,constraintoviewport:true,buttons:[{text:_js("Start"),handler:function(){
-if(_1c.board.imagesLoaded){
-this.hide();
-_1c.problem.getProblem();
-}else{
-var _28=_js("Still trying to load piece images.\n If you keep receiving this message you may need to reload the page.\n If you continue to get this message, you can disable it by going into your preferences and turning 'show problem start dialog' (available under the other tab) off.");
-alert(_28);
-}
-},isDefault:true}]});
-var _29=YAHOO.util.Dom.get("ctb-"+this.board.boardName);
-_27.render(document.body);
-}else{
-this.problem.getProblem();
-}
-}else{
-if(this.problem){
-if(this.problemNumber!=""){
-YAHOO.util.Dom.setStyle("boardandmoves","display","block");
-this.problem.getProblem(this.problemNumber,this.attId);
-}
-}
-}
-}
-}
-this.board.setupEventHandlers();
-if(this.problem){
-this.problem.setupEventHandlers();
-}
-if(this.tactics){
-this.tactics.setupEventHandlers();
-}
-if(isIpad||isIphone){
-}
-if(this.board.scrollToBoardTop){
-var xy=YAHOO.util.Dom.getXY(this.board.boardName+"-boardBorder");
-window.scrollTo(xy[0],xy[1]);
-}
-if(this.config.flipListener){
-this.board.addFlipListener(this.config.flipListener);
-}
-};
-function clearClone(o){
-if(o==null){
-return;
-}
-for(prop in o){
-if(typeof (o[prop])=="object"&&o[prop]!=null&&o[prop].alreadyCloned){
-o[prop].alreadyCloned=false;
-clearClone(o[prop]);
-}
-}
-}
-function cloneWork(o){
-if(o==null){
-return null;
-}
-var _2d=new Object();
-for(prop in o){
-if(typeof (o[prop])=="object"){
-_2d[prop]=o[prop];
-}else{
-_2d[prop]=o[prop];
-}
-}
-return _2d;
-}
-function clone(o){
-return cloneWork(o);
-}
-get_image_str=function(_2f,_30,_31,_32,_33){
-var _34=".vers"+SITE_VERSION;
-if(!_33){
-_34="";
-}
-if(check_bad_msie()){
-return _30+"/images/"+_31+"/"+_2f+_32+_34+".png";
-}else{
-return _30+"/images/"+_31+"/"+_2f+_32+_34+".png";
-}
-};
-check_bad_msie=function(){
-var _35=(window.ActiveXObject&&(typeof document.body.style.maxHeight=="undefined"));
-return _35;
-};
-fix_ie_png=function(img){
-if(!check_bad_msie()){
-return;
-}
-var _37=(img.id)?"id='"+img.id+"' ":"";
-var _38=(img.className)?"class='"+img.className+"' ":"";
-var _39=(img.title)?"title='"+img.title+"' ":"title='"+img.alt+"' ";
-var _3a="display:inline-block;"+img.style.cssText;
-if(img.align=="left"){
-_3a="float:left;"+_3a;
-}
-if(img.align=="right"){
-_3a="float:right;"+_3a;
-}
-if(img.parentElement.href){
-_3a="cursor:hand;"+_3a;
-}
-var _3b="<span "+_37+_38+_39+" style=\""+"width:"+img.width+"px; height:"+img.height+"px;"+_3a+";"+"filter:progid:DXImageTransform.Microsoft.AlphaImageLoader"+"(src='"+img.src+"', sizingMethod='image');\"></span>";
-img.outerHTML=_3b;
-};
-Move=function(_3c,_3d,_3e,_3f,_40,_41,_42){
-this.fromColumn=_3c;
-this.fromRow=_3d;
-this.toColumn=_3e;
-this.toRow=_3f;
-this.take=_40;
-this.promotion=_41;
-this.moveString=_42;
-this.prev=null;
-this.next=null;
-this.numVars=0;
-this.prevMoveEnpassant=false;
-this.ravLevel=0;
-this.atEnd=false;
-this.obj_id=move_obj_id_counter++;
-this.beforeComment="";
-this.afterComment="";
-};
-Move.prototype.freeMove=function(){
-if(this.taken){
-this.taken=null;
-}
-if(this.vars&&this.vars.length>0){
-var i=0;
-for(var i=0;i<this.vars.length;i++){
-this.vars[i].freeMove();
-}
-}
-};
-Move.prototype.clone=function(_44){
-var _45=this.take;
-if(_44&&_45){
-_45=_45.makeLightWeight();
-}
-var _46=new Move(this.fromColumn,this.fromRow,this.toColumn,this.toRow,_45,this.promotion,this.moveString);
-_46.moveNum=this.moveNum;
-_46.atEnd=this.atEnd;
-_46.beforeComment=this.beforeComment;
-_46.afterComment=this.afterComment;
-_46.prevMoveEnpassant=this.prevMoveEnpassant;
-_46.index=this.index;
-if(this.vars){
-_46.vars=[];
-var cnt=0;
-for(var i=0;i<this.vars.length;i++){
-_46.vars[i]=this.vars[i].clone(_44);
-cnt++;
-}
-_46.numVars=cnt;
-}
-return _46;
-};
-Move.columnToChar=function(col){
-var a=String.fromCharCode("a".charCodeAt(0)+col);
-return a;
-};
-Move.prototype.output=function(){
-return Move.columnToChar(this.fromColumn)+""+(this.fromRow+1)+":"+Move.columnToChar(this.toColumn)+""+(this.toRow+1)+" prom:"+this.promotion+" objid:"+this.obj_id+" dummy:"+this.dummy+" endNode:"+this.endNode+" index:"+this.index+" moveNum:"+this.moveNum+" atEnd:"+this.atEnd+" beforeCom:"+this.beforeComment+" afterCom:"+this.afterComment;
-};
-Move.prototype.equals=function(m){
-return (m&&(this.fromColumn==m.fromColumn&&this.fromRow==m.fromRow&&this.promotion==m.promotion&&this.toColumn==m.toColumn&&this.toRow==m.toRow));
-};
-Move.moveArraysEqual=function(a1,a2){
-if(a1==a2){
-return true;
-}
-if(a1==null||a2==null){
-return false;
-}
-if(a1.length!=a2.length){
-return false;
-}
-for(var i=0;i<a1.length;i++){
-if(!a1[i].equals(a2[i])){
-return false;
-}
-if(!Move.moveArraysEqual(a1[i].vars,a2[i].vars)){
-return false;
-}
-}
-return true;
-};
-Move.findMoveInNewArray=function(a1,a2,_51){
-if(a1==a2){
-return _51;
-}
-if(a1==null||a2==null){
-return null;
-}
-if(a1.length!=a2.length){
-return null;
-}
-for(var i=0;i<a1.length;i++){
-if(!a1[i].equals(a2[i])){
-return null;
-}
-if(!Move.moveArraysEqual(a1[i].vars,a2[i].vars)){
-return null;
-}
-if(a1[i]==_51){
-return a2[i];
-}
-}
-return null;
-};
-Move.prototype.toMoveString=function(){
-var _53="";
-if(this.promotion){
-_53=this.promotion;
-}
-return Move.columnToChar(this.fromColumn)+""+(this.fromRow+1)+Move.columnToChar(this.toColumn)+""+(this.toRow+1)+_53;
-};
-function getTagValue(_54,_55){
-var _56=_54.getElementsByTagName(_55);
-if(_56==null){
-YAHOO.log("got null node for tag:"+_55);
-return null;
-}
-if(_56.length==0){
-YAHOO.log("got empty array node for tag:"+_55);
-return null;
-}
-if(_56[0].firstChild==null){
-YAHOO.log("firstChild is null for tag:"+_55);
-return null;
-}
-if(_56[0].firstChild.nodeValue==null){
-YAHOO.log("firstChild.nodeValue is null for tag:"+_55);
-return null;
-}
-if(typeof (_56[0].textContent)!="undefined"){
-return _56[0].textContent;
-}
-return _56[0].firstChild.nodeValue;
-}
-var ua=navigator.userAgent.toLowerCase();
-var isOpera=(ua.indexOf("opera")>-1);
-var isIphone=(navigator.userAgent.match(/iPhone/i))||(navigator.userAgent.match(/iPod/i));
-var isIpad=(navigator.userAgent.match(/iPad/i));
-var isSafari=(ua.indexOf("safari")>-1);
-var isGecko=(!isOpera&&!isSafari&&ua.indexOf("gecko")>-1);
-var isIE=(!isOpera&&ua.indexOf("msie")>-1);
-function unescapeHtml(s){
-var n=document.createElement("div");
-n.innerHTML=s;
-if(n.innerText){
-return n.innerText;
-}else{
-return n.textContent;
-}
-}
-ChessPiece=function(div,_5a,_5b,_5c){
-var id=div.id;
-this.board=_5c;
-this.icon=get_image_str(ChessPiece.pieceIconNames[_5a][_5b],this.board.boardImagePath,this.board.pieceSet,this.board.pieceSize,this.board.addVersion);
-this.colour=_5a;
-this.piece=_5b;
-this.id=id;
-this.div=div;
-var _5e=_5c.getPieceDragDiv();
-var _5f=false;
-var _60="";
-if(_5e==null){
-_5e=document.createElement("div");
-_5e.id="pieceDragDiv";
-_5f=true;
-YAHOO.util.Dom.setStyle(_5e,"visibility","hidden");
-YAHOO.util.Dom.setStyle(_5e,"border","0px");
-YAHOO.util.Dom.setStyle(_5e,"position","absolute");
-}
-this.pieceDragEl=_5e;
-this.pieceDragElId="pieceDragDiv";
-if(_5f){
-var _61=this.board.getDocBody();
-if(_61){
-_61.appendChild(_5e);
-}
-}
-if(YAHOO.util.Event.isIE||isOpera){
-var _62=this.div;
-_62.innerHTML="<img src=\""+this.icon+"\"/>";
-var img=_62.firstChild;
-fix_ie_png(img);
-}else{
-YAHOO.util.Dom.setStyle([this.div],"backgroundImage","url("+this.icon+")");
-}
-YAHOO.util.Dom.setStyle([this.div],"height",this.board.pieceSize+"px");
-YAHOO.util.Dom.setStyle([this.div],"width",this.board.pieceSize+"px");
-YAHOO.util.Dom.setStyle([this.div],"position","relative");
-if(!this.board.clickAndClick){
-this.init(id,"ct-"+this.board.boardName+"-boardandpieces",{dragElId:this.pieceDragElId,resizeFrame:true,centerFrame:false,isTarget:false});
-this.initFrame();
-}
-if(isIphone||isIpad){
-if(this.board.clickAndClickDisabled){
-var _64=this.div;
-var _65=this;
-this.div.addEventListener("DOMNodeInserted",function(ev){
-if(!_65.touchAttached){
-initIphone(_64);
-}
-_65.touchAttached=true;
-},false);
-}
-}
-};
-ChessPiece.prototype=new YAHOO.util.DDProxy();
-ChessPiece.PAWN=0;
-ChessPiece.BISHOP=1;
-ChessPiece.KNIGHT=2;
-ChessPiece.ROOK=3;
-ChessPiece.KING=4;
-ChessPiece.QUEEN=5;
-ChessPiece.WHITE=0;
-ChessPiece.BLACK=1;
-ChessPiece.init=function(){
-ChessPiece.pieceIconNames=new Array(2);
-ChessPiece.pieceIconNames[0]=new Array(6);
-ChessPiece.pieceIconNames[1]=new Array(6);
-ChessPiece.pieceIconNames[ChessPiece.WHITE][ChessPiece.PAWN]="whitepawn";
-ChessPiece.pieceIconNames[ChessPiece.WHITE][ChessPiece.BISHOP]="whitebishop";
-ChessPiece.pieceIconNames[ChessPiece.WHITE][ChessPiece.KNIGHT]="whiteknight";
-ChessPiece.pieceIconNames[ChessPiece.WHITE][ChessPiece.ROOK]="whiterook";
-ChessPiece.pieceIconNames[ChessPiece.WHITE][ChessPiece.KING]="whiteking";
-ChessPiece.pieceIconNames[ChessPiece.WHITE][ChessPiece.QUEEN]="whitequeen";
-ChessPiece.pieceIconNames[ChessPiece.BLACK][ChessPiece.PAWN]="blackpawn";
-ChessPiece.pieceIconNames[ChessPiece.BLACK][ChessPiece.BISHOP]="blackbishop";
-ChessPiece.pieceIconNames[ChessPiece.BLACK][ChessPiece.KNIGHT]="blackknight";
-ChessPiece.pieceIconNames[ChessPiece.BLACK][ChessPiece.ROOK]="blackrook";
-ChessPiece.pieceIconNames[ChessPiece.BLACK][ChessPiece.KING]="blackking";
-ChessPiece.pieceIconNames[ChessPiece.BLACK][ChessPiece.QUEEN]="blackqueen";
-};
-ChessPiece.materialValue=function(_67){
-switch(_67){
-case ChessPiece.PAWN:
-return 1;
-break;
-case ChessPiece.BISHOP:
-return 3;
-break;
-case ChessPiece.KNIGHT:
-return 3;
-break;
-case ChessPiece.ROOK:
-return 5;
-break;
-case ChessPiece.KING:
-return 0;
-break;
-case ChessPiece.QUEEN:
-return 9;
-break;
-}
-return 0;
-};
-ChessPiece.prototype.free=function(){
-if(!this.board.clickAndClick){
-this.unreg();
-}
-};
-ChessPiece.prototype.clickValidator=function(e){
-if(this.board.dragDisabled){
-return false;
-}
-if(!this.board.allowPreMoveSelection&&(this.board.toMove!=this.colour)){
-return false;
-}
-if(this.board.restrictedColourMovement!=-1&&this.colour!=this.board.restrictedColourMovement){
-return;
-}
-if(false&&this.board.clickAndClick){
-return false;
-}
-var _69=YAHOO.util.Event.getTarget(e);
-var _6a=(this.isValidHandleChild(_69)&&(this.id==this.handleElId||this.DDM.handleWasClicked(_69,this.id)));
-this.board.selectDestSquare(e);
-if(true||!_6a){
-YAHOO.util.Event.preventDefault(e);
-}
-return _6a;
-};
-ChessPiece.prototype.onDragOut=function(e,id){
-this.insideBoard=false;
-};
-ChessPiece.prototype.onDragEnter=function(e,id){
-this.insideBoard=true;
-};
-ChessPiece.prototype.endDrag=function(e){
-if(this.board.lastOverSquare){
-YAHOO.util.Dom.removeClass(this.board.lastOverSquare,"ct-over-valid-square");
-YAHOO.util.Dom.removeClass(this.board.lastOverSquare,"ct-over-invalid-square");
-}
-this.board.lastOverSquare=null;
-if(!this.insideBoard){
-this.board.board_xy=null;
-this.setPosition(this.column,this.row,false,null,this.board.moveAnimationLength);
-}
-if(!this.hideAfterDragEnd){
-YAHOO.util.Dom.setStyle(this.getEl(),"visibility","visible");
-}else{
-this.hideAfterDragEnd=false;
-}
-};
-ChessPiece.prototype.startDrag=function(x,y){
-this.insideBoard=true;
-var _72=null;
-if(this.board.currentMove){
-if(this.board.currentMove.prev){
-_72=this.board.currentMove.prev;
-}else{
-_72=this.board.prev_move;
-}
-}else{
-_72=this.board.prev_move;
-}
-if(this.board.highlightValidSquares){
-this.candidates=null;
-this.candidates=new Array(8);
-for(var i=0;i<8;i++){
-this.candidates[i]=new Array(8);
-for(var j=0;j<8;j++){
-this.candidates[i][j]=false;
-}
-}
-}
-this.pieceDragEl.innerHTML="<img src=\""+this.icon+"\"/>";
-var img=this.pieceDragEl.firstChild;
-fix_ie_png(img);
-YAHOO.util.Dom.setStyle(this.pieceDragEl,"zIndex",1000);
-YAHOO.util.Dom.setStyle(this.pieceDragEl,"height",this.board.pieceSize+"px");
-YAHOO.util.Dom.setStyle(this.pieceDragEl,"width",this.board.pieceSize+"px");
-YAHOO.util.Dom.setStyle(this.getEl(),"visibility","hidden");
-if(this.board.highlightValidSquares){
-for(var i=0;i<8;i++){
-for(var j=0;j<8;j++){
-var _76=7-i;
-var _77=j;
-if(this.board.isFlipped){
-_76=7-_76;
-_77=7-_77;
-}
-if((_76==this.row&&_77==this.column)||this.board.canMove(this.makeLightWeight(),_77,_76,_72,true)){
-this.candidates[j][i]=true;
-}
-}
-}
-}
-};
-ChessPiece.prototype.onDragOver=function(e,id){
-var x=YAHOO.util.Event.getPageX(e);
-var y=YAHOO.util.Event.getPageY(e);
-var _7c=YAHOO.util.Dom.getX("ctb-"+this.board.boardName);
-var _7d=YAHOO.util.Dom.getY("ctb-"+this.board.boardName);
-var c=parseInt((x-_7c)/this.board.pieceSize);
-var r=parseInt((y-_7d)/this.board.pieceSize);
-var _80=this.board.boardName+"-s"+c+""+(7-r);
-var _81=YAHOO.util.Dom.get(_80);
-if(this.board.highlightValidSquares){
-if(this.board.lastOverSquare){
-if(this.board.lastOverSquare!=_81){
-YAHOO.util.Dom.removeClass(this.board.lastOverSquare,"ct-over-valid-square");
-YAHOO.util.Dom.removeClass(this.board.lastOverSquare,"ct-over-invalid-square");
-this.board.lastOverSquare=null;
-if(this.candidates&&c<8&&c>=0&&r<8&&r>=0&&this.candidates[c][r]){
-YAHOO.util.Dom.addClass(_81,"ct-over-valid-square");
-}else{
-YAHOO.util.Dom.addClass(_81,"ct-over-invalid-square");
-}
-}
-}
-this.board.lastOverSquare=_81;
-}
-};
-ChessPiece.prototype.onDragDrop=function(e,id){
-if(this.board.blockFowardBack||this.board.deferredBlockForwardBack){
-return false;
-}
-if(this.board.allowPreMoveSelection&&this.board.toMove!=this.colour){
-return false;
-}
-if(this.board.lastOverSquare){
-YAHOO.util.Dom.removeClass(this.board.lastOverSquare,"ct-over-valid-square");
-YAHOO.util.Dom.removeClass(this.board.lastOverSquare,"ct-over-invalid-square");
-}
-var x=YAHOO.util.Event.getPageX(e);
-var y=YAHOO.util.Event.getPageY(e);
-var _86=YAHOO.util.Dom.getX("ctb-"+this.board.boardName);
-var _87=YAHOO.util.Dom.getY("ctb-"+this.board.boardName);
-var c=parseInt((x-_86)/this.board.pieceSize);
-var r=parseInt((y-_87)/this.board.pieceSize);
-if(this.board.isFlipped){
-r=7-r;
-c=7-c;
-}
-if(this.board.allowPreMoveSelection&&(this.board.boardPieces[this.column][this.row]!=this)){
-this.setVisible(false);
-this.hideAfterDragEnd=true;
-return false;
-}
-var _8a=false;
-if(!this.board.currentMove||this.board.currentMove.atEnd){
-_8a=true;
-}
-this.board.updatePiece(this,c,7-r,false,false,true);
-if(!_8a&&this.board.currentMove&&!this.board.allowingFreeMovement&&this.board.currentMove.atEnd){
-this.board.toggleToMove();
-this.board.updateToPlay();
-}
-};
-ChessPiece.prototype.makeLightWeight=function(){
-var cp=this.board.createPiece(this.colour,this.piece,true);
-cp.column=this.column;
-cp.row=this.row;
-cp.enPassant=this.enPassant;
-cp.castled=this.castled;
-return cp;
-};
-ChessPiece.prototype.removeFromParent=function(){
-var _8c=this.div;
-if(_8c.parentNode){
-_8c.parentNode.removeChild(_8c);
-}
-};
-ChessPiece.prototype.setVisible=function(_8d){
-var _8e;
-var _8f;
-if(_8d){
-_8f="block";
-_8e="visible";
-}else{
-_8f="none";
-_8e="hidden";
-}
-YAHOO.util.Dom.setStyle(this.id,"visibility",_8e);
-};
-ChessPiece.prototype.moveResponse=function(o){
-};
-ChessPiece.prototype.getIcon=function(){
-return this.icon;
-};
-ChessPiece.prototype.makeHeavyWeight=function(){
-return this.copyPiece();
-};
-ChessPiece.prototype.copyPiece=function(){
-var cp=new ChessPiece(this.div,this.colour,this.piece,this.board);
-cp.column=this.column;
-cp.row=this.row;
-cp.enPassant=this.enPassant;
-cp.castled=this.castled;
-return cp;
-};
-ChessPiece.prototype.changePieceKeepImage=function(_92){
-var _93=(_92+"").toLowerCase().charAt(0);
-switch(_93){
-case "k":
-this.piece=ChessPiece.KING;
-break;
-case "q":
-this.piece=ChessPiece.QUEEN;
-break;
-case "r":
-this.piece=ChessPiece.ROOK;
-break;
-case "b":
-this.piece=ChessPiece.BISHOP;
-break;
-case "n":
-this.piece=ChessPiece.KNIGHT;
-break;
-case "p":
-this.piece=ChessPiece.PAWN;
-break;
-default:
-}
-};
-ChessPiece.prototype.changePiece=function(_94){
-this.changePieceKeepImage(_94);
-this.icon=get_image_str(ChessPiece.pieceIconNames[this.colour][this.piece],this.board.boardImagePath,this.board.pieceSet,this.board.pieceSize,this.board.addVersion);
-if(YAHOO.util.Event.isIE||isOpera){
-var _95=this.div;
-_95.innerHTML="<img src=\""+this.icon+"\"/>";
-var img=_95.firstChild;
-if(!isOpera){
-fix_ie_png(img);
-}
-}else{
-YAHOO.util.Dom.setStyle(this.div,"backgroundImage","url("+this.icon+")");
-YAHOO.util.Dom.setStyle(this.div,"background-repeat","no-repeat");
-}
-};
-ChessPiece.prototype.getNewXYPosition=function(_97,row){
-var _99=this.board.getBoardDiv();
-var _9a=this.board.getXY();
-var _9b=_9a[0];
-var _9c=_9a[1];
-var _9d=[0,0];
-if(this.board.isFlipped){
-_9d[0]=_9b+((7-_97)*this.board.pieceSize);
-_9d[1]=_9c+((row)*this.board.pieceSize);
-}else{
-_9d[0]=_9b+((_97)*this.board.pieceSize);
-_9d[1]=_9c+((7-row)*this.board.pieceSize);
-}
-return _9d;
-};
-ChessPiece.prototype.setPosition=function(_9e,row,_a0,_a1,_a2,_a3,_a4){
-this.column=_9e;
-this.row=row;
-if(this.board.pieceMoveDisabled){
-return;
-}
-var _a5=this.div;
-var _a6=null;
-if(this.board.isFlipped){
-_a6=this.board.boardName+"-s"+(7-this.column)+""+(7-this.row);
-}else{
-_a6=this.board.boardName+"-s"+(this.column)+""+(this.row);
-}
-var _a7=this.board.getBoardDivFromId(_a6);
-var _a8=null;
-if(!_a3){
-_a8=(this.colour==ChessPiece.WHITE)?this.board.whiteMoveSoundName:this.board.blackMoveSoundName;
-}else{
-_a8=(this.colour==ChessPiece.WHITE)?this.board.whiteTakeSoundName:this.board.blackTakeSoundName;
-}
-if(!_a0){
-if(!this.board.settingUpPosition){
-var _a9=this.getNewXYPosition(_9e,row);
-YAHOO.util.Dom.setXY(_a5,_a9,false);
-}else{
-if(_a5.parentNode){
-_a5.parentNode.removeChild(_a5);
-}
-_a7.appendChild(_a5);
-}
-this.setVisible(true);
-if(_a4&&this.board.soundEnabled){
-boardSounds.playSound(_a8);
-}
-if(_a1){
-_a1();
-}
-}else{
-var _a9=this.getNewXYPosition(_9e,row);
-if(this.board.oldAnim&&this.board.oldAnim.isAnimated()){
-this.board.oldAnim.stop();
-YAHOO.util.Dom.setXY(this.board.oldAnimPieceDiv,this.board.old_new_xy,false);
-}
-var _aa=new YAHOO.util.Motion(_a5,{points:{to:_a9}});
-this.board.oldAnim=_aa;
-this.board.oldAnimPieceDiv=_a5;
-this.board.old_new_xy=_a9;
-_aa.duration=_a2;
-var _ab=this;
-_aa.onComplete.subscribe(function(){
-if(_ab.board.soundEnabled){
-boardSounds.playSound(_a8);
-}
-});
-if(_a1){
-_aa.onComplete.subscribe(_a1);
-}
-_aa.animate();
-}
-};
-ChessPiece.prototype.getFenLetter=function(){
-var _ac=ChessPiece.pieceTypeToChar(this.piece)+"";
-if(this.colour!=ChessPiece.WHITE){
-_ac=_ac.toLowerCase();
-}
-return _ac;
-};
-ChessPiece.pieceTypeToChar=function(_ad){
-switch(_ad){
-case ChessPiece.KING:
-return "K";
-case ChessPiece.QUEEN:
-return "Q";
-case ChessPiece.ROOK:
-return "R";
-case ChessPiece.BISHOP:
-return "B";
-case ChessPiece.KNIGHT:
-return "N";
-case ChessPiece.PAWN:
-return "P";
-}
-return "?";
-};
-LightweightChessPiece=function(div,_af,_b0,_b1){
-this.board=_b1;
-this.colour=_af;
-this.piece=_b0;
-this.div=div;
-};
-LightweightChessPiece.prototype.getFenLetter=ChessPiece.prototype.getFenLetter;
-LightweightChessPiece.prototype.makeLightWeight=function(){
-return this.copyPiece();
-};
-LightweightChessPiece.prototype.makeHeavyWeight=function(){
-var cp=this.board.createPiece(this.colour,this.piece,false);
-cp.column=this.column;
-cp.row=this.row;
-cp.enPassant=this.enPassant;
-cp.castled=this.castled;
-return cp;
-};
-LightweightChessPiece.prototype.setVisible=function(_b3){
-};
-LightweightChessPiece.prototype.free=function(){
-};
-LightweightChessPiece.prototype.setPosition=function(_b4,row,_b6,_b7,_b8){
-this.column=_b4;
-this.row=row;
-};
-LightweightChessPiece.prototype.copyPiece=function(){
-var cp=new LightweightChessPiece(this.id,this.colour,this.piece,this.board);
-cp.column=this.column;
-cp.row=this.row;
-return cp;
-};
-LightweightChessPiece.prototype.changePiece=function(_ba){
-this.changePieceKeepImage(_ba);
-};
-LightweightChessPiece.prototype.changePieceKeepImage=function(_bb){
-var _bc=(_bb+"").toLowerCase().charAt(0);
-switch(_bc){
-case "k":
-this.piece=ChessPiece.KING;
-break;
-case "q":
-this.piece=ChessPiece.QUEEN;
-break;
-case "r":
-this.piece=ChessPiece.ROOK;
-break;
-case "b":
-this.piece=ChessPiece.BISHOP;
-break;
-case "n":
-this.piece=ChessPiece.KNIGHT;
-break;
-case "p":
-this.piece=ChessPiece.PAWN;
-break;
-default:
-}
-};
-MovesDisplay=function(_bd,_be){
-this.board=_bd;
-this.displayType=_be;
-};
-MovesDisplay.DEFAULT_DISPLAY_TYPE=0;
-MovesDisplay.MAIN_ON_OWN_LINE=1;
-Board=function(_bf){
-this.boardName=_bf;
-if(_bf){
-this.initTarget("ctb-"+_bf,"ct-"+this.boardName+"-boardandpieces");
-this.boardPieces=Board.createBoardArray();
-}
-this.imagesLoaded=false;
-this.disableNavigation=false;
-this.currentMove=null;
-this.outputWithoutDisplay=false;
-this.moveIndex=-1;
-this.dontUpdatePositionReachedTable=false;
-this.restrictedColourMovement=-1;
-this.settingUpPosition=false;
-this.pendingLevelZeroCommentaryClose=false;
-this.isUserFlipped=false;
-this.registeredFlipListeners=[];
-this.registeredSpaceListeners=[];
-this.registeredForwardAtEndListeners=[];
-this.registeredPasteFenClickedListeners=[];
-this.registeredGotoMoveIndexListeners=[];
-this.registeredBackMovePreCurrentListeners=[];
-this.registeredForwardMovePostUpdateListeners=[];
-this.registeredUpdateListeners=[];
-this.registeredUpdatePieceFinishedListeners=[];
-this.registeredUpdateEndOfMovesListeners=[];
-this.registeredUpdateHaveAltListeners=[];
-this.registeredUpdateWrongMoveListeners=[];
-this.registeredUpdateAllowMoveListeners=[];
-this.registeredMakeMoveListeners=[];
-this.moveNumber=1;
-this.halfMoveNumber=0;
-};
-Board.prototype=new YAHOO.util.DDTarget();
-Board.invertToMove=function(_c0){
-if(_c0==ChessPiece.WHITE){
-return ChessPiece.BLACK;
-}else{
-return ChessPiece.WHITE;
-}
-};
-Board.boardStyleToClassName=function(_c1){
-var _c2="";
-switch(_c1){
-case 0:
-_c2="-lightgrey";
-break;
-case 1:
-_c2="-grey";
-break;
-case 2:
-_c2="-brown";
-break;
-case 3:
-_c2="-green";
-break;
-case 4:
-_c2="-woodlight";
-break;
-case 5:
-_c2="-wooddark";
-break;
-case 6:
-_c2="-metal";
-break;
-case 7:
-_c2="-marblebrown";
-break;
-case 8:
-_c2="-stucco";
-break;
-case 9:
-_c2="-goldsilver";
-break;
-case 10:
-_c2="-sandsnow";
-break;
-case 11:
-_c2="-crackedstone";
-break;
-case 12:
-_c2="-granite";
-break;
-case 13:
-_c2="-marblegreen";
-break;
-case 14:
-_c2="-greenwhite";
-break;
-default:
-}
-return _c2;
-};
-Board.createBoardArray=function(){
-var _c3=boardPool.getObject();
-if(_c3==null){
-_c3=new Array(8);
-for(var i=0;i<8;i++){
-_c3[i]=new Array(8);
-}
-}
-return _c3;
-};
-Board.prototype.preloadPieces=function(){
-var _c5=[];
-for(var i=0;i<ChessPiece.QUEEN;i++){
-for(var j=0;j<2;j++){
-var _c8=get_image_str(ChessPiece.pieceIconNames[j][i],this.boardImagePath,this.pieceSet,this.pieceSize,true);
-_c5.push(_c8);
-}
-}
-var _c9=this;
-function checkImages(){
-var _ca=true;
-for(var i=0;i<_c5.length;i++){
-var img=document.createElement("img");
-img.src=_c5[i];
-if(!img.complete||(typeof img.naturalWidth!="undefined"&&img.naturalWidth==0)){
-_ca=false;
-}
-}
-if(!_ca){
-setTimeout(checkImages,1000);
-}else{
-_c9.imagesLoaded=true;
-}
-}
-checkImages();
-};
-Board.prototype.selectDestSquare=function(e){
-if(this.clickAndClickDisabled){
-return true;
-}
-var _ce=(new Date()).getTime();
-var _cf=false;
-if(_ce-this.lastDestClick<100){
-_cf=true;
-}
-this.lastDestClick=_ce;
-var x=YAHOO.util.Event.getPageX(e);
-var y=YAHOO.util.Event.getPageY(e);
-var _d2=YAHOO.util.Dom.getX("ctb-"+this.boardName);
-var _d3=YAHOO.util.Dom.getY("ctb-"+this.boardName);
-var c=parseInt((x-_d2)/this.pieceSize);
-var r=parseInt((y-_d3)/this.pieceSize);
-var _d6=this.boardName+"-s"+c+""+(7-r);
-var _d7=YAHOO.util.Dom.get(_d6);
-if(_d7==this.oldSelectedSquare){
-if(!_cf){
-YAHOO.util.Dom.removeClass(_d7,"ct-source-square");
-this.oldSelectedSquare=null;
-this.oldSelectedPiece=null;
-if(this.oldDestSquare){
-YAHOO.util.Dom.removeClass(this.oldDestSquare,"ct-dest-square");
-this.oldDestSquare=null;
-}
-}
-return true;
-}
-if(this.isFlipped){
-c=7-c;
-r=7-r;
-}
-r=7-r;
-var _d8=this.boardPieces[c][r];
-if(_d8&&(_d8.colour==this.toMove||this.allowPreMoveSelection)&&(this.restrictedColourMovement==-1||(_d8.colour==this.restrictedColourMovement))){
-if(this.oldSelectedSquare){
-YAHOO.util.Dom.removeClass(this.oldSelectedSquare,"ct-source-square");
-}
-if(this.oldDestSquare){
-YAHOO.util.Dom.removeClass(this.oldDestSquare,"ct-dest-square");
-this.oldDestSquare=null;
-}
-YAHOO.util.Dom.addClass(_d7,"ct-source-square");
-this.oldSelectedSquare=_d7;
-this.oldSelectedPiece=_d8;
-}else{
-if(this.oldSelectedSquare){
-if(this.oldSelectedPiece&&this.oldSelectedPiece.colour!=this.toMove){
-return false;
-}
-var _d9=null;
-if(this.currentMove){
-if(this.currentMove.prev){
-_d9=this.currentMove.prev;
-}else{
-_d9=this.prev_move;
-}
-}else{
-_d9=this.prev_move;
-}
-if(this.canMove(this.oldSelectedPiece.makeLightWeight(),c,r,_d9,true)){
-this.lastDestSquare=_d7;
-this.lastDestRow=r;
-this.lastDestColumn=c;
-YAHOO.util.Dom.removeClass(this.oldSelectedSquare,"ct-source-square");
-var _da=false;
-if(!this.currentMove||this.currentMove.atEnd){
-_da=true;
-}
-this.updatePiece(this.oldSelectedPiece,c,r,false,false,true);
-this.oldSelectedPiece=null;
-this.oldSelectedSquare=null;
-if(!_da&&this.currentMove&&!this.allowingFreeMovement&&this.currentMove.atEnd){
-this.toggleToMove();
-this.updateToPlay();
-}
-}else{
-}
-}else{
-return true;
-}
-}
-};
-Board.prototype.selectSourcePiece=function(_db){
-if(this.lastSourceSquare){
-YAHOO.util.Dom.removeClass(_dc,"ct-source-square");
-}
-var r=_db.row;
-var c=_db.column;
-if(this.isFlipped){
-r=7-r;
-c=7-c;
-}
-var _df=this.boardName+"-s"+c+""+r;
-var _dc=YAHOO.util.Dom.get(_df);
-YAHOO.util.Dom.addClass(_dc,"ct-source-square");
-this.lastSourceSquare=_dc;
-this.lastSourcePiece=_db;
-this.lastSourceRow=_db.row;
-this.lastSourceColumn=_db.column;
-};
-Board.prototype.toggleToMove=function(){
-if(this.toMove==ChessPiece.WHITE){
-this.toMove=ChessPiece.BLACK;
-}else{
-this.toMove=ChessPiece.WHITE;
-}
-};
-Board.prototype.setupPieceDivs=function(){
-var _e0=this.getBoardDiv();
-if(this.pieces){
-for(var i=0;i<32;i++){
-if(this.pieces[i]){
-this.pieces[i].setVisible(false);
-this.pieces[i].free();
-this.pieces[i]=null;
-}
-}
-}
-if(this.availPieceDivs){
-for(var i=0;i<32;i++){
-if(this.availPieceDivs[i]){
-if(this.availPieceDivs[i].parentNode){
-this.availPieceDivs[i].parentNode.removeChild(this.availPieceDivs[i]);
-}
-}
-}
-}
-this.availids=null;
-this.availIds=new Array(32);
-this.availPieceDivs=null;
-this.availPieceDivs=new Array(32);
-this.pieces=null;
-this.pieces=new Array(32);
-this.uptoId=0;
-this.uptoPiece=0;
-};
-Board.prototype.getXY=function(){
-if(true||!this.board_xy){
-this.board_xy=YAHOO.util.Dom.getXY("ctb-"+this.boardName);
-}
-return this.board_xy;
-};
-Board.prototype.updateFromTo=function(_e2,_e3,_e4,_e5,_e6,_e7){
-YAHOO.util.Dom.removeClass(this.lastFromSquare,"ct-from-square");
-YAHOO.util.Dom.removeClass(this.lastToSquare,"ct-to-square");
-if(_e4==null){
-return;
-}
-this.lastFromSquare=_e2;
-this.lastToSquare=_e3;
-this.lastFromRow=_e4;
-this.lastFromColumn=_e5;
-this.lastToRow=_e6;
-this.lastToColumn=_e7;
-if(this.highlightFromTo){
-YAHOO.util.Dom.addClass(_e2,"ct-from-square");
-YAHOO.util.Dom.addClass(_e3,"ct-to-square");
-}
-};
-Board.prototype.makeMove=function(_e8,_e9,_ea,_eb,_ec,_ed,_ee,_ef,_f0){
-var _f1;
-var _f2;
-if(!this.isFlipped){
-_f1=YAHOO.util.Dom.get(this.boardName+"-s"+_e8.fromColumn+""+_e8.fromRow);
-_f2=YAHOO.util.Dom.get(this.boardName+"-s"+_e8.toColumn+""+_e8.toRow);
-}else{
-_f1=YAHOO.util.Dom.get(this.boardName+"-s"+(7-_e8.fromColumn)+""+(7-_e8.fromRow));
-_f2=YAHOO.util.Dom.get(this.boardName+"-s"+(7-_e8.toColumn)+""+(7-_e8.toRow));
-}
-if(this.oldSelectedSquare){
-if(!this.allowPreMoveSelection||(this.oldSelectedPiece&&_e9&&(this.oldSelectedPiece.colour==_e9.colour))){
-YAHOO.util.Dom.removeClass(this.oldSelectedSquare,"ct-source-square");
-this.oldSelectedSquare=null;
-this.oldSelectedPiece=null;
-}
-}
-if(_ed){
-this.updateFromTo(_f1,_f2,_e8.fromRow,_e8.fromColumn,_e8.toRow,_e8.toColumn);
-}
-var _f3=this.boardPieces[_e8.toColumn][_e8.toRow];
-if(_f3!=null){
-_f3.enPassant=false;
-_f3.castled=false;
-}
-if(_e9.piece==ChessPiece.PAWN&&_e8.toColumn!=_e8.fromColumn&&this.boardPieces[_e8.toColumn][_e8.toRow]==null){
-_f3=this.boardPieces[_e8.toColumn][_e8.fromRow];
-this.boardPieces[_e8.toColumn][_e8.fromRow]=null;
-if(_f3!=null){
-_f3.enPassant=true;
-}
-}
-var _f4=null;
-if(_e9.piece==ChessPiece.KING&&Math.abs(_e8.toColumn-_e8.fromColumn)>1){
-var _f5;
-var _f6;
-if(_e8.toColumn>_e8.fromColumn){
-_f4=this.boardPieces[7][_e8.fromRow];
-_f5=_e8.fromRow;
-_f6=5;
-this.boardPieces[7][_e8.toRow]=null;
-}else{
-_f4=this.boardPieces[0][_e8.fromRow];
-_f5=_e8.fromRow;
-_f6=3;
-this.boardPieces[0][_e8.toRow]=null;
-}
-if(!_f4){
-alert("No castle piece");
-}else{
-_f4.setPosition(_f6,_f5,_ea,null,_eb,null,_f0);
-this.boardPieces[_f4.column][_f4.row]=_f4;
-_f4.castled=true;
-}
-}
-_e8.taken=_f3;
-if(_f3&&_ec){
-this.processTaken(_f3,true);
-}
-this.moveNumber++;
-_e8.preHalfMoveNumber=this.halfMoveNumber;
-this.halfMoveNumber++;
-if(_f3||_e9.piece==ChessPiece.PAWN){
-this.halfMoveNumber=0;
-}
-this.board_xy=null;
-if(_e8.promotion!=null){
-_e9.changePieceKeepImage(_e8.promotion);
-}
-_e9.setPosition(_e8.toColumn,_e8.toRow,_ea,function(){
-var tp=_f3;
-if(tp){
-tp.setVisible(false);
-}
-if(_e8.promotion!=null){
-_e9.changePiece(_e8.promotion);
-}
-if(_ee){
-_ee.call(_ef);
-}
-},_eb,_f3,_f0);
-if(!_ea){
-if(_e8.promotion!=null){
-_e9.changePiece(_e8.promotion);
-}
-}
-this.boardPieces[_e8.fromColumn][_e8.fromRow]=null;
-this.boardPieces[_e8.toColumn][_e8.toRow]=_e9;
-if(_f4!=null){
-_e8.taken=_f4;
-}
-_e8.preCastleQueenSide=new Array(2);
-_e8.preCastleKingSide=new Array(2);
-_e8.preCastleQueenSide[0]=this.canCastleQueenSide[0];
-_e8.preCastleQueenSide[1]=this.canCastleQueenSide[1];
-_e8.preCastleKingSide[0]=this.canCastleKingSide[0];
-_e8.preCastleKingSide[1]=this.canCastleKingSide[1];
-if(_e9.piece==ChessPiece.ROOK){
-if(((_e9.colour==ChessPiece.WHITE)&&_e8.fromRow==0)||((_e9.colour==ChessPiece.BLACK)&&_e8.fromRow==7)){
-if(_e8.fromColumn==0){
-this.canCastleQueenSide[_e9.colour]=false;
-}else{
-if(_e8.fromColumn==7){
-this.canCastleKingSide[_e9.colour]=false;
-}
-}
-}
-}else{
-if(_e9.piece==ChessPiece.KING){
-this.canCastleQueenSide[_e9.colour]=false;
-this.canCastleKingSide[_e9.colour]=false;
-}
-}
-if(_f3&&(_f3.piece==ChessPiece.ROOK)){
-if(_e8.toColumn==0){
-if(((_f3.colour==ChessPiece.WHITE)&&_e8.toRow==0)||((_f3.colour==ChessPiece.BLACK)&&_e8.toRow==7)){
-this.canCastleQueenSide[_f3.colour]=false;
-}
-}else{
-if(_e8.toColumn==7){
-if(((_f3.colour==ChessPiece.WHITE)&&_e8.toRow==0)||((_f3.colour==ChessPiece.BLACK)&&_e8.toRow==7)){
-this.canCastleKingSide[_f3.colour]=false;
-}
-}
-}
-}
-this.updatePositionReached(_e9.colour);
-for(var i=0;i<this.registeredMakeMoveListeners.length;i++){
-var _f9=this.registeredMakeMoveListeners[i].makeMoveCallback(_e8);
-}
-};
-Board.prototype.isThreeFoldRep=function(_fa){
-var _fb=this.toMove;
-if(_fa){
-if(_fb==ChessPiece.WHITE){
-_fb=ChessPiece.BLACK;
-}else{
-_fb=ChessPiece.WHITE;
-}
-}
-var _fc=this.boardToUniqueFen(_fb);
-return (this.positionsSeen[_fc]>=3);
-};
-Board.prototype.updatePositionReached=function(_fd){
-if(this.dontUpdatePositionReachedTable){
-return;
-}
-var _fe=this.boardToUniqueFen(_fd);
-if(!this.positionsSeen){
-this.positionsSeen=[];
-}
-if(this.positionsSeen[_fe]){
-this.positionsSeen[_fe]++;
-}else{
-this.positionsSeen[_fe]=1;
-}
-};
-Board.prototype.promptPromotion=function(_ff,col,row,_102,_103){
-_ff.prePromotionColumn=_ff.column;
-_ff.prePromotionRow=_ff.row;
-_ff.setPosition(col,row,false,null,this.moveAnimationLength);
-var _104=this;
-var _105=new YAHOO.widget.Dialog("promotionDialogId",{width:"300px",fixedcenter:true,visible:true,modal:true,close:false,constraintoviewport:true,buttons:[{text:_js("Queen"),handler:function(){
-_105.hide();
-_104.updatePiece(_ff,col,row,_102,_103,false,"q");
-},isDefault:true},{text:_js("Rook"),handler:function(){
-_105.hide();
-_104.updatePiece(_ff,col,row,_102,_103,false,"r");
-},isDefault:false},{text:_js("Bishop"),handler:function(){
-_105.hide();
-_104.updatePiece(_ff,col,row,_102,_103,false,"b");
-},isDefault:false},{text:_js("Knight"),handler:function(){
-_105.hide();
-_104.updatePiece(_ff,col,row,_102,_103,false,"n");
-},isDefault:false}]});
-_105.setHeader(_js("Select Promotion Piece"));
-_105.setBody("<div></div>");
-_105.render(document.body);
-};
-Board.moveToLocale=function(_106){
-if(!_106||_106==""){
-return _106;
-}
-var _107="";
-for(var i=0;i<_106.length;i++){
-var _109=_106.charAt(i);
-switch(_109){
-case "K":
-_109=_js("K");
-break;
-case "Q":
-_109=_js("Q");
-break;
-case "R":
-_109=_js("R");
-break;
-case "N":
-_109=_js("N");
-break;
-case "B":
-_109=_js("B");
-break;
-case "P":
-_109=_js("P");
-break;
-case "a":
-_109=_js("a");
-break;
-case "b":
-_109=_js("b");
-break;
-case "c":
-_109=_js("c");
-break;
-case "d":
-_109=_js("d");
-break;
-case "e":
-_109=_js("e");
-break;
-case "f":
-_109=_js("f");
-break;
-case "g":
-_109=_js("g");
-break;
-case "h":
-_109=_js("h");
-break;
-case "x":
-_109=_js("x");
-break;
-case "#":
-_109=_js("#");
-break;
-}
-_107+=_109;
-}
-return _107;
-};
-Board.prototype.updatePiece=function(_10a,col,row,_10d,_10e,_10f,_110,_111){
-if(_110){
-this.board_xy=null;
-if(_10a.prePromotionRow){
-_10a.row=_10a.prePromotionRow;
-_10a.column=_10a.prePromotionColumn;
-}
-}
-if(_110==null&&_10a.column==col&&_10a.row==row){
-this.board_xy=null;
-_10a.setPosition(_10a.column,_10a.row,false,null,this.moveAnimationLength);
-if(clog){
-console.log("moved piece back to its orig position");
-}
-return;
-}
-var _112=null;
-if(this.currentMove){
-if(this.currentMove.prev){
-_112=this.currentMove.prev;
-}else{
-_112=this.prev_move;
-}
-}else{
-_112=this.prev_move;
-}
-if(clog){
-if(this.currentMove){
-console.log("updatepiece currentMove:"+this.currentMove.output());
-}else{
-console.log("updatepiece currentmove null");
-}
-}
-if(!_10d&&!this.canMove(_10a.makeLightWeight(),col,row,_112,true)){
-this.board_xy=null;
-_10a.setPosition(_10a.column,_10a.row,false,null,0.5);
-if(clog){
-console.log("move not legal , move back to orig:"+this.toMove);
-if(_112){
-console.log("prevMove was:"+_112.output());
-}else{
-console.log("prevMove was null");
-}
-}
-return;
-}
-var _113="";
-if(_10f&&_10a.piece==ChessPiece.PAWN&&(row==7||row==0)){
-this.promptPromotion(_10a,col,row,_10d,_10e);
-return;
-}else{
-if(_110!=null){
-_113=_110;
-}
-}
-var _114=true;
-var _115="";
-_115+=Move.columnToChar(_10a.column);
-_115+=String.fromCharCode("1".charCodeAt(0)+_10a.row);
-_115+=Move.columnToChar(col);
-_115+=String.fromCharCode("1".charCodeAt(0)+(row));
-if(_113){
-_115+=_113;
-}
-var _116=this.createMoveFromString(_115);
-var move=this.currentMove;
-if(move){
-_116.moveNum=move.moveNum;
-}
-var res=null;
-for(var i=0;i<this.registeredUpdateListeners.length;i++){
-_11a=this.registeredUpdateListeners[i].updatePieceCallback(_113,_10a,col,row,_10d,_10e,_10f,_110,_111,_112,this.currentMove,_116);
-if(!_11a){
-return false;
-}
-if(!_11a.ignoreRetVal){
-res=_11a;
-}
-}
-if(!res){
-if(clog){
-console.log("Got no update piece callbak");
-}
-return false;
-}
-if(res.allowMove){
-if(this.oldSelectedSquare){
-YAHOO.util.Dom.removeClass(this.oldSelectedSquare,"ct-source-square");
-}
-var move=res.move;
-for(var i=0;i<this.registeredUpdateAllowMoveListeners.length;i++){
-var res2=this.registeredUpdateAllowMoveListeners[i].updateAllowMoveCallback(_113,_10a,col,row,_10d,_10e,_10f,_110,_111,move);
-}
-this.makeMove(move,_10a,_10e,this.moveAnimationLength,true,true,null,null,true);
-var _11c=!res.dontMakeOpponentMove&&!_10d&&(this.currentMove&&this.currentMove.next&&!this.currentMove.next.atEnd);
-if(clog){
-if(move.next){
-console.log("setting current move in updatepiece to:"+move.next.output());
-}else{
-console.log("in updatepiece, current move being set to null");
-}
-}
-this.setCurrentMove(move.next,false,_11c);
-if(this.currentMove.atEnd){
-for(var i=0;i<this.registeredUpdateEndOfMovesListeners.length;i++){
-var res=this.registeredUpdateEndOfMovesListeners[i].updateEndOfMovesCallback(_113,_10a,col,row,_10d,_10e,_10f,_110,_111);
-}
-}
-if(_11c){
-opponentMove=this.currentMove;
-if(this.currentMove&&this.currentMove.next.atEnd){
-this.toggleToMove();
-}
-this.updatePiece(this.boardPieces[opponentMove.fromColumn][opponentMove.fromRow],opponentMove.toColumn,opponentMove.toRow,true,true,false);
-}
-}else{
-var move=res.move;
-var _11d=_10a.column;
-var _11e=_10a.row;
-this.board_xy=null;
-_10a.setPosition(_10a.column,_10a.row,false,null,this.moveAnimationLength);
-for(var i=0;i<this.registeredUpdateWrongMoveListeners.length;i++){
-var res=this.registeredUpdateWrongMoveListeners[i].updateWrongMoveCallback(_113,_10a,col,row,_10d,_10e,_10f,_110,_111,move);
-}
-}
-for(var i=0;i<this.registeredUpdatePieceFinishedListeners.length;i++){
-var _11a=this.registeredUpdatePieceFinishedListeners[i].updatePieceFinishedCallback(_113,_10a,col,row,_10d,_10e,_10f,_110,_111,_112,this.currentMove,_116);
-}
-};
-Board.prototype.addGotoMoveIndexListener=function(_11f){
-this.registeredGotoMoveIndexListeners.push(_11f);
-};
-Board.prototype.addPasteFenClickedListener=function(_120){
-this.registeredPasteFenClickedListeners.push(_120);
-};
-Board.prototype.addBackMovePreCurrentListener=function(_121){
-this.registeredBackMovePreCurrentListeners.push(_121);
-};
-Board.prototype.addForwardMovePostUpdateListener=function(_122){
-this.registeredForwardMovePostUpdateListeners.push(_122);
-};
-Board.prototype.addForwardAtEndListener=function(_123){
-this.registeredForwardAtEndListeners.push(_123);
-};
-Board.prototype.addUpdatePieceListener=function(_124){
-this.registeredUpdateListeners.push(_124);
-};
-Board.prototype.addUpdatePieceFinishedListener=function(_125){
-this.registeredUpdatePieceFinishedListeners.push(_125);
-};
-Board.prototype.addUpdatePieceEndOfMovesListener=function(_126){
-this.registeredUpdateEndOfMovesListeners.push(_126);
-};
-Board.prototype.addUpdatePieceHaveAltListener=function(_127){
-this.registeredUpdateHaveAltListeners.push(_127);
-};
-Board.prototype.addUpdatePieceAllowMoveListener=function(_128){
-this.registeredUpdateAllowMoveListeners.push(_128);
-};
-Board.prototype.addMakeMoveListener=function(_129){
-this.registeredMakeMoveListeners.push(_129);
-};
-Board.prototype.addUpdatePieceWrongMoveListener=function(_12a){
-this.registeredUpdateWrongMoveListeners.push(_12a);
-};
-Board.prototype.scoreToShortString=function(_12b){
-if(_12b=="draw"){
-return "D";
-}
-if(_12b>=0){
-return "M"+_12b;
-}else{
-return "L"+(-1*_12b);
-}
-};
-Board.prototype.scoreToLongString=function(_12c){
-if(_12c=="draw"){
-return _js("Draw");
-}
-if(_12c==0){
-return _js("Mate");
-}else{
-if(_12c>0){
-return __js("Mate in {NUMBER_MOVES}",[["NUMBER_MOVES",_12c]]);
-}else{
-return __js("Lose in {NUMBER_MOVES}",[["NUMBER_MOVES",(-1*_12c)]]);
-}
-}
-};
-Board.prototype.egMoveToScoreString=function(_12d){
-var _12e=_12d.score;
-var _12f=_12d.optimal_score;
-var s=this.scoreToShortString(_12e);
-var opt=this.scoreToShortString(_12f);
-var _132=this.scoreToLongString(_12e);
-var _133=this.scoreToLongString(_12f);
-if(_12e==_12f){
-return ["",_132];
-}else{
-var _134="ct-subopt-move-score";
-if(_12e=="draw"||_12e<0){
-_134="ct-bad-move-score";
-}
-return ["<span class=\""+_134+"\">"+s+"("+opt+")</span>",_132+"("+_133+")"];
-}
-};
-Board.prototype.makeShortAlgabraic=function(_135,_136,_137,_138,_139){
-if(clog){
-console.log("fromCol:"+_135+" fromRow:"+_136+" toCol:"+_137+" toRow:"+_138);
-}
-var _13a=this.boardPieces[_135][_136];
-var _13b=_13a.piece;
-var _13c=ChessPiece.pieceTypeToChar(_13b);
-var move="";
-if(_13b==ChessPiece.PAWN){
-if(_135==_137){
-move=Move.columnToChar(_135)+""+(_138+1);
-}else{
-move=Move.columnToChar(_135)+"x"+Move.columnToChar(_137)+""+(_138+1);
-if(!this.boardPieces[_137][_138]){
-move+=" e.p.";
-}
-}
-}else{
-if(_13b==ChessPiece.KING){
-var _13e=Math.abs(_135-_137);
-if(_13e==1||_13e==0){
-move=_13c;
-if(this.boardPieces[_137][_138]){
-move+="x";
-}
-move+=Move.columnToChar(_137)+""+(_138+1);
-}else{
-if(_137==6){
-move="O-O";
-}else{
-move="O-O-O";
-}
-}
-}else{
-var _13f=[];
-for(var row=0;row<8;row++){
-for(var col=0;col<8;col++){
-var cp=this.boardPieces[col][row];
-if(cp&&cp.colour==_13a.colour&&cp.piece==_13b&&!(_13a.column==cp.column&&_13a.row==cp.row)){
-var prev=null;
-if(this.currentMove){
-prev=this.currentMove.prev;
-}
-if(this.canMove(cp.makeLightWeight(),_137,_138,prev,true)){
-_13f.push(cp);
-}
-}
-}
-}
-move=_13c;
-if(_13f.length>0){
-var _144=false;
-var _145=false;
-for(var i=0;i<_13f.length;i++){
-if(_13f[i].row==_136){
-_145=true;
-}
-if(_13f[i].column==_135){
-_144=true;
-}
-}
-if(_145||!(_145||_144)){
-move+=Move.columnToChar(_135);
-}
-if(_144){
-move+=""+(_136+1);
-}
-}
-if(this.boardPieces[_137][_138]){
-move+="x";
-}
-move+=Move.columnToChar(_137)+""+(_138+1);
-}
-}
-var _147="";
-var _148="";
-if(_139){
-var _149=this.cloneBoard();
-var _14a=ChessPiece.WHITE;
-if(_149.boardPieces[_139.fromColumn][_139.fromRow].colour==ChessPiece.WHITE){
-_14a=ChessPiece.BLACK;
-}
-_149.makeMove(_139,_149.boardPieces[_139.fromColumn][_139.fromRow],false,_149.moveAnimationLength,false,false);
-if(!_149.isKingSafe(_14a,_139)){
-_147="+";
-if(_149.isKingMated(_14a,_139)){
-_147="#";
-}
-}
-if(_139.promotion){
-_148="="+((_139.promotion+"").toUpperCase());
-}
-}
-move+=_148+_147;
-return move;
-};
-Board.getVarMove=function(move,row,col,_14e,_14f){
-if(move.vars&&move.vars.length>0){
-var i=0;
-for(var i=0;i<move.vars.length;i++){
-var _151=move.vars[i];
-if(_151.fromColumn==_14e.column&&_151.fromRow==_14e.row&&_151.toRow==row&&_151.toColumn==col&&(_14f==""||(_14f==_151.promotion))){
-return _151;
-}
-}
-}
-};
-Board.prototype.createMoveFromString=function(_152){
-var _153=0;
-var take=false;
-var _155=null;
-var _156=_152.charCodeAt(_153++);
-var _157=_152.charCodeAt(_153++);
-var _158=_152.split("|");
-var pgn=null;
-if(_158.length>1){
-pgn=_158[1];
-_152=_158[0];
-}else{
-_152=_158[0];
-}
-if(_152.charAt(_153)=="x"){
-_153++;
-take=true;
-}
-var _15a=_152.charCodeAt(_153++);
-var _15b=_152.charCodeAt(_153++);
-if(_153<_152.length){
-_155=_152.charAt(_153);
-}
-var move=new Move(_156-("a".charCodeAt(0)),_157-("1".charCodeAt(0)),_15a-("a".charCodeAt(0)),_15b-("1".charCodeAt(0)),take,_155,_152);
-move.pgn=pgn;
-return move;
-};
-Board.prototype.getBackButton=function(){
-if(!this.backButton){
-this.backButton=YAHOO.util.Dom.get(this.boardName+"-back");
-}
-return this.backButton;
-};
-Board.prototype.getForwardButton=function(){
-if(!this.forwardButton){
-this.forwardButton=YAHOO.util.Dom.get(this.boardName+"-forward");
-}
-return this.forwardButton;
-};
-Board.prototype.getEndButton=function(){
-if(!this.endButton){
-this.endButton=YAHOO.util.Dom.get(this.boardName+"-end");
-}
-return this.endButton;
-};
-Board.prototype.getStartButton=function(){
-if(!this.startButton){
-this.startButton=YAHOO.util.Dom.get(this.boardName+"-start");
-}
-return this.startButton;
-};
-Board.prototype.setForwardBack=function(){
-var back=this.getBackButton();
-var _15e=this.getForwardButton();
-var end=this.getEndButton();
-var _160=this.getStartButton();
-if(!this.currentMove){
-if(back){
-back.src=this.boardImagePath+"/images/resultset_previous_disabled"+this.getVersString()+".gif";
-}
-if(_160){
-_160.src=this.boardImagePath+"/images/disabled_resultset_first"+this.getVersString()+".gif";
-}
-if(_15e){
-_15e.src=this.boardImagePath+"/images/resultset_next_disabled"+this.getVersString()+".gif";
-}
-if(end){
-end.src=this.boardImagePath+"/images/disabled_resultset_last"+this.getVersString()+".gif";
-}
-return;
-}
-if(this.currentMove.prev==null){
-if(back){
-back.src=this.boardImagePath+"/images/resultset_previous_disabled"+this.getVersString()+".gif";
-}
-if(_160){
-_160.src=this.boardImagePath+"/images/disabled_resultset_first"+this.getVersString()+".gif";
-}
-}else{
-if(back){
-back.src=this.boardImagePath+"/images/resultset_previous"+this.getVersString()+".gif";
-}
-if(_160){
-_160.src=this.boardImagePath+"/images/resultset_first"+this.getVersString()+".gif";
-}
-}
-if(this.currentMove.atEnd){
-if(_15e){
-_15e.src=this.boardImagePath+"/images/resultset_next_disabled"+this.getVersString()+".gif";
-}
-if(end){
-end.src=this.boardImagePath+"/images/disabled_resultset_last"+this.getVersString()+".gif";
-}
-}else{
-if(_15e){
-_15e.src=this.boardImagePath+"/images/resultset_next"+this.getVersString()+".gif";
-}
-if(end){
-end.src=this.boardImagePath+"/images/resultset_last"+this.getVersString()+".gif";
-}
-}
-};
-Board.prototype.convertPiecesFromLightWeight=function(_161){
-var _162=this.settingUpPosition;
-this.settingUpPosition=true;
-for(var i=0;i<8;i++){
-for(var j=0;j<8;j++){
-if(this.boardPieces[i][j]!=null){
-var _165=this.boardPieces[i][j];
-var p=_165.makeHeavyWeight();
-this.boardPieces[i][j]=p;
-p.setPosition(p.column,p.row,false,null,this.moveAnimationLength);
-p.setVisible(true);
-}
-}
-}
-var move=this.moveArray[_161];
-while(move!=null){
-if(move.taken){
-move.taken=move.taken.makeHeavyWeight();
-}
-move=move.prev;
-}
-this.settingUpPosition=_162;
-};
-MovesDisplay.prototype.setToMove=function(_168){
-this.toMove=_168;
-};
-MovesDisplay.prototype.clickComment=function(e){
-var t=e.currentTarget?e.currentTarget:e.targetElement?e.targetElement:false;
-if(!t){
-t=YAHOO.util.Event.getTarget(e);
-}
-if(!t.id){
-t=t.parentNode;
-}
-var _16b=t.id.substr((this.board.boardName+"-mcX").length);
-var _16c=true;
-if(t.id.indexOf("-mca")>=0){
-_16c=false;
-}
-var move=this.board.moveArray[_16b];
-var _16e="";
-if(_16c){
-_16e=move.beforeComment;
-}else{
-_16e=move.afterComment;
-}
-mySimpleDialog=new YAHOO.widget.SimpleDialog(this.boardName+"-editCommentDialog",{width:"20em",fixedcenter:true,modal:true,visible:false,draggable:false});
-mySimpleDialog.setHeader("Edit Comment");
-mySimpleDialog.setBody("<textarea id=\""+this.board.boardName+"-editComment\">"+_16e+"</textarea>");
-mySimpleDialog.cfg.setProperty("icon",YAHOO.widget.SimpleDialog.ICON_INFO);
-var me=this;
-var _170=function(){
-if(_16c){
-move.beforeComment=null;
-}else{
-move.afterComment=null;
-}
-t.innerHTML="";
-this.hide();
-};
-var _171=function(){
-var _172=YAHOO.util.Dom.get(me.board.boardName+"-editComment");
-var txt=trimStr(_172.value);
-if(_16c){
-move.beforeComment=txt;
-}else{
-move.afterComment=txt;
-}
-if(_16c){
-t.innerHTML=me.outputComment(txt,0)+" ";
-}else{
-t.innerHTML=" "+me.outputComment(txt,0);
-}
-this.hide();
-};
-var _174=function(){
-this.hide();
-};
-var _175=[{text:"Delete",handler:_170},{text:"Save",handler:_171},{text:"Cancel",handler:_174,isDefault:true}];
-mySimpleDialog.cfg.queueProperty("buttons",_175);
-mySimpleDialog.render(document.body);
-mySimpleDialog.show();
-};
-MovesDisplay.prototype.gotoMove=function(e){
-if(this.board.disableNavigation){
-return;
-}
-if(this.board.tactics&&this.board.tactics.problemActive){
-return;
-}
-if(this.board.blockFowardBack||this.board.deferredBlockForwardBack){
-return;
-}
-activeBoard=this.board;
-var t=e.currentTarget?e.currentTarget:e.targetElement?e.targetElement:false;
-if(!t){
-t=YAHOO.util.Event.getTarget(e);
-}
-if(!t.id){
-t=t.parentNode;
-}
-var _178=t.id.substr((this.board.boardName+"-m").length);
-if(clog){
-console.log("got goto move index:"+_178);
-}
-this.board.gotoMoveIndex(_178,false,false,false,false);
-if(this.board.problem){
-if(this.board.currentMove.bestMoves){
-this.board.problem.showBestMoves(this.board.currentMove,this.board.currentMove.bestMoves,this.board.currentMove.correctMove,this.board.currentMove.wrongMove);
-}else{
-this.board.problem.clearBestMoves();
-}
-}
-};
-MovesDisplay.prototype.getMovesDisplay=function(){
-if(!this.cachedMovesDisplay&&!this.allreadyCachedMovesDisplay){
-var name=this.board.boardName+"-moves";
-if(this.moveListName){
-name=this.moveListName;
-}
-this.cachedMovesDisplay=YAHOO.util.Dom.get(name);
-this.allreadyCachedMovesDisplay=true;
-}
-return this.cachedMovesDisplay;
-};
-MovesDisplay.prototype.outputVariationStart=function(_17a,_17b,_17c,_17d){
-var _17e="";
-if(_17b>this.board.ml){
-return _17e;
-}
-if(this.board.ml==1&&_17d>1){
-return _17e;
-}
-var _17f=this.getMovesDisplay();
-if(_17f||this.board.outputWithoutDisplay){
-if(_17a==0&&this.displayType==MovesDisplay.MAIN_ON_OWN_LINE){
-if(this.firstNonMove){
-if(this.board.useDivClearForNewline){
-_17e+="<div style=\"clear:both;\"></div>";
-}
-_17e+="<div class=\"ct-mainline-commentary\"/>";
-this.pendingLevelZeroCommentaryClose=true;
-}
-}
-if(this.variationOnOwnLine){
-if(this.board.useDivClearForNewline){
-_17e+="<div style=\"clear:both;\"></div>";
-}else{
-_17e+="<br/>";
-}
-}
-if(this.board.showBracketsOnVariation&&(!this.board.hideBracketsOnTopLevelVariation||_17a>0)){
-_17e+="<span>"+this.board.variationStartString+"</span>";
-}
-}
-this.firstNonMove=false;
-return _17e;
-};
-MovesDisplay.prototype.outputVariationEnd=function(_180,_181,_182,_183){
-var _184=this.getMovesDisplay();
-var _185="";
-if(this.board.ml==1&&_181>0&&this.board.outputFirstVar){
-return _185;
-}
-this.board.outputFirstVar=true;
-if(_184||this.board.outputWithoutDisplay){
-if(this.board.showBracketsOnVariation&&(!this.board.hideBracketsOnTopLevelVariation||_180>1)){
-_185+="<span>"+this.board.variationEndString+"</span>";
-}
-}
-if(_180==1&&this.displayType==MovesDisplay.MAIN_ON_OWN_LINE){
-}
-this.firstNonMove=false;
-return _185;
-};
-MovesDisplay.prototype.outputComment=function(_186,_187,_188,_189){
-if(this.board.ignoreCommentRegex){
-var _18a=new RegExp(this.board.ignoreCommentRegex);
-if(_18a.test(_186)){
-return "";
-}
-}
-var _18b="";
-if(this.board.ml==1){
-return _18b;
-}
-var _18c=this.getMovesDisplay();
-if(_18c||this.board.outputWithoutDisplay){
-if(_187==0&&this.displayType==MovesDisplay.MAIN_ON_OWN_LINE){
-if(this.firstNonMove){
-_18b+="<br/>";
-}
-_18b+="<div class=\"ct-mainline-commentary\">";
-this.pendingLevelZeroCommentaryClose=true;
-}
-var _18d="ct-board-move-comment";
-if(_188){
-_18d="ct-board-move-alt-comment";
-}
-if(this.board.handleCommentClicks){
-_18d+=" ct-board-clickable-comment";
-}
-_18b+="<span class=\""+_18d+"\"> "+_186+" </span>";
-if(_187==0&&this.displayType==MovesDisplay.MAIN_ON_OWN_LINE){
-}
-}
-if(!_189){
-this.firstNonMove=false;
-}
-return _18b;
-};
-MovesDisplay.prototype.outputNag=function(_18e){
-var _18f="";
-var _190=this.getMovesDisplay();
-if(_190||this.board.outputWithoutDisplay){
-var _191=null;
-switch(_18e){
-case 11:
-_191="=";
-break;
-case 14:
-_191="+=";
-break;
-case 15:
-_191="=+";
-break;
-case 16:
-_191="+/-";
-break;
-case 17:
-_191="-/+";
-break;
-case 18:
-_191="+-";
-break;
-case 19:
-_191="-+";
-break;
-case 20:
-_191="+--";
-break;
-case 21:
-_191="--+";
-break;
-default:
-}
-if(_191){
-_18f+="<span> "+_191+" </span>";
-}
-}
-return _18f;
-};
-MovesDisplay.prototype.outputResult=function(_192){
-return "<span class=\"ct-result\">"+_192+"</span>";
-};
-MovesDisplay.prototype.outputMove=function(_193,_194,_195,_196,_197,_198,_199,move,_19b,_19c,_19d,_19e,_19f,_1a0,_1a1){
-var clog=false;
-if(clog){
-console.log("outputMove:"+_196+" hideScore:"+_19b+" this.board:"+this.board);
-}
-var _1a3="";
-var _1a4=this.getMovesDisplay();
-if(this.board.tr&&_194>0&&(_198>1||_199>3)&&!_197){
-return _1a3;
-}
-if(clog){
-console.log("ravLevel:"+_194+" ravCount:"+_198+" topCount:"+_199+" output:"+_196);
-}
-if(this.board.ml==1&&_198>0&&this.board.outputFirstVar){
-return _1a3;
-}
-if(clog){
-console.log("movesDisplay:"+_1a4);
-}
-if(_1a4||this.board.outputWithoutDisplay){
-var _1a5=""+Math.round(_195/2)+". ";
-var _1a6=false;
-if(_195%2!=1){
-if(clog){
-console.log("firstRav:"+_197+" firstNonMove:"+this.firstNonMove);
-}
-if(_197||!this.firstNonMove){
-_1a5=Math.round(_195/2)+"... ";
-_1a6=true;
-}else{
-_1a5="";
-}
-}
-if(clog){
-console.log("moveNum:"+_195+" moveNumOut:"+_1a5);
-}
-if(this.displayType==MovesDisplay.MAIN_ON_OWN_LINE&&_194==0&&(!this.firstNonMove||_195%2==1)){
-if(this.pendingLevelZeroCommentaryClose){
-this.pendingLevelZeroCommentaryClose=false;
-_1a3+="</div>";
-}
-if(this.board.newlineForEachMainMove){
-if(this.board.useDivClearForNewline){
-_1a3+="<div style=\"clear:both;\"></div>";
-}else{
-_1a3+="<br/>";
-}
-}
-}
-var _1a7="";
-var _1a8="";
-if(move&&move.eg_move){
-var res=this.board.egMoveToScoreString(move.eg_move);
-_1a7=res[0];
-_1a8=res[1];
-}
-var _1aa="";
-if(_19b){
-_1aa="initially_hidden";
-}
-if(_1a7!=""){
-_1a7=" "+_1a7;
-}
-var _1ab="title";
-if(_19b){
-_1ab="alt";
-}
-var _1ac="";
-if(_19c){
-_1ac=" rel=\""+_196+"\" ";
-_196="___";
-}
-var _1ad="";
-if(_1a6&&_194==0){
-_1ad="<span class=\"ct-board-move-dottedempty\">&nbsp;</span>";
-}
-var _1ae="";
-if(_1a5){
-_1ae="<span class=\"ct-board-move-movenum\">"+_1a5+"</span>";
-}
-var _1af="";
-if(_193==0){
-if(_19d){
-_1af=" ct-best-move ";
-}else{
-if(_19f){
-_1af=" ct-bad-move ";
-}else{
-if(_19e){
-_1af=" ct-good-move ";
-}else{
-if(_1a0){
-_1af=" ct-current-move ";
-}else{
-_1af=" ct-first-move ";
-}
-}
-}
-}
-}
-if(_1a1){
-_1af=" ct-current-move ";
-}
-_1a3+="<span "+_1ac+_1ab+"=\""+_1a8+"\" id=\""+this.board.boardName+"-m"+_193+"\" class=\""+((_194==0)?"ct-board-move-mainline":"ct-board-move-variation")+_1af+"\">"+_1ae+_1ad+"<span class=\"ct-board-move-movetext\">"+_196+"</span><span id=\""+this.board.boardName+"-msc"+_193+"\" class=\""+_1aa+"\">"+_1a7+"</span></span>";
-}
-this.firstNonMove=true;
-return _1a3;
-};
-Board.prototype.setMoveSeqLalg=function(_1b0,_1b1,_1b2,_1b3,_1b4,_1b5,_1b6,_1b7,_1b8,_1b9,_1ba,_1bb){
-var _1bc=new Array();
-if(_1b0&&_1b0.length>0){
-_1bc=_1b0.replace(/\s+$/g,"").split(" ");
-}
-this.setupFromLalgArray(_1bc,_1b3,_1b2,_1b1,_1b4,_1b5,_1b6,_1b7,_1b8,_1b9,_1ba,_1bb);
-};
-Board.prototype.setupFromLalgArray=function(_1bd,_1be,_1bf,_1c0,_1c1,_1c2,_1c3,_1c4,_1c5,_1c6,_1c7,_1c8){
-var clog=false;
-if(clog){
-console.log("top of setupFromLalgArray");
-}
-this.outputFirstVar=false;
-if(this.movesDisplay){
-this.movesDisplay.pendingLevelZeroCommentaryClose=false;
-var md=this.movesDisplay.getMovesDisplay();
-if(md){
-if(!_1c2){
-YAHOO.util.Event.purgeElement(md,true);
-}
-md.innerHTML="";
-}
-}
-if(!_1c0){
-_1c0=new Array();
-}
-var _1cb=this.cloneBoard();
-this.movesDisplay.firstNonMove=false;
-var _1cc=null;
-var _1cd=null;
-if(!_1c1){
-_1cc=new Array();
-_1cd=new Array();
-}
-if(!_1c6&&this.prev_move){
-if(clog){
-console.log("this.prev_move:"+this.prev_move.output());
-}
-if(_1cb.boardPieces[this.prev_move.fromColumn][this.prev_move.fromRow]){
-_1cb.makeMove(this.prev_move,_1cb.boardPieces[this.prev_move.fromColumn][this.prev_move.fromRow],false,_1cb.moveAnimationLength,false,false);
-}
-}
-var _1ce=null;
-if(!_1c1){
-_1ce=_1cb.cloneBoard();
-}
-var _1cf=null;
-var _1d0=0;
-var _1d1="";
-var _1d2=false;
-var _1d3=false;
-var _1d4=0;
-var _1d5=false;
-var _1d6=new Array();
-var _1d7=new Array();
-_1d7[0]=0;
-var _1d8=new Array();
-var _1d9=new Array();
-var _1da=_1bf*2-1;
-var _1db=_1bf*2-1;
-var _1dc=new Array();
-var _1dd=ChessPiece.WHITE;
-var _1de=0;
-var eval="";
-var _1e0="";
-var _1e1="";
-var time="";
-var _1e3=-1;
-var _1e4=0;
-for(var i=0;i<_1bd.length;i++){
-var _1e6=0;
-if(clog){
-console.log("movesArr["+i+"]:"+_1bd[i]);
-}
-if(_1bd[i]=="ALT"){
-_1d3=true;
-continue;
-}
-if(_1bd[i].indexOf("EVAL")==0){
-eval=_1bd[i].split(":")[1];
-if(parseInt(eval)>=175&&_1d4>0&&_1d7[_1d4]>1){
-_1d3=true;
-}
-continue;
-}
-if(_1bd[i].indexOf("DEPTH")==0){
-_1e0=_1bd[i].split(":")[1];
-continue;
-}
-if(_1bd[i].indexOf("NODES")==0){
-_1e1=_1bd[i].split(":")[1];
-continue;
-}
-if(_1bd[i].indexOf("TIME")==0){
-time=_1bd[i].split(":")[1];
-var e=eval;
-if(eval.indexOf("mate")!=0){
-e=(parseFloat(eval)/100).toFixed(2);
-if(e>0){
-e="+"+e;
-}
-}else{
-e=e.replace(/_/," ");
-var _1e8=e.split(" ");
-_1e6=parseInt(_1e8[1]);
-e=_js("mate")+" "+_1e8[1];
-if(_1d7[_1d4]==1){
-_1e3=_1e6;
-}
-}
-_1e4=_1e6;
-if(_1e6<0){
-_1d3=false;
-}else{
-if(_1e6>0&&_1e6<8&&_1d4>0&&_1d7[_1d4]>1){
-_1d3=true;
-}
-}
-var _1e9="";
-if(_1d3){
-_1e9=_js("ALT")+" ";
-}
-var t=parseInt(time);
-var nps=" "+__js("nps:{NODES_PER_SECOND}",[["NODES_PER_SECOND",Math.round(parseInt(_1e1)/(parseInt(time)/1000))]]);
-if(!this.showNPS){
-nps="";
-}
-if(!(_1d4>0&&_1d7[_1d4]>this.ml)){
-_1bd[i]=_1e9+e+" ("+__js("depth:{DEPTH}",[["DEPTH",_1e0]])+nps+")";
-}else{
-_1bd[i]="";
-}
-}
-if(_1bd[i]=="}"){
-_1d2=false;
-if(this.movesDisplay){
-_1d1=_1d1.replace(/\s+$/g,"");
-_1dc.push(this.movesDisplay.outputComment(_1d1,_1d4,_1d3));
-}
-continue;
-}else{
-if(_1d2){
-_1d1+=_1bd[i]+" ";
-continue;
-}else{
-if(_1bd[i]=="{"){
-_1d1="";
-_1d2=true;
-continue;
-}else{
-if(_1bd[i]=="("){
-if(!_1d7[_1d4+1]){
-_1d7[_1d4+1]=0;
-}
-_1d7[_1d4+1]++;
-if(this.movesDisplay){
-_1dc.push(this.movesDisplay.outputVariationStart(_1d4,_1d7[_1d4+1],_1da,_1d6[0]));
-}
-_1d6[_1d4]=_1da;
-_1d8[_1d4]=_1cf;
-_1d9[_1d4]=_1dd;
-_1cc[_1d4]=_1cb;
-_1cd[_1d4]=_1ce;
-_1cb=_1ce.cloneBoard();
-_1d4++;
-_1da--;
-_1d5=true;
-continue;
-}else{
-if(_1bd[i]==")"){
-if(this.movesDisplay){
-_1dc.push(this.movesDisplay.outputVariationEnd(_1d4,_1d7[_1d4],_1da,_1d6[0]));
-}
-var _1ec=new Move();
-_1ec.atEnd=true;
-_1cf.next=_1ec;
-_1ec.prev=_1cf;
-_1d4--;
-_1da=_1d6[_1d4];
-_1cf=_1d8[_1d4];
-_1dd=_1d9[_1d4];
-_1cb=_1cc[_1d4];
-_1ce=_1cd[_1d4];
-_1d3=false;
-continue;
-}else{
-if(_1bd[i].charAt(0)=="$"){
-if(this.movesDisplay){
-_1dc.push(this.movesDisplay.outputNag(parseInt(_1bd[i].substring(1))));
-}
-continue;
-}
-}
-}
-}
-}
-}
-var move=this.createMoveFromString(_1bd[i]);
-var _1ee=false;
-if(_1da==_1db&&this.boardPieces[move.fromColumn][move.fromRow].colour==ChessPiece.BLACK){
-_1da++;
-_1ee=true;
-_1dd=ChessPiece.BLACK;
-}
-move.index=_1d0;
-var _1ef=(move.pgn)?move.pgn:move.moveString;
-if(move.pgn){
-_1ef=move.pgn;
-}else{
-_1ef=_1cb.makeShortAlgabraic(move.fromColumn,move.fromRow,move.toColumn,move.toRow,move);
-move.SAN=_1ef;
-}
-_1ef=Board.moveToLocale(_1ef);
-if(this.movesDisplay){
-this.movesDisplay.setToMove(_1dd);
-var _1f0=false;
-if(_1c7&&_1c8&&!_1c8.atEnd){
-var _1f1=_1c8.toMoveString();
-_1c8=_1c8.next;
-if(_1f1==_1bd[i]){
-_1f0=true;
-}else{
-_1c7=false;
-}
-}
-_1dc.push(this.movesDisplay.outputMove(_1d0,_1d4,_1da,_1ef+" ",_1d5,_1d7[_1d4],_1d6[0],null,false,false,_1c3,_1c4,_1c5,_1c7,_1f0));
-}
-_1dd=(_1dd==ChessPiece.BLACK)?ChessPiece.WHITE:ChessPiece.BLACK;
-move.moveNum=_1da;
-_1da++;
-if(_1d4>0){
-if(_1d5){
-var _1f2=_1cf;
-if(_1f2==null){
-alert("Got no previous move for variation:"+movesArra[i]);
-}
-if(_1f2.numVars==0){
-_1f2.vars=new Array();
-}
-move.isAlt=_1d3;
-move.mateInMoves=_1e4;
-_1f2.vars[_1f2.numVars++]=move;
-move.prev=_1f2.prev;
-_1d5=false;
-}else{
-move.prev=_1cf;
-if(_1cf!=null){
-_1cf.next=move;
-}
-}
-}else{
-move.prev=_1cf;
-if(_1cf!=null){
-_1cf.next=move;
-}
-}
-_1d7[_1d4+1]=0;
-if(_1d4==0){
-_1de=_1d0;
-}
-_1c0[_1d0++]=move;
-_1cb.moveArray[_1d0-1]=move;
-_1cf=move;
-if(!_1c1){
-_1ce=_1cb.cloneBoard();
-}
-_1cb.makeMove(move,_1cb.boardPieces[move.fromColumn][move.fromRow],false,_1cb.moveAnimationLength,false,false);
-}
-if(this.movesDisplay&&!this.disableMoveOutput){
-var _1f3=this.movesDisplay.getMovesDisplay();
-_1dc.push(this.movesDisplay.outputResult(_1be));
-this.pendingMovesOutput=_1dc.join("");
-this.pendingMovesOutputCount=_1d0;
-}
-this.lastMoveIndex=_1de;
-if(_1cf!=null){
-var _1ec=new Move();
-_1ec.atEnd=true;
-_1cf.next=_1ec;
-_1ec.prev=_1cf;
-}
-this.lastCount=_1d0;
-};
-Board.prototype.getMaterialCount=function(){
-var _1f4=0;
-var _1f5=0;
-for(var i=0;i<8;i++){
-for(var j=0;j<8;j++){
-var _1f8=this.boardPieces[i][j];
-if(_1f8){
-if(_1f8.colour==ChessPiece.WHITE){
-_1f4+=ChessPiece.materialValue(_1f8.piece);
-}else{
-_1f5+=ChessPiece.materialValue(_1f8.piece);
-}
-}
-}
-}
-return [_1f4,_1f5];
-};
-Board.prototype.getMaterialBalance=function(){
-var cnt=this.getMaterialCount();
-return cnt[0]-cnt[1];
-};
-Board.prototype.getMaterialBalances=function(){
-var _1fa=this.cloneBoard();
-var mv=this.moveArray[0];
-_1fa.gotoMoveIndex(-1,true,true,true,true);
-var _1fc=[];
-while(mv&&!mv.atEnd){
-_1fa.makeMove(mv,_1fa.boardPieces[mv.fromColumn][mv.fromRow],false,this.moveAnimationLength,false,false);
-_1fc.push(_1fa.getMaterialBalance());
-mv=mv.next;
-_1fa.toggleToMove();
-}
-return _1fc;
-};
-Board.prototype.lalgToMoveList=function(_1fd,_1fe,_1ff,_200,_201,_202){
-if(ctime){
-console.time("lalgToMoveList");
-}
-if(clog){
-console.log("startMoveNum:"+_1ff);
-}
-if(!_200){
-_200=new Array();
-}
-var _203=this.cloneBoard();
-var _204=null;
-var _205=null;
-if(!_202){
-_204=new Array();
-_205=new Array();
-}
-if(!_201&&this.prev_move){
-_203.makeMove(this.prev_move,_203.boardPieces[this.prev_move.fromColumn][this.prev_move.fromRow],false,_203.moveAnimationLength,false,false);
-}
-var _206=null;
-if(!_202){
-_206=_203.cloneBoard();
-}
-var nags=[];
-var _208=null;
-var _209=0;
-var _20a="";
-var _20b=false;
-var _20c=0;
-var _20d=false;
-var _20e=new Array();
-var _20f=new Array();
-_20f[0]=0;
-var _210=new Array();
-var _211=new Array();
-var _212=_1ff*2-1;
-var _213=new Array();
-var _214=ChessPiece.WHITE;
-var _215=0;
-var _216=true;
-for(var i=0;i<_1fd.length;i++){
-if(_1fd[i]=="}"){
-_20b=false;
-_20a=_20a.replace(/\s+$/g,"");
-continue;
-}else{
-if(_20b){
-_20a+=_1fd[i]+" ";
-continue;
-}else{
-if(_1fd[i]=="{"){
-if(_20a){
-if(_208){
-_208.afterComment=trimStr(_20a);
-}
-}
-_20a="";
-_20b=true;
-continue;
-}else{
-if(_1fd[i]=="("){
-if(clog){
-console.log("var start comment:"+_20a);
-}
-if(_208){
-_208.afterComment=trimStr(_20a);
-_20a="";
-}
-if(clog){
-if(_208){
-console.log("old:"+_208.output());
-}else{
-console.log("no old move");
-}
-}
-if(!_20f[_20c+1]){
-_20f[_20c+1]=0;
-}
-_20f[_20c+1]++;
-_20e[_20c]=_212;
-_210[_20c]=_208;
-_211[_20c]=_214;
-_204[_20c]=_203;
-_205[_20c]=_206;
-_203=_206.cloneBoard();
-_20c++;
-_212--;
-_20d=true;
-continue;
-}else{
-if(_1fd[i]==")"){
-if(_208){
-if(clog){
-console.log("var end comment:"+_20a);
-console.log("var end comment:"+_208.output());
-}
-_208.afterComment=trimStr(_20a);
-_20a="";
-}
-var _218=new Move();
-_218.atEnd=true;
-_208.next=_218;
-_218.prev=_208;
-_20c--;
-_212=_20e[_20c];
-_208=_210[_20c];
-_214=_211[_20c];
-_203=_204[_20c];
-_206=_205[_20c];
-continue;
-}else{
-if(_1fd[i].charAt(0)=="$"){
-nags.push(parseInt(_1fd[i].substring(1)));
-continue;
-}
-}
-}
-}
-}
-}
-var move=this.createMoveFromString(_1fd[i]);
-move.nags=nags;
-move.beforeComment=trimStr(_20a);
-_20a=null;
-nags=[];
-if(_216){
-if(this.boardPieces[move.fromColumn][move.fromRow].colour==ChessPiece.BLACK){
-_212++;
-_214=ChessPiece.BLACK;
-if(clog){
-console.log("first move black new movenum:"+_212);
-}
-}
-_216=false;
-}
-move.index=_209;
-var _21a=(move.pgn)?move.pgn:move.moveString;
-if(move.pgn){
-_21a=move.pgn;
-move.SAN=move.pgn;
-}else{
-_21a=_203.makeShortAlgabraic(move.fromColumn,move.fromRow,move.toColumn,move.toRow,move);
-move.SAN=_21a;
-}
-_214=(_214==ChessPiece.BLACK)?ChessPiece.WHITE:ChessPiece.BLACK;
-move.moveNum=_212;
-_212++;
-if(_20c>0){
-if(_20d){
-var _21b=_208;
-if(_21b==null){
-alert("Got no previous move for variation:"+movesArra[i]);
-}
-if(_21b.numVars==0){
-_21b.vars=new Array();
-}
-_21b.vars[_21b.numVars++]=move;
-move.prev=_21b.prev;
-_20d=false;
-}else{
-move.prev=_208;
-if(_208!=null){
-_208.next=move;
-}
-}
-}else{
-move.prev=_208;
-if(_208!=null){
-_208.next=move;
-}
-}
-_20f[_20c+1]=0;
-if(_20c==0){
-_215=_209;
-}
-_200[_209++]=move;
-_203.moveArray[_209-1]=move;
-_208=move;
-if(!_202){
-_206=_203.cloneBoard();
-}
-_203.makeMove(move,_203.boardPieces[move.fromColumn][move.fromRow],false,_203.moveAnimationLength,false,false);
-}
-if(_208!=null){
-var _218=new Move();
-_218.atEnd=true;
-_208.next=_218;
-_218.prev=_208;
-if(_20a){
-_208.afterComment=trimStr(_20a);
-}
-}
-if(ctime){
-console.timeEnd("lalgToMoveList");
-}
-return _200;
-};
-Board.prototype.reset=function(fen,_21d){
-if(this.lastFromSquare){
-YAHOO.util.Dom.removeClass(this.lastFromSquare,"ct-from-square");
-}
-if(this.lastToSquare){
-YAHOO.util.Dom.removeClass(this.lastToSquare,"ct-to-square");
-}
-this.clearMoveList();
-if(fen){
-this.startFen=fen;
-this.setupFromFen(fen,false,this.isFlipped,false,_21d,true);
-}else{
-this.startFen=Board.INITIAL_FEN;
-this.setupFromFen(Board.INITIAL_FEN,false,this.isFlipped,false,false,true);
-}
-this.setForwardBack();
-};
-Board.prototype.clearMoveList=function(_21e){
-this.movesDisplay.firstNonMove=false;
-var _21f=this.movesDisplay.getMovesDisplay();
-if(_21f){
-YAHOO.util.Event.purgeElement(_21f,true);
-_21f.innerHTML="";
-}
-this.currentMove=null;
-this.moveIndex=-1;
-this.moveArray=new Array();
-if(_21e){
-_21e.prev=null;
-this.startMoveNum=_21e.moveNum;
-}else{
-this.startMoveNum=1;
-}
-};
-Board.prototype.insertMovesFromMoveList=function(_220,_221,_222,_223,_224){
-var _225=!_221;
-if(clog){
-console.log("insertMovesFromMoveList called");
-}
-if(ctime&&_225){
-console.time("insertMovesFromMoveList");
-}
-if(!this.movesDisplay){
-return;
-}
-if(_225){
-this.clearMoveList(_220);
-}
-var _226=0;
-var _227=_220.moveNum;
-var move=_220;
-while(move!=null&&!move.atEnd){
-if(clog){
-console.log("move:"+move.output());
-}
-var _229=move.next;
-if(clog){
-if(this.currentMove){
-console.log("current move:"+this.currentMove.output());
-}else{
-console.log("no current move");
-}
-if(_229){
-console.log("next move:"+_229.output());
-}else{
-console.log("no next move");
-}
-}
-if(_225||_220!=move||_222==null){
-if(clog){
-console.log("about to call insertmoveafter");
-}
-if(_223!=null){
-if(clog){
-console.log("inserting after moveToInsertAfter:"+_223.output());
-}
-this.insertMoveAfter(_223,move);
-_223=null;
-}else{
-if(clog){
-console.log("inserting after current move");
-}
-this.insertMoveAfter(this.currentMove,move);
-}
-if(clog){
-console.log("finished call to insertmoveafter");
-}
-}else{
-if(clog){
-console.log("about to replace variationParent:"+_222.output()+" with move:"+move.output()+" and board:"+this.boardToFen());
-}
-this.replaceMove(_222,move,true,true,false,false,true);
-}
-if(move.beforeComment){
-this.insertCommentIntoMoveDisplay(move,move.beforeComment,false);
-}
-if(move.afterComment){
-this.insertCommentIntoMoveDisplay(move,move.afterComment,true);
-}
-if(clog){
-console.log("about to make move:"+move.output()+" with board pos:"+this.boardToFen());
-}
-this.makeMove(move,this.boardPieces[move.fromColumn][move.fromRow],false,this.moveAnimationLength,false,false);
-if(clog){
-console.log("made move");
-}
-this.setCurrentMove(move,true,true);
-if(move.numVars>0){
-var _22a=move.index;
-var bm=move.prev;
-var _22c=-1;
-if(bm){
-_22c=bm.index;
-}
-var _22d=move.numVars;
-var vars=move.vars;
-move.numVars=0;
-move.vars=[];
-for(var i=0;i<_22d;i++){
-this.gotoMoveIndex(_22c,true,true,true,true);
-if(clog){
-console.log("about to call insertMovesFromMoveList with head of variation");
-}
-this.insertMovesFromMoveList(vars[i],true,move,null,0);
-if(clog){
-console.log("about to reset currentMoveIndex  after variation insert:"+_22a);
-}
-}
-this.gotoMoveIndex(_22a,true,true,true,true);
-this.backMove();
-var cm=this.currentMove;
-this.makeMove(cm,this.boardPieces[cm.fromColumn][cm.fromRow],false,this.moveAnimationLength,false,false);
-if(clog){
-if(this.currentMove){
-console.log("popped up from variation, current set back to:"+this.currentMove.output());
-}else{
-console.log("popped up from variation, current set to null");
-}
-}
-}
-move=_229;
-_226++;
-if(_224>0&&_226>=_224){
-break;
-}
-}
-if(_225){
-this.gotoMoveIndex(-1,false,false,false,false);
-}
-if(clog){
-var m=this.currentMove;
-while(m){
-console.log("m:"+m.output());
-m=m.next;
-}
-}
-if(ctime&&_225){
-console.timeEnd("insertMovesFromMoveList");
-}
-};
-Board.prototype.setupFromLalgArrayIncremental=function(_232,_233,_234,_235){
-this.outputFirstVar=false;
-if(this.movesDisplay&&this.lastCount){
-this.movesDisplay.pendingLevelZeroCommentaryClose=false;
-for(var i=0;i<this.lastCount;i++){
-var mv=YAHOO.util.Dom.get(this.boardName+"-m"+i);
-if(mv){
-YAHOO.util.Event.purgeElement(mv);
-}
-}
-}
-var _238=0;
-var _239=_234*2-1;
-var _23a="";
-var _23b=false;
-var _23c=false;
-var _23d=ChessPiece.WHITE;
-var _23e=false;
-var _23f=true;
-this.currentMove=null;
-for(var i=0;i<_232.length;i++){
-if(_232[i]=="}"){
-_23e=false;
-if(this.movesDisplay){
-_23a=_23a.replace(/\s+$/g,"");
-}
-continue;
-}else{
-if(_23e){
-_23a+=_232[i]+" ";
-continue;
-}else{
-if(_232[i]=="{"){
-_23a="";
-_23e=true;
-continue;
-}else{
-if(_232[i]=="("){
-_23b=true;
-continue;
-}else{
-if(_232[i]==")"){
-_23c=true;
-continue;
-}else{
-if(_232[i].charAt(0)=="$"){
-continue;
-}
-}
-}
-}
-}
-}
-var move=this.createMoveFromString(_232[i]);
-var _241=false;
-if(_23f&&this.boardPieces[move.fromColumn][move.fromRow].colour==ChessPiece.BLACK){
-_239++;
-_241=true;
-_23d=ChessPiece.BLACK;
-}
-this.startMoveNum=_239;
-_23f=false;
-move.index=_238++;
-var _242=move.moveString;
-_242=Board.moveToLocale(_242);
-_23d=(_23d==ChessPiece.BLACK)?ChessPiece.WHITE:ChessPiece.BLACK;
-this.insertMoveAfter(this.currentMove,move);
-if(clog){
-if(move.prev){
-if(move.prev.next){
-console.log("move.prev.next:"+move.prev.next.output());
-}else{
-console.log("move.prev:"+move.prev.output()+" next null");
-}
-}
-}
-this.makeMove(move,this.boardPieces[move.fromColumn][move.fromRow],false,this.moveAnimationLength,false,false);
-this.setCurrentMove(move);
-}
-this.gotoMoveIndex(-1,false,false,false,false);
-};
-Board.prototype.displayPendingMoveList=function(){
-if(this.pendingMovesOutput&&this.movesDisplay){
-var _243=this.movesDisplay.getMovesDisplay();
-if(_243){
-_243.innerHTML=this.pendingMovesOutput;
-var _244=new YAHOO.util.Scroll(_243,{scroll:{to:[0,0]}},0);
-_244.animate();
-}
-if(this.movesDisplay){
-for(var i=0;i<this.pendingMovesOutputCount;i++){
-var mv1=YAHOO.util.Dom.get(this.boardName+"-m"+i);
-if(mv1){
-YAHOO.util.Event.addListener(mv1,"click",this.movesDisplay.gotoMove,this.movesDisplay,true);
-if(this.handleCommentClicks){
-var _247=YAHOO.util.Dom.get(this.boardName+"-mcb"+i);
-if(_247){
-YAHOO.util.Event.addListener(_247,"click",this.movesDisplay.clickComment,this.movesDisplay,true);
-}
-_247=YAHOO.util.Dom.get(this.boardName+"-mca"+i);
-if(_247){
-YAHOO.util.Event.addListener(_247,"click",this.movesDisplay.clickComment,this.movesDisplay,true);
-}
-}
-}
-}
-}
-}
-};
-Board.prototype.setMoveSequence=function(_248,_249,_24a,_24b){
-this.tacticMoveArray=new Array();
-this.moveArray=this.tacticMoveArray;
-this.setMoveSeqLalg(_248,this.tacticMoveArray,_24a,_24b);
-this.tacticsmoveArrayLastMoveIndex=this.lastMoveIndex;
-if(false&&_249!="NA"){
-this.fullmoveArray=new Array();
-this.disableMoveOutput=true;
-this.setMoveSeqLalg(_249,this.fullmoveArray,_24a,_24b);
-this.disableMoveOutput=false;
-this.fullmoveArrayLastMoveIndex=this.lastMoveIndex;
-}else{
-this.fullmoveArray=null;
-}
-this.lastMoveIndex=this.tacticsmoveArrayLastMoveIndex;
-};
-Board.prototype.resetVariationsPreviousNodes=function(_24c,_24d){
-if(_24c.numVars>0){
-for(var i=0;i<_24c.numVars;i++){
-_24c.vars[i].prev=_24d;
-this.resetVariationsPreviousNodes(_24c.vars[i],_24d);
-}
-}
-};
-Board.prototype.reconnectNextNodeVariations=function(_24f,_250){
-if(!_250){
-return;
-}
-if(_250.numVars>0){
-for(var i=0;i<_250.numVars;i++){
-_250.vars[i].prev=_24f;
-this.reconnectNextNodeVariations(_24f,_250.vars[i]);
-}
-}
-};
-Board.prototype.findFirstMoveFromList=function(move){
-var m=move;
-while(m&&m.prev!=null){
-m=m.prev;
-}
-return m;
-};
-Board.prototype.findVariationHeadFromMove=function(move){
-var m=move;
-while(m&&m.prev&&m.prev.next==m){
-m=m.prev;
-}
-if(m&&m.prev&&m.prev.next!=m){
-return m;
-}else{
-if(m&&!m.prev){
-var _256=this.moveArray[0];
-if(m!=_256){
-return m;
-}
-}
-return null;
-}
-};
-Board.prototype.liftVariation=function(_257){
-if(!_257){
-return;
-}
-var _258=null;
-var _259=null;
-if(_257.prev){
-_258=_257.prev.next;
-}else{
-_258=this.moveArray[0];
-_259=_257;
-}
-var _25a=null;
-if(this.currentMove&&this.currentMove.prev){
-_25a=this.currentMove.prev;
-}
-if(_258){
-var _25b=_258.numVars;
-var vars=_258.vars;
-_258.numVars=0;
-_258.vars=[];
-if(_257.numVars==0){
-_257.vars=[];
-}
-for(var i=0;i<_25b;i++){
-var _25e=vars[i];
-if(clog){
-console.log("processing var:"+_25e.output());
-}
-if(_25e==_257){
-if(clog){
-console.log("inserted parent var");
-}
-_257.vars.push(_258);
-_257.numVars++;
-}else{
-_257.vars.push(_25e);
-_257.numVars++;
-}
-}
-if(_257.prev){
-_257.prev.next=_257;
-}
-if(clog){
-console.log("finished moving variations");
-}
-if(!_259){
-_259=this.findFirstMoveFromList(_257);
-}
-this.moveArray[0]=_259;
-this.gotoMoveIndex(-1,true,true,true,true);
-if(clog){
-console.log("fm:"+_259.output());
-}
-this.insertMovesFromMoveList(_259);
-}
-if(_25a){
-this.gotoMoveIndex(_25a.index);
-}
-};
-Board.prototype.deleteMoveAndLine=function(move){
-var m=move;
-var oldM=m;
-var _262=false;
-var _263=null;
-var _264=this.moveArray[0];
-var _265=null;
-if(clog){
-console.log("delete line:"+move.output());
-}
-if(clog){
-console.log("delete line prev:"+move.prev);
-}
-if(clog&&move.prev){
-console.log("delete line prev.next:"+move.prev.next);
-}
-if(move&&move.prev&&move.prev.next!=move){
-if(clog){
-console.log("var is head and not front of move list");
-}
-_262=true;
-_263=move.prev.next;
-}else{
-if(move&&!move.prev&&move!=this.moveArray[0]){
-if(clog){
-console.log("var is head and front of move list");
-}
-_262=true;
-_263=this.moveArray[0];
-}
-}
-if(clog){
-console.log("isVariationHead:"+_262);
-}
-if(clog){
-console.log("fm:"+_264.output());
-}
-var _266=m.prev;
-if(_262){
-_265=_263;
-if(_263){
-if(clog){
-console.log("delete variation from parent:"+_263.output());
-}
-var _267=[];
-for(var i=0;i<_263.numVars;i++){
-if(!(_263.vars[i]==oldM)){
-if(clog){
-console.log("saving var:"+_263.vars[i].output());
-}
-_267.push(_263.vars[i]);
-}else{
-if(clog){
-console.log("dropping var:"+_263.vars[i].output());
-}
-}
-}
-_263.vars=_267;
-_263.numVars=_267.length;
-}
-}else{
-if(_266){
-_266.next=null;
-_265=_266;
-}else{
-if(clog){
-console.log("deleting entire list");
-}
-if(this.movesDisplay){
-this.movesDisplay.firstNonMove=false;
-YAHOO.util.Event.purgeElement(this.movesDisplay.getMovesDisplay(),true);
-this.movesDisplay.pendingLevelZeroCommentaryClose=false;
-}
-var _269=this.movesDisplay.getMovesDisplay();
-if(_269){
-_269.innerHTML="";
-}
-this.currentMove=null;
-this.startMoveNum=_264.moveNum;
-if(clog){
-console.log("startFen:"+this.startFen);
-}
-this.moveIndex=-1;
-this.moveArray=[];
-this.setupFromFen(this.startFen);
-if(this.lastFromSquare){
-YAHOO.util.Dom.removeClass(this.lastFromSquare,"ct-from-square");
-}
-if(this.lastToSquare){
-YAHOO.util.Dom.removeClass(this.lastToSquare,"ct-to-square");
-}
-this.setForwardBack();
-return;
-}
-}
-this.moveArray[0]=_264;
-this.gotoMoveIndex(-1,true,true,true,true);
-if(clog){
-console.log("fm:"+_264.output());
-}
-this.insertMovesFromMoveList(_264);
-if(_265){
-this.gotoMoveIndex(_265.index);
-}
-};
-Board.prototype.insertMoveAfter=function(_26a,_26b,_26c,_26d,_26e,_26f){
-addToMovelist=!_26c;
-if(clog){
-console.log("addToMovelist:"+addToMovelist);
-}
-var _270="null";
-if(_26a){
-_270=_26a.output();
-}
-if(clog){
-console.log("insert newMove:"+_26b.output()+" after:"+_270);
-}
-if(_26a==null){
-this.currentMove=_26b;
-_26b.atEnd=0;
-_26b.prev=null;
-_26b.next=null;
-this.firstMove=_26b;
-if(this.startMoveNum>0){
-this.currentMove.moveNum=this.startMoveNum;
-}else{
-if(this.toMove==ChessPiece.WHITE){
-this.currentMove.moveNum=1;
-}else{
-this.currentMove.moveNum=2;
-}
-}
-if(clog){
-console.log("startMoveNum:"+this.startMoveNum+" currMoveNum:"+this.currentMove.moveNum);
-}
-}else{
-_26b.atEnd=_26a.atEnd;
-_26b.prev=_26a;
-_26a.atEnd=0;
-if(clog){
-if(_26a.next){
-console.log("prevMove.next:"+_26a.next.output());
-}
-}
-if(_26b.equals(_26a.next)||_26b.equals(_26a)){
-if(clog){
-console.log("inserting move that already exists in variation:"+_26a.next.output());
-}
-var _271=_26a.next;
-if(this.firstMove==_271){
-this.firstMove=_26b;
-}
-if(_26b.equals(_26a)){
-_271=_26a;
-}
-if(_271.prev&&(_271.prev.next==_271)){
-_271.prev.next=_26b;
-}
-if(_271.next){
-_271.next.prev=_26b;
-}
-addToMovelist=false;
-_26b.moveNum=_271.moveNum;
-_26b.ravLevel=_271.ravLevel;
-_26b.index=_271.index;
-_26b.fen=_271.fen;
-_26b.nextFen=_271.nextFen;
-_26b.bestMoves=_271.bestMoves;
-_26b.correctMove=_271.correctMove;
-_26b.wrongMove=_271.wrongMove;
-_26b.next=_271.next;
-_26b.vars=_271.vars;
-_26b.numVars=_271.numVars;
-this.reconnectNextNodeVariations(_26b,_271.next);
-this.moveArray[_26b.index]=_26b;
-if(this.currentMove==_271){
-this.setCurrentMove(_26b);
-}
-}else{
-_26b.moveNum=_26a.moveNum+1;
-_26b.ravLevel=_26a.ravLevel;
-_26b.next=_26a.next;
-if(_26b.next){
-_26b.next.prev=_26b;
-}
-}
-_26a.next=_26b;
-}
-if(addToMovelist){
-this.insertIntoMoveDisplay(_26a,_26b,_26d,_26e,_26f);
-}
-if(_26b.next==null){
-var _272=this.createMoveFromString("i1i2");
-_26b.next=_272;
-_272.prev=_26b;
-_272.moveNum=_26b.moveNum+1;
-_272.ravLevel=_26b.ravLevel;
-_272.next=null;
-_272.atEnd=1;
-_272.endNode=true;
-if(clog){
-console.log("created endmove node in insertAfterMove:"+_272.output());
-}
-}else{
-if(clog){
-console.log("allready had a node at end:"+_26b.next.output());
-}
-_26b.next.moveNum=_26b.moveNum+1;
-}
-};
-function insertBefore(node,_274){
-if(_274){
-_274.parentNode.insertBefore(node,_274);
-}
-}
-function insertAfter(node,_276){
-var _277=_276.parentNode;
-_277.insertBefore(node,_276.nextSibling);
-}
-Board.prototype.replaceIntoMoveDisplay=function(_278,_279,_27a,_27b,_27c){
-var _27d="null";
-if(_278){
-_27d=_278.output();
-}
-if(clog){
-console.log("replace display newMove:"+_279.output()+" after:"+_27d+" hideScore:"+_27b);
-}
-if(!_278){
-if(clog){
-console.log("null oldMove");
-}
-this.insertIntoMoveDisplay(null,_279,false,_27b);
-}else{
-if(clog){
-console.log("about to get movesdsiplay in replace into move display:"+this.movesDisplay);
-}
-var _27e=this.movesDisplay.getMovesDisplay();
-if(clog){
-console.log("got moves display");
-}
-if(!_27e){
-if(clog){
-console.log("no movesd disiplay in replace into move display");
-}
-return;
-}
-var san=_279.SAN;
-if(!san){
-if(clog){
-console.log("about to make san");
-}
-san=this.makeShortAlgabraic(_279.fromColumn,_279.fromRow,_279.toColumn,_279.toRow,_279);
-if(clog){
-console.log("about to made san:"+san);
-}
-_279.SAN=san;
-}
-if(clog){
-console.log("oldMove.index:"+_278.index);
-}
-var _280=this.boardName+"-ms"+_278.index;
-var _281=-1;
-if(_278.next){
-_281=this.boardName+"-m"+_278.next.index;
-}
-if(clog){
-console.log("oldMoveId:"+_280);
-}
-var _282=YAHOO.util.Dom.get(_280);
-var _283=YAHOO.util.Dom.get(_281);
-if(_27a){
-this.moveIndex++;
-_279.index=this.moveIndex;
-this.moveArray[this.moveIndex]=_279;
-if(clog){
-console.log("replace as variation old:"+_278.output()+" new:"+_279.output());
-}
-var _284=document.createElement("span");
-if(typeof _278.ravlevel=="undefined"||_278.ravlevel==0){
-YAHOO.util.Dom.addClass(_284,"ct-top-var-start");
-}
-var _285=this.movesDisplay.outputVariationStart(0,0,_279.moveNum,0);
-_279.ravLevel=_278.ravlevel+1;
-var _27d=Board.moveToLocale(san);
-if(_279.prev==null){
-this.movesDisplay.firstNonMove=false;
-}
-var _286=this.movesDisplay.outputMove(this.moveIndex,_279.ravLevel,_279.moveNum,_27d,_27a,0,_279.moveNum,_279,_27b,_27c);
-var _287=document.createElement("span");
-_287.id=(this.boardName+"-ms"+_279.index);
-_287.innerHTML=_286+"&nbsp;";
-var _288=this.movesDisplay.outputVariationEnd(0,0,_279.moveNum,0);
-this.movesDisplay.firstNonMove=true;
-var _289=document.createElement("span");
-_289.innerHTML=_285;
-var _28a=document.createElement("span");
-_28a.innerHTML=_288;
-_284.appendChild(_289);
-var els=YAHOO.util.Dom.getElementsByClassName("ct-mainline-commentary","div",_284);
-var _28c=_284;
-if(els.length>0){
-_28c=els[0];
-}
-_28c.appendChild(_287);
-_28c.appendChild(_28a);
-_282.appendChild(_284);
-if(_283){
-var els=YAHOO.util.Dom.getElementsByClassName("ct-board-move-movenum","span",_283);
-if(els.length==0){
-var _28d=_278.next.moveNum;
-var _28e=""+Math.round(_28d/2)+". ";
-var _28f=false;
-if(_28d%2!=1){
-if(clog){
-console.log("firstRav:"+firstRav+" firstNonMove:"+this.firstNonMove);
-}
-if(true||firstRav||!this.firstNonMove){
-_28e=Math.round(_28d/2)+"... ";
-_28f=true;
-}else{
-_28e="";
-}
-}
-var _287=document.createElement("span");
-_287.className="ct-board-move-movenum";
-_287.innerHTML=_28e;
-insertBefore(_287,_283.firstChild);
-_287=document.createElement("span");
-if(_28f){
-_287.className="ct-board-move-dottedempty";
-_287.innerHTML="&nbsp;";
-insertAfter(_287,_283.firstChild);
-}
-}
-}
-}else{
-_279.index=_278.index;
-this.moveArray[_279.index]=_279;
-var _27d=Board.moveToLocale(san);
-if(_279.prev==null){
-this.movesDisplay.firstNonMove=false;
-}
-var _286=this.movesDisplay.outputMove(_279.index,_279.ravLevel,_279.moveNum,_27d,_27a,0,_279.moveNum,_279,_27b,_27c);
-var _287=document.createElement("span");
-_287.innerHTML=_286+"&nbsp;";
-_287.id=(this.boardName+"-ms"+_279.index);
-var _290=[];
-if(_282&&_282.childNodes){
-for(var i=1;i<_282.childNodes.length;i++){
-_290[i-1]=_282.childNodes[i];
-}
-}
-if(clog){
-console.log("replace as main line not variation old:"+_278.output()+" new:"+_279.output());
-}
-_282.parentNode.replaceChild(_287,_282);
-if(_290){
-for(var i=0;i<_290.length;i++){
-_287.appendChild(_290[i]);
-}
-}
-}
-YAHOO.util.Event.removeListener(this.boardName+"-m"+_279.index);
-YAHOO.util.Event.addListener((this.boardName+"-m"+_279.index),"click",this.movesDisplay.gotoMove,this.movesDisplay,true);
-}
-};
-Board.prototype.insertCommentIntoMoveDisplay=function(move,_293,_294){
-var _295=this.movesDisplay.getMovesDisplay();
-if(!_295){
-return;
-}
-var _296="b";
-if(_294){
-_296="a";
-}
-if(move){
-var _297=this.boardName+"-mc"+_296+move.index;
-var _298=YAHOO.util.Dom.get(_297);
-var _299=false;
-if(!_298){
-_298=document.createElement("span");
-_298.id=_297;
-_299=true;
-}
-var _29a=move.moveNum%2!=1;
-var _29b=!_29a&&!_294;
-if(clog){
-console.log("dontResetFirstNoneMove:"+_29b+" isBlackMoveNum:"+_29a+" insertCommentAfter:"+_294+" move.moveNum:"+move.moveNum+" comment:"+_293);
-}
-_298.innerHTML=this.movesDisplay.outputComment(_293,0,false,_29b);
-var _29c=YAHOO.util.Dom.get((this.boardName+"-m"+move.index));
-if(_29c){
-if(_294){
-move.afterComment=_293;
-if(_299){
-insertAfter(_298,_29c);
-}
-}else{
-move.beforeComment=_293;
-if(_299){
-insertBefore(_298,_29c);
-}
-}
-}
-if(_298&&_299&&this.handleCommentClicks){
-YAHOO.util.Event.addListener(_298,"click",this.movesDisplay.clickComment,this.movesDisplay,true);
-}
-}else{
-}
-};
-Board.prototype.insertIntoMoveDisplay=function(_29d,_29e,_29f,_2a0,_2a1){
-var _2a2=this.movesDisplay.getMovesDisplay();
-if(!_2a2){
-return;
-}
-if(clog){
-var _2a3="null";
-if(_29d){
-_2a3=_29d.output();
-}
-console.log("insert display newMove:"+_29e.output()+" after:"+_2a3);
-}
-var san=_29e.SAN;
-if(!san){
-san=this.makeShortAlgabraic(_29e.fromColumn,_29e.fromRow,_29e.toColumn,_29e.toRow,_29e);
-_29e.SAN=san;
-}
-this.moveIndex++;
-_29e.index=this.moveIndex;
-this.moveArray[this.moveIndex]=_29e;
-var _2a3=Board.moveToLocale(san);
-var _2a5=false;
-var _2a6=null;
-if(_29d){
-_2a6=YAHOO.util.Dom.get((this.boardName+"-ms"+_29d.index));
-}
-if(_2a6){
-var els=YAHOO.util.Dom.getElementsByClassName("ct-mainline-commentary","div",_2a6);
-if(els.length>0){
-_2a5=true;
-}
-}
-var _2a8=this.movesDisplay.outputMove(this.moveIndex,_29e.ravLevel,_29e.moveNum,_2a3,_2a5,0,_29e.moveNum,_29e,_2a0,_2a1);
-var _2a9=document.createElement("span");
-_2a9.innerHTML=_2a8+"&nbsp;";
-_2a9.id=(this.boardName+"-ms"+this.moveIndex);
-if(_29f){
-YAHOO.util.Dom.setStyle(_2a9,"visibility","hidden");
-}
-if(_29d){
-if(clog){
-console.log("prevMove.index:"+_29d.index+"prevMove:"+_29d.output());
-}
-if(_2a6){
-insertAfter(_2a9,_2a6);
-}else{
-_2a2.appendChild(_2a9);
-}
-}else{
-if(_29e.next){
-var _2aa=YAHOO.util.Dom.get((this.boardName+"-ms"+_29e.next.index));
-insertBefore(_2a9,_2aa);
-}else{
-_2a2.appendChild(_2a9);
-}
-}
-YAHOO.util.Event.removeListener(this.boardName+"-m"+this.moveIndex);
-YAHOO.util.Event.addListener((this.boardName+"-m"+this.moveIndex),"click",this.movesDisplay.gotoMove,this.movesDisplay,true);
-};
-Board.prototype.replaceMove=function(_2ab,_2ac,_2ad,_2ae,_2af,_2b0,_2b1){
-var _2b2="null";
-if(_2ab){
-_2b2=_2ab.output();
-}
-if(clog){
-console.log("replace newMove:"+_2ac.output()+" after:"+_2b2+" replace as var"+_2ad+" rep move display:"+_2ae+" hideScore:"+_2af+" replaceAsVariationEvenIfSame:"+_2b1);
-if(_2ab&&_2ab.prev){
-console.log("replace oldMove.prev:"+_2ab.prev.output());
-}
-if(_2ab&&_2ab.next){
-console.log("replace oldMove.next:"+_2ab.next.output());
-}
-}
-var _2b3=false;
-var _2b4=null;
-var _2b5=0;
-if(_2ab.endNode){
-if(clog){
-console.log("asked to replace endNode,inserting before instead");
-}
-this.insertMoveAfter(_2ab.prev,_2ac,false,false,_2af,_2b0);
-_2ac.fen=_2ab.fen;
-_2ac.nextFen=_2ab.nextFen;
-return;
-}
-if(!_2b1&&_2ac.equals(_2ab)){
-if(clog){
-console.log("new move is same as old move so not replacing as variation");
-}
-_2ad=false;
-}else{
-if(!_2b1&&_2ab&&_2ab.numVars>0){
-for(var i=0;i<_2ab.numVars;i++){
-var _2b7=_2ab.vars[i];
-if(_2ac.equals(_2b7)){
-if(clog){
-console.log("new move is same as an existing variation varNum:"+i);
-console.log("variation:"+_2b7.output());
-if(_2b7.next){
-console.log("variation next:"+_2b7.next.output());
-}
-}
-_2b3=true;
-_2b4=_2ab;
-_2ab=_2b7;
-_2b5=i;
-break;
-}
-}
-}
-}
-if(_2ab==null){
-if(clog){
-console.log("replaced new move with null oldmove");
-}
-this.currentMove=_2ac;
-_2ac.atEnd=1;
-_2ac.next=null;
-_2ac.prev=null;
-if(this.startPositionAfterOpponentMove){
-_2ac.fen=this.startPositionAfterOpponentMove;
-_2ac.nextFen=null;
-}
-if(this.toMove==ChessPiece.WHITE){
-this.currentMove.moveNum=1;
-}else{
-this.currentMove.moveNum=2;
-}
-this.firstMove=_2ac;
-}else{
-var _2b8=false;
-if(_2ab&&_2ab.prev&&_2ab.prev.next!=_2ab){
-_2b8=true;
-}
-if(this.currentMove==_2ab&&!_2ad){
-this.currentMove=_2ac;
-}else{
-if(clog){
-console.log("not setting current move in replacemove");
-}
-}
-_2ac.atEnd=_2ab.atEnd;
-_2ac.prev=_2ab.prev;
-_2ac.next=_2ab.next;
-_2ac.fen=_2ab.fen;
-_2ac.nextFen=_2ab.nextFen;
-_2ac.bestMoves=_2ab.bestMoves;
-_2ac.correctMove=_2ab.correctMove;
-_2ac.wrongMove=_2ab.wrongMove;
-_2ac.moveNum=_2ab.moveNum;
-_2ac.ravLevel=_2ab.ravLevel;
-_2ac.index=_2ab.index;
-if(clog){
-console.log("replacingVariation with var not null:"+_2b3);
-}
-if(_2b3){
-_2b4.vars[_2b5]=_2ac;
-_2ac.vars=_2ab.vars;
-_2ac.numVars=_2ab.numVars;
-this.reconnectNextNodeVariations(_2ac,_2ab.next);
-if(_2ab.next){
-_2ab.next.prev=_2ac;
-}
-this.moveArray[_2ac.index]=_2ac;
-if(clog){
-console.log("replacing existing sub variation of main line");
-if(_2ac.next){
-console.log("next of replacement variation:"+_2ac.next.output());
-}
-}
-return;
-}
-if(!_2ad){
-if(clog){
-console.log("not replacing as variation");
-}
-if(!_2b8&&_2ab.prev){
-_2ab.prev.next=_2ac;
-}
-if(_2ab.next){
-_2ab.next.prev=_2ac;
-}
-_2ac.vars=_2ab.vars;
-_2ac.numVars=_2ab.numVars;
-this.reconnectNextNodeVariations(_2ac,_2ab.next);
-if(this.firstMove==_2ab){
-this.firstMove=_2ac;
-}
-this.moveArray[_2ac.index]=_2ac;
-}else{
-if(clog){
-console.log("replacing as variation");
-}
-if(_2ab.numVars==0){
-_2ab.vars=new Array();
-}
-_2ab.vars[_2ab.numVars++]=_2ac;
-_2ab.atEnd=0;
-_2ac.next=null;
-var _2b9=this.createMoveFromString("i1i2");
-_2ac.next=_2b9;
-_2b9.prev=_2ac;
-_2b9.next=null;
-_2b9.atEnd=1;
-_2b9.moveNum=_2ac.moveNum+1;
-_2b9.ravLevel=_2ac.ravLevel;
-_2b9.endNode=true;
-}
-}
-if(_2ae){
-this.replaceIntoMoveDisplay(_2ab,_2ac,_2ad,_2af,_2b0);
-}
-};
-Board.prototype.setCurrentMove=function(move,_2bb,_2bc){
-if(!this.cloned&&this.currentMove!=null){
-if(this.currentMove.prev!=null){
-YAHOO.util.Dom.removeClass(this.boardName+"-m"+this.currentMove.prev.index,"ct-board-move-current");
-}
-}
-this.currentMove=move;
-if(!this.cloned&&this.currentMove!=null&&this.currentMove.prev!=null){
-var _2bd=this.boardName+"-m"+this.currentMove.prev.index;
-if(clog){
-console.log("setCurrentMove attempted highlight of id:"+_2bd+" for move:"+move.output());
-}
-var span=YAHOO.util.Dom.get(_2bd);
-if(span){
-var cls=span.className;
-YAHOO.util.Dom.addClass(span,"ct-board-move-current");
-if(this.autoScrollMoves){
-if(!_2bc&&(this.scrollVariations||cls.indexOf("ct-board-move-variation")==-1)){
-var _2c0=this.movesDisplay.getMovesDisplay();
-if(_2c0){
-var off=0;
-if(_2c0&&_2c0.offsetHeight){
-off=_2c0.offsetHeight/2;
-}
-var y=YAHOO.util.Dom.getY(span)-(YAHOO.util.Dom.getY(_2c0)+off);
-var _2c3=new YAHOO.util.Scroll(_2c0,{scroll:{by:[0,y-this.scrollOffsetCorrection]}},this.moveAnimationLength,YAHOO.util.Easing.easeOut);
-_2c3.animate();
-}
-}
-}
-}
-}else{
-if(move==null){
-if(clog){
-console.log("attempted to set current move on null node");
-}
-}
-}
-if(!_2bb){
-this.setForwardBack();
-}
-};
-Board.prototype.distanceFromInitial=function(){
-var _2c4=this.cloneBoard();
-_2c4.setupFromFen(Board.INITIAL_FEN,false,false,true,false,false);
-var _2c5=0;
-for(var i=0;i<8;i++){
-for(var j=0;j<8;j++){
-var p1=this.boardPieces[i][j];
-var p2=_2c4.boardPieces[i][j];
-if(p1==p2){
-continue;
-}
-if(!p2){
-continue;
-}
-if(!p1){
-_2c5++;
-continue;
-}
-if(p1.piece==p2.piece&&p1.colour==p2.colour){
-continue;
-}
-_2c5++;
-}
-}
-return _2c5;
-};
-Board.INITIAL_FEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-Board.isFenLegal=function(fen){
-function isLegalCastling(c){
-if(!c){
-return false;
-}
-c=c.toLowerCase();
-for(var i=0;i<c.length;i++){
-if(!(c.charAt(i)=="q"||c.charAt(i)=="k"||c.charAt(i)=="-")){
-return false;
-}
-}
-return true;
-}
-function isLegalEnpassant(m){
-if(!m){
-return false;
-}
-if(m=="-"){
-return true;
-}
-if(m.length!=2){
-return false;
-}
-if(m.charAt(0)<"a"||m.charAt(0)>"h"){
-return false;
-}
-var n=parseInt(m.charAt(1));
-if(isNaN(n)||n<1||n>8){
-return false;
-}
-return true;
-}
-function isRowLegal(r){
-if(!r){
-return false;
-}
-r=r.toLowerCase();
-for(var i=0;i<r.length;i++){
-if(!isSquareCharLegal(r.charAt(i))){
-return false;
-}
-}
-return true;
-}
-function isSquareCharLegal(c){
-switch(c){
-case "1":
-case "2":
-case "3":
-case "4":
-case "5":
-case "6":
-case "7":
-case "8":
-case "p":
-case "k":
-case "b":
-case "q":
-case "r":
-case "k":
-return true;
-default:
-false;
-}
-}
-if(!fen){
-return false;
-}
-var ss=fen.split(" ");
-if(ss.length!=6){
-return false;
-}
-var pos=ss[0].split("/");
-if(pos.length!=8){
-return false;
-}
-if(ss[1]!="w"&&ss[1]!="b"){
-return false;
-}
-if(isNaN(parseInt(ss[4]))){
-return false;
-}
-if(isNaN(parseInt(ss[5]))){
-return false;
-}
-if(!isLegalCastling(ss[2])){
-return false;
-}
-if(!isLegalEnpassant(ss[3])){
-return false;
-}
-return true;
-};
-Board.prototype.boardToUniqueFen=function(_2d4){
-var fen=this.boardToFen();
-var ss=fen.split(" ");
-var _2d7="w";
-if(_2d4==ChessPiece.BLACK){
-_2d7="b";
-}
-var _2d8=ss[0]+" "+_2d7+" "+ss[2]+" "+ss[3];
-return _2d8;
-};
-Board.prototype.boardToFen=function(_2d9){
-var _2da="";
-for(var row=7;row>=0;row--){
-var _2dc=0;
-var line="";
-if(row<7){
-line="/";
-}
-for(var col=0;col<8;col++){
-var _2df=this.boardPieces[col][row];
-if(_2df){
-var _2e0="";
-if(_2dc>0){
-_2e0=_2dc+"";
-}
-line+=_2e0+_2df.getFenLetter();
-_2dc=0;
-}else{
-_2dc++;
-}
-}
-if(_2dc>0){
-line+=_2dc+"";
-}
-_2da+=line;
-}
-var fen=_2da;
-var _2e2=" w ";
-if(_2d9){
-if(this.toMove==ChessPiece.WHITE){
-_2e2=" b ";
-}
-}else{
-if(this.toMove==ChessPiece.BLACK){
-_2e2=" b ";
-}
-}
-fen+=_2e2;
-var _2e3="";
-_2e3+=Board.getFenCastleChar(this.canCastleKingSide,"K",ChessPiece.WHITE);
-_2e3+=Board.getFenCastleChar(this.canCastleQueenSide,"Q",ChessPiece.WHITE);
-_2e3+=Board.getFenCastleChar(this.canCastleKingSide,"K",ChessPiece.BLACK);
-_2e3+=Board.getFenCastleChar(this.canCastleQueenSide,"Q",ChessPiece.BLACK);
-if(_2e3==""){
-fen+="- ";
-}else{
-fen+=_2e3+" ";
-}
-var _2e4=null;
-if(this.currentMove){
-if(this.currentMove.prev){
-_2e4=this.currentMove.prev;
-}else{
-_2e4=this.prev_move;
-}
-}else{
-_2e4=this.prev_move;
-}
-var _2e5="- ";
-if(_2e4){
-var _2e6=this.boardPieces[_2e4.toColumn][_2e4.toRow];
-if(_2e6){
-if(_2e6.piece==ChessPiece.PAWN){
-if(_2e6.colour==ChessPiece.WHITE){
-if(_2e4.fromRow==1&&_2e4.toRow==3){
-_2e5=Move.columnToChar(_2e4.fromColumn)+"3 ";
-}
-}else{
-if(_2e4.fromRow==6&&_2e4.toRow==4){
-_2e5=Move.columnToChar(_2e4.fromColumn)+"6 ";
-}
-}
-}
-}
-}
-fen+=_2e5;
-fen+=this.halfMoveNumber+" "+parseInt((this.moveNumber+1)/2);
-if(clog){
-console.log("moveNumber:"+this.moveNumber+" fen:"+fen);
-}
-return fen;
-};
-Board.getFenCastleChar=function(_2e7,_2e8,_2e9){
-if(_2e7[_2e9]){
-if(_2e9==ChessPiece.WHITE){
-return _2e8.toUpperCase();
-}else{
-return _2e8.toLowerCase();
-}
-}
-return "";
-};
-Board.prototype.getCastlingString=function(_2ea){
-var _2eb=_js("None");
-if(this.canCastleKingSide[_2ea]){
-_2eb="O-O";
-}
-if(this.canCastleQueenSide[_2ea]){
-if(_2eb==_js("None")){
-_2eb="O-O-O";
-}else{
-_2eb+=",O-O-O";
-}
-}
-return _2eb;
-};
-Board.prototype.updateToPlay=function(){
-if(this.disableUpdateToPlay){
-return;
-}
-if(this.showToMoveIndicators){
-if(this.isFlipped){
-YAHOO.util.Dom.setStyle(this.boardName+"-top-to-move-inner","background-color","white");
-YAHOO.util.Dom.setStyle(this.boardName+"-top-to-move-inner","border","1px solid black");
-YAHOO.util.Dom.setStyle(this.boardName+"-bottom-to-move-inner","background-color","black");
-YAHOO.util.Dom.setStyle(this.boardName+"-bottom-to-move-inner","border","1px solid white");
-}else{
-YAHOO.util.Dom.setStyle(this.boardName+"-bottom-to-move-inner","background-color","white");
-YAHOO.util.Dom.setStyle(this.boardName+"-bottom-to-move-inner","border","1px solid black");
-YAHOO.util.Dom.setStyle(this.boardName+"-top-to-move-inner","background-color","black");
-YAHOO.util.Dom.setStyle(this.boardName+"-top-to-move-inner","border","1px solid white");
-}
-if(this.toMove==ChessPiece.WHITE){
-if(this.isFlipped){
-YAHOO.util.Dom.addClass(this.boardName+"-top-to-move-outer","ct-to-move-active");
-YAHOO.util.Dom.removeClass(this.boardName+"-bottom-to-move-outer","ct-to-move-active");
-}else{
-YAHOO.util.Dom.addClass(this.boardName+"-bottom-to-move-outer","ct-to-move-active");
-YAHOO.util.Dom.removeClass(this.boardName+"-top-to-move-outer","ct-to-move-active");
-}
-}else{
-if(this.isFlipped){
-YAHOO.util.Dom.addClass(this.boardName+"-bottom-to-move-outer","ct-to-move-active");
-YAHOO.util.Dom.removeClass(this.boardName+"-top-to-move-outer","ct-to-move-active");
-}else{
-YAHOO.util.Dom.addClass(this.boardName+"-top-to-move-outer","ct-to-move-active");
-YAHOO.util.Dom.removeClass(this.boardName+"-bottom-to-move-outer","ct-to-move-active");
-}
-}
-}
-var _2ec=YAHOO.util.Dom.get("toPlay");
-if(_2ec==null){
-return;
-}
-if(this.toMove==ChessPiece.WHITE){
-_2ec.src="/images/whiteknight"+this.getVersString()+".gif";
-_2ec.alt=_js("White to play");
-}else{
-_2ec.src="/images/blackknight"+this.getVersString()+".gif";
-_2ec.alt=_js("Black to play");
-}
-var _2ed=YAHOO.util.Dom.get("fenStatus");
-if(_2ed){
-var _2ee=this.getCastlingString(ChessPiece.BLACK);
-var _2ef=this.getCastlingString(ChessPiece.WHITE);
-var s="<div><span>"+_js("White Castling: ")+"</span><span>"+_2ef+"</span></div>"+"<div><span>"+_js("Black Castling: ")+"</span><span>"+_2ee+"</span></div>";
-_2ed.innerHTML=s;
-}
-};
-Board.prototype.getBoardDivFromId=function(id){
-if(!this[id]){
-this[id]=YAHOO.util.Dom.get(id);
-}
-return this[id];
-};
-Board.prototype.getBoardDiv=function(){
-if(!this.boardDiv){
-this.boardDiv=YAHOO.util.Dom.get("ctb-"+this.boardName);
-}
-return this.boardDiv;
-};
-Board.prototype.getDocBody=function(){
-if(!this.docBody){
-var _2f2=document.getElementsByTagName("body");
-if(_2f2==null||_2f2.length==0){
-alert("Could not find body tag");
-}else{
-this.docBody=_2f2[0];
-}
-}
-return this.docBody;
-};
-Board.prototype.getPieceDragDiv=function(){
-if(!this.pieceDragDiv){
-this.pieceDragDiv=YAHOO.util.Dom.get("pieceDragDiv");
-}
-return this.pieceDragDiv;
-};
-Board.prototype.createBoardCoords=function(){
-this.coordinatesShown=false;
-var _2f3=YAHOO.util.Dom.get(this.boardName+"-fileLabels");
-var _2f4=YAHOO.util.Dom.get(this.boardName+"-rankLabels");
-if(!_2f3||!_2f4){
-return;
-}
-YAHOO.util.Event.purgeElement(_2f3,true);
-_2f4.innerHTML="";
-_2f3.innerHTML="";
-var _2f5=YAHOO.util.Dom.get(this.boardName+"-boardBorder");
-if(!this.showCoordinates){
-YAHOO.util.Dom.setStyle(_2f3,"display","none");
-YAHOO.util.Dom.setStyle(_2f4,"display","none");
-var _2f6=0;
-YAHOO.util.Dom.setStyle(_2f5,"width",(this.pieceSize*8+_2f6)+"px");
-YAHOO.util.Dom.setStyle(_2f5,"height",(this.pieceSize*8+_2f6)+"px");
-return;
-}
-YAHOO.util.Dom.setStyle(_2f3,"display","block");
-YAHOO.util.Dom.setStyle(_2f4,"display","block");
-var _2f6=15;
-var _2f7=0;
-if(check_bad_msie()){
-_2f7=this.ie6FixCoordsOffsetSize;
-}
-if(YAHOO.util.Event.isIE){
-_2f7+=this.allIeFixCoordsOffsetSize;
-if(document.compatMode!="CSS1Compat"){
-_2f7=8;
-}
-}
-YAHOO.util.Dom.setStyle(_2f5,"width",(this.pieceSize*8+_2f6+_2f7)+"px");
-YAHOO.util.Dom.setStyle(_2f5,"height",(this.pieceSize*8+_2f6)+"px");
-this.coordinatesShown=true;
-for(var i=0;i<8;i++){
-var _2f9=document.createElement("div");
-YAHOO.util.Dom.setStyle(_2f9,"height",this.pieceSize+"px");
-YAHOO.util.Dom.setStyle(_2f9,"width","15px");
-YAHOO.util.Dom.setStyle(_2f9,"text-align","center");
-YAHOO.util.Dom.setStyle(_2f9,"line-height",this.pieceSize+"px");
-if(this.isFlipped){
-_2f9.innerHTML=""+(i+1);
-}else{
-_2f9.innerHTML=""+9-(i+1);
-}
-_2f4.appendChild(_2f9);
-}
-for(var i=0;i<9;i++){
-var _2fa=document.createElement("span");
-YAHOO.util.Dom.setStyle(_2fa,"float","left");
-YAHOO.util.Dom.setStyle(_2fa,"height","15px");
-if(i==0){
-YAHOO.util.Dom.setStyle(_2fa,"width","15px");
-YAHOO.util.Dom.setStyle(_2fa,"clear","both");
-YAHOO.util.Dom.setStyle(_2fa,"margin-top","-5px");
-if(_2f7){
-YAHOO.util.Dom.setStyle(_2fa,"margin-left","-3px");
-}else{
-YAHOO.util.Dom.setStyle(_2fa,"margin-left","-2px");
-}
-var _2fb="";
-if(this.isFlipped){
-_2fb="whiteblack-flipper"+this.getVersString()+".png";
-}else{
-_2fb="blackwhite-flipper"+this.getVersString()+".png";
-}
-_2fa.innerHTML="<span><img id=\""+this.boardName+"-flipper\" title=\""+_js("Flip Board")+"\" src=\""+this.boardImagePath+"/images/"+_2fb+"\"/></span>";
-if(!this.disableFlipper){
-YAHOO.util.Event.addListener(this.boardName+"-flipper","click",this.flipBoard,this,true);
-}
-}else{
-YAHOO.util.Dom.setStyle(_2fa,"width",this.pieceSize+"px");
-YAHOO.util.Dom.setStyle(_2fa,"text-align","center");
-if(this.isFlipped){
-_2fa.innerHTML=_js(Move.columnToChar(8-(i)));
-}else{
-_2fa.innerHTML=_js(Move.columnToChar((i-1)));
-}
-}
-_2f3.appendChild(_2fa);
-}
-var _2fc=YAHOO.util.Dom.get(this.boardName+"-flipper");
-if(_2fc){
-fix_ie_png(_2fc);
-}
-};
-Board.prototype.showNavigation=function(){
-this.disableNavigation=false;
-YAHOO.util.Dom.setStyle(this.boardName+"-ct-nav-container","display","block");
-};
-Board.prototype.hideNavigation=function(){
-this.disableNavigation=true;
-YAHOO.util.Dom.setStyle(this.boardName+"-ct-nav-container","display","none");
-};
-Board.prototype.createBoardUI=function(){
-var _2fd=this.boardName+"-container";
-var _2fe=YAHOO.util.Dom.get(_2fd);
-if(_2fe==null){
-alert("Could not find board container:"+_2fd);
-return;
-}
-YAHOO.util.Dom.addClass(_2fe,"ct-board-container");
-this.boardDiv=null;
-var _2ff=document.createElement("div");
-_2ff.id=this.boardName+"-boardBorder";
-YAHOO.util.Dom.addClass(_2ff,"ct-board-border"+this.squareColorClass);
-var _300=0;
-if(this.showCoordinates){
-_300=15;
-}
-YAHOO.util.Dom.setStyle(_2ff,"width",(this.pieceSize*8+_300)+"px");
-YAHOO.util.Dom.setStyle(_2ff,"height",(this.pieceSize*8+_300)+"px");
-var _301=document.createElement("div");
-YAHOO.util.Dom.setStyle(_301,"float","left");
-_301.id=this.boardName+"-rankLabels";
-_2ff.appendChild(_301);
-var _302=document.createElement("div");
-YAHOO.util.Dom.addClass(_302,"ct-board");
-YAHOO.util.Dom.setStyle(_302,"width",(this.pieceSize*8)+"px");
-YAHOO.util.Dom.setStyle(_302,"height",(this.pieceSize*8)+"px");
-_302.id="ctb-"+this.boardName;
-var _303="ct-white-square"+this.squareColorClass;
-var _304="";
-var _305=[];
-for(var i=7;i>=0;i--){
-var s="<div>";
-for(var j=0;j<8;j++){
-var _309=document.createElement("div");
-var _30a=this.boardName+"-s"+j+""+i;
-var _30b=(((j+1)*(i+1))%19/19*100);
-var _30c=((65-((j+1)*(i+1)))%19/19*100);
-s+="<div id=\""+_30a+"\" class=\""+_303+"\" style=\"width:"+this.pieceSize+"px;height:"+this.pieceSize+"px;background-position:"+_30b+"% "+_30c+"%\"></div>";
-_305.push(_30a);
-_303=(_303=="ct-black-square"+this.squareColorClass)?"ct-white-square"+this.squareColorClass:"ct-black-square"+this.squareColorClass;
-}
-_303=(_303=="ct-black-square"+this.squareColorClass)?"ct-white-square"+this.squareColorClass:"ct-black-square"+this.squareColorClass;
-s+="</div>";
-_304+=s;
-}
-_302.innerHTML=_304;
-var _30d=document.createElement("div");
-_30d.id=this.boardName+"-fileLabels";
-_2ff.appendChild(_302);
-_2ff.appendChild(_30d);
-_2fe.appendChild(_2ff);
-if(this.showToMoveIndicators){
-var _30e=document.createElement("div");
-_30e.id=this.boardName+"-moveIndicators";
-YAHOO.util.Dom.addClass(_30e,"ct-move-indicators");
-_30e.innerHTML="<div class=\"ct-top-to-move-outer\" id=\""+this.boardName+"-top-to-move-outer\"><div  class=\"ct-top-to-move-inner\" id=\""+this.boardName+"-top-to-move-inner\"></div></div><div class=\"ct-bottom-to-move-outer\"  id=\""+this.boardName+"-bottom-to-move-outer\"><div class=\"ct-bottom-to-move-inner\" id=\""+this.boardName+"-bottom-to-move-inner\" ></div>";
-_2fe.appendChild(_30e);
-YAHOO.util.Dom.setStyle(_2ff,"float","left");
-YAHOO.util.Dom.setStyle(_30e,"float","left");
-YAHOO.util.Dom.setStyle(_30e,"margin-left","2px");
-YAHOO.util.Dom.setStyle(_30e,"height",((this.pieceSize*8)+2)+"px");
-YAHOO.util.Dom.setStyle(_30e,"position","relative");
-var _30f=document.createElement("div");
-YAHOO.util.Dom.setStyle(_30f,"clear","both");
-_2fe.appendChild(_30f);
-}
-this.createBoardCoords();
-var _310=false;
-var _311=YAHOO.util.Dom.get(this.boardName+"-ct-nav-container");
-if(!_311){
-_311=document.createElement("div");
-}else{
-_310=true;
-_311.innerHTML="";
-}
-_311.id=this.boardName+"-ct-nav-container";
-if(!this.dontOutputNavButtons||this.r){
-var _312="";
-if(!this.dontOutputNavButtons){
-if(!this.problem||!this.problem.isEndgame){
-_312="<span id=\"playStopSpan\"><img class=\"ct-end\" id=\""+this.boardName+"-end\" src=\""+this.boardImagePath+"/images/resultset_last"+this.getVersString()+".gif\" alt=\""+_js("End position")+"\" title=\""+_js("Go to final position")+"\"/>"+"<img class=\"ct-play\" id=\""+this.boardName+"-play\" src=\""+this.boardImagePath+"/images/control_play_blue"+this.getVersString()+".gif\" alt=\""+_js("Play moves")+"\" title=\""+_js("Play sequence of moves")+"\"/>"+"<img class=\"ct-stop\" id=\""+this.boardName+"-stop\" src=\""+this.boardImagePath+"/images/control_stop_blue"+this.getVersString()+".gif\" alt=\""+_js("Stop playing")+"\" title=\""+_js("Stop playing move sequence")+"\"/></span>";
-}
-}
-var _313="<div class=\"ct-nav-buttons\" id=\""+this.boardName+"-navButtons\"><span id=\""+this.boardName+"-nav-buttons-only\">";
-if(!this.dontOutputNavButtons){
-var size="";
-if(isIphone||isIpad){
-size=" width=\"50px\" height=\"34px\" ";
-_312="";
-}
-if(!(isIphone||isIpad)){
-_313+="<img class=\"ct-start\" id=\""+this.boardName+"-start\" src=\""+this.boardImagePath+"/images/resultset_first"+this.getVersString()+".gif\" alt=\""+_js("Start position")+"\" title=\""+_js("Go to starting position")+"\"/>";
-}
-_313+="<img class=\"ct-back\" id=\""+this.boardName+"-back\" "+size+" src=\""+this.boardImagePath+"/images/resultset_previous"+this.getVersString()+".gif\" alt=\""+_js("Previous Move")+"\" title=\""+_js("Go back a move")+"\"/>"+"<img class=\"ct-forward\" id=\""+this.boardName+"-forward\" "+size+" src=\""+this.boardImagePath+"/images/resultset_next"+this.getVersString()+".gif\" alt=\""+_js("Next Move")+"\" title=\""+_js("Go forward a move")+"\"/>"+_312;
-}
-if(this.r){
-_313+="<img class=\"ct-forward\" id=\""+this.boardName+"-analyse\" src=\""+this.boardImagePath+"/images/anboard"+this.getVersString()+".gif\" alt=\""+_js("Analyse")+"\" title=\""+_js("Launch analysis board to explore different lines in this position")+"\"/>";
-if(!this.g){
-_313+="<img class=\"ct-forward\" id=\""+this.boardName+"-showfen\" src=\""+this.boardImagePath+"/images/copy_fen"+this.getVersString()+".gif\" alt=\""+_js("Copy FEN")+"\" title=\""+_js("Show FEN for current position")+"\"/>";
-}
-}
-if(this.canPasteFen){
-_313+="<img class=\"ct-forward\" id=\""+this.boardName+"-pastefen\" src=\""+this.boardImagePath+"/images/paste_fen"+this.getVersString()+".gif\" alt=\""+_js("Input FEN")+"\" title=\""+_js("Setup position from user supplied FEN or move list")+"\"/>";
-}
-if(this.g2){
-_313+="<img class=\"ct-forward\" id=\""+this.boardName+"-playcomp\" src=\""+this.boardImagePath+"/images/computer"+this.getVersString()+".gif\" alt=\""+_js("Play Current Position vs Computer")+"\" title=\""+_js("Play current position against computer")+"\"/>";
-}
-_313+="</span>";
-_313+="</div>";
-if(this.puzzle){
-var _315="";
-var _316="";
-var _317="";
-var _318="";
-if(this.pieceSize>=29){
-_315=_js("Easy");
-_316=_js("Medium");
-_317=_js("Hard");
-_318=_js("Help");
-}else{
-_315=_js("D1");
-_316=_js("D2");
-_317=_js("D3");
-_318=_js("?");
-}
-_313+="<div><form action=\"\"><button type=\"button\" id=\""+this.boardName+"-puzzleSolution\" class=\"asolution-button\">"+_js("Show")+"</button><button id=\""+this.boardName+"-easyPuzzle\" type=\"button\" class=\"puzzle-difficulty\">"+_315+"</button>"+"<button id=\""+this.boardName+"-mediumPuzzle\" type=\"button\" class=\"puzzle-difficulty\">"+_316+"</button>"+"<button id=\""+this.boardName+"-hardPuzzle\" type=\"button\" class=\"puzzle-difficulty\">"+_317+"</button>"+"<button id=\""+this.boardName+"-puzzleHelp\" type=\"button\" class=\"puzzle-difficulty\">"+_318+"</button>"+"<img alt=\"\" class=\"ct-forward\" id=\""+this.boardName+"-problemState\"></img><span id=\""+this.boardName+"-puzzleResult\"></span></form></div>";
-_313+="<div class=\"initially_hidden initially_invisible\" id=\""+this.boardName+"-moves\"></div>";
-_313+="<div class=\"initially_hidden initially_invisible\" id=\""+this.boardName+"-moves\"></div>";
-}
-_311.innerHTML=_313;
-}
-if(!_310){
-_2fe.appendChild(_311);
-}
-if(this.problem){
-var body=YAHOO.util.Dom.get("body");
-if(body){
-YAHOO.util.Dom.setStyle(body,"min-width",((this.pieceSize*8+_300)+300+200+120)+"px");
-}
-}
-};
-Board.prototype.getPieceDiv=function(){
-var _31a=this.getBoardDiv();
-var _31b=document.createElement("div");
-this.availPieceDivs[this.uptoId]=_31b;
-this.availIds[this.uptoId]=YAHOO.util.Dom.generateId(_31b);
-YAHOO.util.Dom.setStyle(_31b,"visibility","hidden");
-YAHOO.util.Dom.addClass(_31b,"board-piece-start-style");
-_31a.appendChild(_31b);
-this.uptoId++;
-return _31b;
-};
-Board.prototype.flipToMove=function(_31c){
-return (_31c=="w")?"b":"w";
-};
-Board.prototype.pieceCharToPieceNum=function(_31d){
-var _31e;
-switch(_31d){
-case "K":
-_31e=ChessPiece.KING;
-break;
-case "Q":
-_31e=ChessPiece.QUEEN;
-break;
-case "R":
-_31e=ChessPiece.ROOK;
-break;
-case "B":
-_31e=ChessPiece.BISHOP;
-break;
-case "N":
-_31e=ChessPiece.KNIGHT;
-break;
-case "P":
-_31e=ChessPiece.PAWN;
-break;
-}
-return _31e;
-};
-Board.prototype.pieceTypeToChar=function(_31f){
-switch(_31f){
-case ChessPiece.KING:
-return "K";
-case ChessPiece.QUEEN:
-return "Q";
-case ChessPiece.ROOK:
-return "R";
-case ChessPiece.BISHOP:
-return "B";
-case ChessPiece.KNIGHT:
-return "N";
-case ChessPiece.PAWN:
-return "P";
-}
-return "?";
-};
-Board.prototype.canMoveKnight=function(_320,_321,_322,_323){
-if(_320+2==_322&&_321+1==_323){
-return true;
-}
-if(_320+2==_322&&_321-1==_323){
-return true;
-}
-if(_320-2==_322&&_321+1==_323){
-return true;
-}
-if(_320-2==_322&&_321-1==_323){
-return true;
-}
-if(_320+1==_322&&_321+2==_323){
-return true;
-}
-if(_320-1==_322&&_321+2==_323){
-return true;
-}
-if(_320+1==_322&&_321-2==_323){
-return true;
-}
-if(_320-1==_322&&_321-2==_323){
-return true;
-}
-return false;
-};
-Board.prototype.canMovePawn=function(_324,_325,_326,_327,_328){
-var _329=this.boardPieces[_326][_327];
-var _32a=this.boardPieces[_324][_325];
-if(_328){
-var _32b=this.boardPieces[_328.toColumn][_328.toRow];
-if(_32b&&_32b.piece==ChessPiece.PAWN){
-if(_32b.colour==ChessPiece.WHITE){
-if(_328.fromRow==1&&_328.toRow==3){
-if(_326==_328.fromColumn&&_325==3&&_327==2&&(_324==_326+1||_324==_326-1)){
-return true;
-}
-}
-}else{
-if(_328.fromRow==6&&_328.toRow==4){
-if(_326==_328.fromColumn&&_325==4&&_327==5&&(_324==_326+1||_324==_326-1)){
-return true;
-}
-}
-}
-}
-}
-if(_329){
-if(_32a.colour==ChessPiece.WHITE){
-if((_324==_326+1||_324==_326-1)&&(_325==_327-1)){
-return true;
-}
-}else{
-if((_324==_326+1||_324==_326-1)&&(_325==_327+1)){
-return true;
-}
-}
-}else{
-if(_324==_326){
-if(_32a.colour==ChessPiece.WHITE){
-if(_325==1){
-if(_327==2){
-return true;
-}else{
-if(_327==3&&this.boardPieces[_326][2]==null){
-return true;
-}
-}
-}else{
-if(_325+1==_327){
-return true;
-}
-}
-}else{
-if(_325==6){
-if(_327==5){
-return true;
-}else{
-if(_327==4&&this.boardPieces[_326][5]==null){
-return true;
-}
-}
-}else{
-if(_325-1==_327){
-return true;
-}
-}
-}
-}
-}
-return false;
-};
-Board.prototype.canMoveStraight=function(_32c,_32d,_32e,_32f,_330,_331){
-var _332=_32c;
-var _333=_32d;
-var _334=0;
-var _335=0;
-if(_32e>_32c){
-_334=1;
-}else{
-if(_32e<_32c){
-_334=-1;
-}
-}
-if(_32f>_32d){
-_335=1;
-}else{
-if(_32f<_32d){
-_335=-1;
-}
-}
-if(clog){
-console.log("deltaRow:"+_335+" deltaCol:"+_334+" fromCol:"+_32c+" fromRow:"+_32d+" toCol:"+_32e+" toRow:"+_32f);
-}
-if(_330==ChessPiece.ROOK&&(_334!=0&&_335!=0)){
-return false;
-}
-if(_330==ChessPiece.BISHOP&&(_334==0||_335==0)){
-return false;
-}
-var _336=0;
-while(true){
-_336++;
-_32c+=_334;
-_32d+=_335;
-if(_330==ChessPiece.KING&&_336>1){
-if(clog){
-console.log("king count:"+_336+" toCol:"+_32e+" toRow:"+_32f);
-}
-if(_336!=2){
-return false;
-}
-if(_335!=0){
-return false;
-}
-if(!(_32e==6||_32e==2)){
-return false;
-}
-if(_32e==2){
-if(this.boardPieces[1][_32d]||this.boardPieces[2][_32d]||this.boardPieces[3][_32d]){
-return false;
-}
-if(!this.canCastleQueenSide[_331.colour]){
-return false;
-}
-}else{
-if(_32e==6){
-if(this.boardPieces[5][_32d]||this.boardPieces[6][_32d]){
-if(clog){
-console.log("king can't castle intervening piece");
-}
-return false;
-}
-if(!this.canCastleKingSide[_331.colour]){
-if(clog){
-console.log("king can't castle king side (made previously invalid) colour:"+_331.colour);
-}
-return false;
-}
-}else{
-if(clog){
-console.log("king not in col 2 or 6");
-}
-return false;
-}
-}
-var _337="";
-_337+=Move.columnToChar(_332);
-_337+=String.fromCharCode("1".charCodeAt(0)+_333);
-_337+=Move.columnToChar((_332+_334));
-_337+=String.fromCharCode("1".charCodeAt(0)+(_333+_335));
-var move=this.createMoveFromString(_337);
-var _339=this.cloneBoard();
-_339.makeMove(move,_339.boardPieces[_332][_333],false,this.moveAnimationLength,false,false);
-kingSafe=_339.isKingSafe(_331.colour,move);
-if(clog){
-console.log("kingSafe1:"+kingSafe);
-}
-if(!kingSafe){
-return false;
-}
-var _337="";
-_337+=Move.columnToChar(_332);
-_337+=String.fromCharCode("1".charCodeAt(0)+_333);
-_337+=Move.columnToChar(_332);
-_337+=String.fromCharCode("1".charCodeAt(0)+_333);
-var move=this.createMoveFromString(_337);
-var _339=this.cloneBoard();
-_339.makeMove(move,_339.boardPieces[_332][_333],false,this.moveAnimationLength,false,false);
-kingSafe=_339.isKingSafe(_331.colour,move);
-var _339=this.cloneBoard();
-_339.makeMove(move,_339.boardPieces[_332][_333],false,this.moveAnimationLength,false,false);
-kingSafe=this.isKingSafe(_331.colour,move);
-if(clog){
-console.log("kingSafe2:"+kingSafe);
-}
-if(!kingSafe){
-return false;
-}
-}
-if(_32c==_32e&&_32d==_32f){
-return true;
-}
-if(_32c<0||_32c>7||_32d<0||_32d>7){
-return false;
-}
-if(this.boardPieces[_32c][_32d]!=null){
-return false;
-}
-}
-};
-Board.prototype.canMove=function(_33a,_33b,_33c,_33d,_33e){
-var _33f=_33a.column;
-var _340=_33a.row;
-if(_33b>7||_33b<0||_33c>7||_33c<0){
-if(clog){
-console.log("can't move coz out of bounds");
-}
-return false;
-}
-var _341=this.boardPieces[_33b][_33c];
-var _342=this.boardPieces[_33f][_340];
-if(_342==null){
-return false;
-}
-if(_341&&_341.colour==_342.colour){
-return false;
-}
-var _343=false;
-if(_33a.piece==ChessPiece.PAWN){
-_343=this.canMovePawn(_33f,_340,_33b,_33c,_33d);
-}else{
-if(_33a.piece==ChessPiece.KNIGHT){
-_343=this.canMoveKnight(_33f,_340,_33b,_33c);
-}else{
-_343=this.canMoveStraight(_33f,_340,_33b,_33c,_33a.piece,_33a);
-}
-}
-if(clog){
-console.log("moveOk:"+_343);
-}
-var _344=true;
-if(_343&&_33e){
-var _345="";
-_345+=Move.columnToChar(_33f);
-_345+=String.fromCharCode("1".charCodeAt(0)+_340);
-_345+=Move.columnToChar(_33b);
-_345+=String.fromCharCode("1".charCodeAt(0)+_33c);
-var move=this.createMoveFromString(_345);
-var _347=this.cloneBoard();
-_347.makeMove(move,_347.boardPieces[_33f][_340],false,this.moveAnimationLength,false,false);
-_344=_347.isKingSafe(_33a.colour,move);
-}
-return _343&&_344;
-};
-Board.prototype.is50MoveRule=function(){
-return (this.halfMoveNumber>=100);
-};
-Board.prototype.isCheckmate=function(_348){
-return (!this.isKingSafe(this.toMove,_348)&&this.isKingMated(this.toMove,_348));
-};
-Board.prototype.isStalemate=function(_349){
-return (this.isKingSafe(this.toMove,_349)&&(this.getCandidateMoves(this.toMove,_349,true)).length==0);
-};
-Board.prototype.isKingMated=function(_34a,_34b){
-var _34c=null;
-for(var i=0;i<8;i++){
-for(var j=0;j<8;j++){
-var bp=this.boardPieces[i][j];
-if(bp!=null&&bp.piece==ChessPiece.KING&&bp.colour==_34a){
-_34c=bp;
-break;
-}
-}
-}
-var _350=[[1,0],[1,1],[1,-1],[-1,0],[-1,1],[-1,-1],[0,1],[0,-1],[2,0],[-2,0]];
-var bp=_34c;
-for(var k=0;k<_350.length;k++){
-if(this.canMove(bp,bp.column+_350[k][0],bp.row+_350[k][1],_34b,true)){
-return false;
-}
-}
-var _352=this.getCandidateMoves(_34a,_34b,true,true);
-if(_352.length>0){
-return false;
-}
-return true;
-};
-Board.prototype.getCandidateMoves=function(_353,_354,_355,_356){
-var _357=new Array();
-for(var i=0;i<8;i++){
-for(var j=0;j<8;j++){
-var bp=this.boardPieces[i][j];
-var _35b=[];
-if(!bp||bp.colour!=_353){
-continue;
-}
-switch(bp.piece){
-case ChessPiece.KING:
-if(_356){
-continue;
-}
-_35b=[[1,0],[1,1],[1,-1],[-1,0],[-1,1],[-1,-1],[0,1],[0,-1],[2,0],[-2,0]];
-break;
-case ChessPiece.KNIGHT:
-_35b=[[2,1],[2,-1],[-2,1],[-2,-1],[1,2],[1,-2],[-1,2],[-1,-2]];
-break;
-case ChessPiece.BISHOP:
-for(var k=0;k<8;k++){
-_35b.push([1+k,1+k]);
-_35b.push([1+k,-1-k]);
-_35b.push([-1-k,1+k]);
-_35b.push([-1-k,-1-k]);
-}
-break;
-case ChessPiece.QUEEN:
-for(var k=0;k<8;k++){
-_35b.push([1+k,0]);
-_35b.push([1+k,1+k]);
-_35b.push([1+k,-1-k]);
-_35b.push([-1-k,0]);
-_35b.push([-1-k,1+k]);
-_35b.push([-1-k,-1-k]);
-_35b.push([0,-1-k]);
-_35b.push([0,1+k]);
-}
-break;
-case ChessPiece.ROOK:
-for(var k=0;k<8;k++){
-_35b.push([1+k,0]);
-_35b.push([-1-k,0]);
-_35b.push([0,-1-k]);
-_35b.push([0,1+k]);
-}
-break;
-case ChessPiece.PAWN:
-if(_353==ChessPiece.BLACK){
-_35b=[[0,-1],[1,-1],[-1,-1]];
-if(j==6){
-_35b.push([0,-2]);
-}
-}else{
-_35b=[[0,1],[1,1],[-1,1]];
-if(j==1){
-_35b.push([0,2]);
-}
-}
-break;
-}
-for(var k=0;k<_35b.length;k++){
-if(this.canMove(bp,bp.column+_35b[k][0],bp.row+_35b[k][1],_354,true)){
-_357.push(new Move(bp.column,bp.row,bp.column+_35b[k][0],bp.row+_35b[k][1]));
-if(_355){
-return _357;
-}
-}
-}
-}
-}
-return _357;
-};
-Board.prototype.isKingSafe=function(_35d,_35e){
-var _35f=null;
-for(var i=0;i<8;i++){
-for(var j=0;j<8;j++){
-var bp=this.boardPieces[i][j];
-if(bp!=null&&bp.piece==ChessPiece.KING&&bp.colour==_35d){
-_35f=bp;
-break;
-}
-}
-}
-for(var i=0;i<8;i++){
-for(var j=0;j<8;j++){
-var bp=this.boardPieces[i][j];
-if(bp!=null&&bp.colour!=_35d){
-if(this.canMove(bp,_35f.column,_35f.row,_35e,false)){
-return false;
-}
-}
-}
-}
-return true;
-};
-Board.prototype.freeBoardPieces=function(_363){
-if(this.boardPieces){
-for(var i=0;i<8;i++){
-for(var j=0;j<8;j++){
-if(this.boardPieces[i][j]!=null){
-this.boardPieces[i][j].free();
-this.boardPieces[i][j]=null;
-}
-}
-if(_363){
-this.boardPieces[i]=null;
-}
-}
-}
-if(_363){
-this.boardPieces=null;
-}
-};
-Board.prototype.freeBoard=function(){
-this.freeBoardPieces(true);
-this.freeMoveArray();
-};
-Board.prototype.freeMoveArray=function(){
-if(this.moveArray){
-for(var i=0;i<this.moveArray.length;i++){
-var m=this.moveArray[i];
-if(m){
-m.freeMove();
-this.moveArray[i]=null;
-}
-}
-}
-};
-Board.prototype.cloneBoard=function(){
-var _368=new Board();
-_368.boardName=this.boardName;
-_368.cloned=true;
-_368.boardPieces=this.copyBoardPieces(true);
-_368.moveArray=this.copyMoveArray(false);
-_368.canCastleQueenSide=this.copyCastleQueenSide();
-_368.canCastleKingSide=this.copyCastleKingSide();
-_368.toMove=this.toMove;
-_368.restrictedColourMovement=-1;
-_368.opponentColour=this.opponentColour;
-_368.outputWithoutDisplay=this.outputWithoutDisplay;
-_368.isFlipped=this.isFlipped;
-_368.isUserFlipped=this.isUserFlipped;
-_368.ignoreFlipping=this.ignoreFlipping;
-_368.reverseFlip=this.reverseFlip;
-_368.moveAnimationLength=this.moveAnimationLength;
-_368.moveNumber=this.moveNumber;
-_368.halfMoveNumber=this.halfMoveNumber;
-_368.startFen=this.startFen;
-_368.boardImagePath=this.boardImagePath;
-_368.dontUpdatePositionReachedTable=this.dontUpdatePositionReachedTable;
-if(this.prev_move){
-_368.prev_move=this.prev_move.clone();
-}else{
-_368.prev_move=null;
-}
-return _368;
-};
-Board.prototype.copyCastleQueenSide=function(){
-return [this.canCastleQueenSide[0],this.canCastleQueenSide[1]];
-};
-Board.prototype.copyCastleKingSide=function(){
-return [this.canCastleKingSide[0],this.canCastleKingSide[1]];
-};
-Board.copyMoves=function(_369,_36a,_36b){
-var _36c=new Array();
-if(!_36a){
-if(_369&&_369.length>0){
-_36c=_369.slice(0);
-}
-}else{
-if(_369){
-for(var i=0;i<_369.length;i++){
-var m=_369[i];
-var newM=null;
-if(m){
-newM=m.clone(true);
-}
-_36c[i]=newM;
-}
-}
-}
-if(_36b){
-for(var i=0;i<_369.length;i++){
-if(_369[i].prev){
-if(typeof _369[i].prev.index!="undefined"){
-_36c[i].prev=_36c[_369[i].prev.index];
-}
-}
-if(_369[i].next){
-if(typeof _369[i].next.index!="undefined"){
-_36c[i].next=_36c[_369[i].next.index];
-}
-}
-}
-}
-return _36c;
-};
-Board.prototype.copyMoveArray=function(_370){
-return Board.copyMoves(this.moveArray,_370);
-var _371=new Array();
-if(!_370){
-if(this.moveArray&&this.moveArray.length>0){
-_371=this.moveArray.slice(0);
-}
-return _371;
-}else{
-if(this.moveArray){
-for(var i=0;i<this.moveArray.length;i++){
-var m=this.moveArray[i];
-if(m){
-var newM=m.clone(true);
-_371[i]=newM;
-}
-}
-}
-return _371;
-}
-};
-Board.prototype.copyBoardPieces=function(_375){
-var _376=Board.createBoardArray();
-for(var i=0;i<8;i++){
-for(var j=0;j<8;j++){
-if(this.boardPieces[i][j]!=null){
-if(_375){
-_376[i][j]=this.boardPieces[i][j].makeLightWeight();
-}else{
-_376[i][j]=this.boardPieces[i][j].copyPiece();
-}
-}else{
-_376[i][j]=null;
-}
-}
-}
-return _376;
-};
-Board.prototype.createPiece=function(_379,_37a,_37b){
-if(_37b){
-return new LightweightChessPiece(null,_379,_37a,this);
-}else{
-return new ChessPiece(this.getPieceDiv(),_379,_37a,this);
-}
-};
-Board.prototype.restoreCastling=function(_37c){
-this.canCastleKingSide=_37c.kingSide;
-this.canCastleQueenSide=_37c.queenSide;
-};
-Board.prototype.saveCastling=function(){
-var _37d=[this.canCastleQueenSide[0],this.canCastleQueenSide[1]];
-var _37e=[this.canCastleKingSide[0],this.canCastleKingSide[1]];
-return {queenSide:_37d,kingSide:_37e};
-};
-var firstLightProf=true;
-var firstHeavyProf=true;
-Board.prototype.setupFromFenLightweight=function(fen,_380,flip,_382,_383){
-var _384=false&&firstLightProf;
-if(_384){
-console.profile("setupFromFenLight");
-}
-this.setupFromFenGeneric(fen,_380,flip,true,_382,_383);
-if(_384){
-console.profileEnd();
-}
-};
-Board.prototype.setupFromFenHeavyWeight=function(fen,_386,flip,_388,_389){
-var _38a=false&&firstHeavyProf;
-if(_38a){
-console.profile("setupFromFenHeavy");
-}
-if(this.lastFromSquare){
-YAHOO.util.Dom.removeClass(this.lastFromSquare,"ct-from-square");
-}
-if(this.lastToSquare){
-YAHOO.util.Dom.removeClass(this.lastToSquare,"ct-to-square");
-}
-this.setupFromFenGeneric(fen,_386,flip,false,_388,_389);
-if(_38a){
-console.profileEnd();
-}
-};
-Board.prototype.setupFromFen=function(fen,_38c,flip,_38e,_38f,_390){
-this.positionsSeen=[];
-if(_38e){
-this.setupFromFenLightweight(fen,_38c,flip,_38f,_390);
-}else{
-this.setupFromFenHeavyWeight(fen,_38c,flip,_38f,_390);
-}
-};
-Board.prototype.setupFromFenGeneric=function(fen,_392,flip,_394,_395,_396){
-if(ctime){
-console.time("setupFromFen"+_394);
-}
-if(this.oldSelectedSquare){
-YAHOO.util.Dom.removeClass(this.oldSelectedSquare,"ct-source-square");
-}
-this.oldSelectedSquare=null;
-this.oldSelectedPiece=null;
-this.settingUpPosition=true;
-var _397=fen.split(" ");
-var _398=_397[0].split("/");
-this.halfMoveNumber=parseInt(_397[4]);
-this.moveNumber=parseInt(_397[5])*2;
-var _399=0;
-var row=8;
-this.uptoId=0;
-this.board_xy=null;
-var _39b=_397[2];
-var _39c=null;
-this.canCastleQueenSide=[false,false];
-this.canCastleKingSide=[false,false];
-if(_39b!="-"){
-if(_39b.indexOf("K")>=0){
-this.canCastleKingSide[ChessPiece.WHITE]=true;
-}
-if(_39b.indexOf("Q")>=0){
-this.canCastleQueenSide[ChessPiece.WHITE]=true;
-}
-if(_39b.indexOf("k")>=0){
-this.canCastleKingSide[ChessPiece.BLACK]=true;
-}
-if(_39b.indexOf("q")>=0){
-this.canCastleQueenSide[ChessPiece.BLACK]=true;
-}
-}
-if(_396){
-this.startMoveNum=this.moveNumber;
-}
-if(_397[1]=="w"){
-if(_396){
-this.startMoveNum--;
-}
-this.toMove=ChessPiece.WHITE;
-this.opponentColour=ChessPiece.WHITE;
-this.isFlipped=false;
-this.moveNumber--;
-}else{
-this.toMove=ChessPiece.BLACK;
-this.opponentColour=ChessPiece.BLACK;
-this.isFlipped=true;
-}
-if(_395){
-var _39d=_397[3];
-if(_39d!="-"&&_39d.length==2){
-var _39e=_39d[0];
-var _39f=parseInt(_39d[1]);
-if(_39f==3){
-_39c=this.createMoveFromString(_39e+"2"+_39e+"4");
-}else{
-_39c=this.createMoveFromString(_39e+"7"+_39e+"5");
-}
-_39c.prevMoveEnpassant=true;
-this.prev_move=_39c;
-}
-}
-if(_392){
-this.toMove=(ChessPiece.BLACK==this.toMove)?ChessPiece.WHITE:ChessPiece.BLACK;
-this.isFlipped=!this.isFlipped;
-}
-if(flip){
-this.isFlipped=true;
-}
-if(this.reverseFlip){
-this.isFlipped=!this.isFlipped;
-}
-if(this.ignoreFlipping){
-this.isFlipped=false;
-}
-if(this.isUserFlipped){
-this.isFlipped=!this.isFlipped;
-}
-this.updateToPlay();
-this.setupPieceDivs();
-for(var i=0;i<8;i++){
-for(var j=0;j<8;j++){
-this.boardPieces[i][j]=null;
-}
-}
-for(var i=0;i<8;i++){
-var line=_398[i];
-row--;
-_399=0;
-for(var j=0;j<line.length;j++){
-var c=line.charAt(j);
-var code=line.charCodeAt(j);
-var num=code-"0".charCodeAt(0);
-if(num>0&&num<9){
-while(num--){
-var _3a6=this.boardPieces[_399][row];
-this.boardPieces[_399][row]=null;
-_399++;
-}
-}else{
-var _3a7=(c+"").toLowerCase().charAt(0);
-var _3a8=ChessPiece.WHITE;
-if(_3a7==c){
-_3a8=ChessPiece.BLACK;
-}
-var cp;
-switch(_3a7){
-case "k":
-cp=this.createPiece(_3a8,ChessPiece.KING,_394);
-break;
-case "q":
-cp=this.createPiece(_3a8,ChessPiece.QUEEN,_394);
-break;
-case "r":
-cp=this.createPiece(_3a8,ChessPiece.ROOK,_394);
-break;
-case "b":
-cp=this.createPiece(_3a8,ChessPiece.BISHOP,_394);
-break;
-case "n":
-cp=this.createPiece(_3a8,ChessPiece.KNIGHT,_394);
-break;
-case "p":
-cp=this.createPiece(_3a8,ChessPiece.PAWN,_394);
-break;
-default:
-alert("unknown piece letter:"+_3a7+" for fen:"+fen);
-}
-if(isGecko||isOpera){
-cp.setPosition(_399,row,false,null,this.moveAnimationLength);
-cp.setVisible(true);
-}
-this.boardPieces[_399][row]=cp;
-this.pieces[this.uptoPiece]=cp;
-this.pieces[this.uptoPiece].column=_399;
-this.pieces[this.uptoPiece].row=row;
-this.uptoPiece++;
-_399++;
-}
-}
-}
-if(!isGecko){
-for(var i=0;i<this.uptoPiece;i++){
-this.pieces[i].setPosition(this.pieces[i].column,this.pieces[i].row,false,null,0);
-}
-}
-if(!_394){
-for(var i=0;i<this.uptoPiece;i++){
-this.pieces[i].setVisible(true);
-}
-}
-if(!_394){
-this.createBoardCoords();
-}
-this.settingUpPosition=false;
-if(ctime){
-console.timeEnd("setupFromFen"+_394);
-}
-};
-Board.prototype.resetMoveListScrollPosition=function(){
-var _3aa=this.movesDisplay.getMovesDisplay();
-if(_3aa){
-var _3ab=new YAHOO.util.Scroll(_3aa,{scroll:{to:[0,0]}},0);
-_3ab.animate();
-}
-};
-Board.prototype.changePieceSet=function(_3ac,_3ad){
-if(!this.showedIE6Warning){
-var str=_js("Depending on your browser you may need to reload the<br/> page for piece size changes to properly take effect.");
-alert(str.replace("<br/>","\n"));
-}
-this.showedIE6Warning=true;
-if(check_bad_msie()){
-if(!this.showedIE6Warning){
-var str=_js("Internet Explorer version 6 does not support dynamic piece size changes.<br/> Please reload page to view new settings.");
-alert(str.replace("<br/>","\n"));
-}
-this.showedIE6Warning=true;
-return;
-}
-var _3af=this.pieceSize;
-this.pieceSet=_3ac;
-this.pieceSize=_3ad;
-var _3b0=YAHOO.util.Dom.get(this.boardName+"-boardBorder");
-var _3b1=0;
-if(this.showCoordinates){
-_3b1=15;
-}
-_3b0.className="";
-YAHOO.util.Dom.addClass(_3b0,"ct-board-border"+this.squareColorClass);
-YAHOO.util.Dom.setStyle(_3b0,"width",(this.pieceSize*8+_3b1)+"px");
-YAHOO.util.Dom.setStyle(_3b0,"height",(this.pieceSize*8+_3b1)+"px");
-var _3b2=YAHOO.util.Dom.get("ctb-"+this.boardName);
-YAHOO.util.Dom.setStyle(_3b2,"width",(this.pieceSize*8)+"px");
-YAHOO.util.Dom.setStyle(_3b2,"height",(this.pieceSize*8)+"px");
-var _3b3="ct-white-square"+this.squareColorClass;
-for(var i=7;i>=0;i--){
-for(var j=0;j<8;j++){
-var _3b6=this.getBoardDivFromId(this.boardName+"-s"+j+""+i);
-_3b6.className="";
-YAHOO.util.Dom.addClass(_3b6,_3b3);
-YAHOO.util.Dom.setStyle(_3b6,"width",this.pieceSize+"px");
-YAHOO.util.Dom.setStyle(_3b6,"height",this.pieceSize+"px");
-var _3b7=(((j+1)*(i+1))%19/19*100);
-var _3b8=((65-((j+1)*(i+1)))%19/19*100);
-YAHOO.util.Dom.setStyle(_3b6,"background-position",_3b7+"% "+_3b8+"%");
-_3b3=(_3b3=="ct-black-square"+this.squareColorClass)?"ct-white-square"+this.squareColorClass:"ct-black-square"+this.squareColorClass;
-}
-_3b3=(_3b3=="ct-black-square"+this.squareColorClass)?"ct-white-square"+this.squareColorClass:"ct-black-square"+this.squareColorClass;
-}
-for(var i=0;i<8;i++){
-for(var j=0;j<8;j++){
-var cp=this.boardPieces[i][j];
-if(cp){
-cp.icon=get_image_str(ChessPiece.pieceIconNames[cp.colour][cp.piece],cp.board.boardImagePath,cp.board.pieceSet,cp.board.pieceSize,cp.board.addVersion);
-if(YAHOO.util.Event.isIE||isOpera){
-var _3ba=cp.div;
-_3ba.innerHTML="<img src=\""+cp.icon+"\"/>";
-var img=_3ba.firstChild;
-if(!isOpera){
-fix_ie_png(img);
-}
-}else{
-YAHOO.util.Dom.setStyle([cp.div],"backgroundImage","url("+cp.icon+")");
-YAHOO.util.Dom.setStyle([cp.div],"background-repeat","no-repeat");
-}
-YAHOO.util.Dom.setStyle([cp.div],"height",this.pieceSize+"px");
-YAHOO.util.Dom.setStyle([cp.div],"width",this.pieceSize+"px");
-YAHOO.util.Dom.setStyle([cp.div],"left","");
-YAHOO.util.Dom.setStyle([cp.div],"top","");
-var xy=cp.getNewXYPosition(cp.column,cp.row);
-YAHOO.util.Dom.setXY(cp.div,xy,false);
-}
-}
-}
-if(this.moveArray){
-var move=this.moveArray[0];
-while(move!=null){
-if(move.taken){
-var cp=move.taken;
-if(cp.getNewXYPosition){
-cp.icon=get_image_str(ChessPiece.pieceIconNames[cp.colour][cp.piece],cp.board.boardImagePath,cp.board.pieceSet,cp.board.pieceSize,cp.board.addVersion);
-if(YAHOO.util.Event.isIE||isOpera){
-var _3ba=cp.div;
-_3ba.innerHTML="<img src=\""+cp.icon+"\"/>";
-YAHOO.util.Dom.setStyle([cp.div],"position","relative");
-var img=_3ba.firstChild;
-if(!isOpera){
-fix_ie_png(img);
-}
-}else{
-YAHOO.util.Dom.setStyle([cp.div],"backgroundImage","url("+cp.icon+")");
-YAHOO.util.Dom.setStyle([cp.div],"background-repeat","no-repeat");
-}
-YAHOO.util.Dom.setStyle([cp.div],"height",this.pieceSize+"px");
-YAHOO.util.Dom.setStyle([cp.div],"width",this.pieceSize+"px");
-YAHOO.util.Dom.setStyle([cp.div],"left","");
-YAHOO.util.Dom.setStyle([cp.div],"top","");
-var xy=cp.getNewXYPosition(cp.column,cp.row);
-YAHOO.util.Dom.setXY(cp.div,xy,false);
-}
-}
-move=move.next;
-}
-}
-if(this.problem){
-var body=YAHOO.util.Dom.get("body");
-if(body){
-YAHOO.util.Dom.setStyle(body,"min-width",((this.pieceSize*8+_3b1)+300+200+120)+"px");
-}
-}
-this.createBoardCoords();
-};
-Board.prototype.forwardMove=function(e){
-if(this.disableNavigation){
-return;
-}
-if(this.blockFowardBack||this.deferredBlockForwardBack){
-if(clog){
-console.log("returning early from forward due to block forward on");
-}
-return;
-}
-var _3c0=false;
-if(this.tactics&&this.tactics.problemActive){
-if(clog){
-console.log("not forwarding, tactic is active");
-}
-return;
-}
-this.blockForwardBack=true;
-if(this.currentMove&&!this.currentMove.atEnd){
-move=this.currentMove;
-if(move){
-if(clog){
-console.log("forward move:"+move.output());
-}
-}else{
-if(clog){
-console.log("forward move with currentmove null");
-}
-}
-if(move.endNode){
-if(clog){
-console.log("calling processendgame from forward move");
-}
-if(!_3c0){
-this.problem.processEndgame("",true);
-}
-this.toggleToMove();
-this.updateToPlay();
-}else{
-if(clog){
-console.log("forwarding move:"+move.output());
-}
-var _3c1=null;
-piece=this.boardPieces[move.fromColumn][move.fromRow];
-if(move.promotion){
-_3c1=move.promotion;
-piece.prePromotionColumn=null;
-piece.prePromotionRow=null;
-}
-this.updatePiece(piece,move.toColumn,move.toRow,true,true,false,_3c1,true);
-this.toggleToMove();
-this.updateToPlay();
-var _3c2=this.currentMove;
-if(clog){
-if(_3c2){
-console.log("after forward curmove:"+_3c2.output());
-}else{
-console.log("after forward cur move null");
-}
-}
-for(var i=0;i<this.registeredForwardMovePostUpdateListeners.length;i++){
-var _3c4=this.registeredForwardMovePostUpdateListeners[i].forwardMovePostUpdateCallback(move);
-}
-}
-}else{
-if(clog){
-console.log("already at end");
-}
-for(var i=0;i<this.registeredForwardAtEndListeners.length;i++){
-var _3c4=this.registeredForwardAtEndListeners[i].forwardAtEndCallback();
-}
-}
-this.blockForwardBack=false;
-};
-Board.prototype.setupEventHandlers=function(){
-this.tlf=0;
-YAHOO.util.Event.addListener(document,"blur",this.lostFocus,this,true);
-if(!this.avoidMouseoverActive){
-YAHOO.util.Event.addListener(this.boardName+"-container","mouseover",function(e){
-activeBoard=this;
-},this,true);
-}
-if(true||this.clickAndClick){
-YAHOO.util.Event.addListener(this.boardName+"-container","click",this.selectDestSquare,this,true);
-}
-var _3c6="keydown";
-if(isGecko){
-_3c6="keypress";
-}
-YAHOO.util.Event.addListener(document,_3c6,function(e){
-var _3c8=(e.target)?e.target:e.srcElement;
-if(_3c8.form){
-return true;
-}
-var _3c9=_3c8.tagName.toLowerCase();
-switch(_3c9){
-case "input":
-case "textarea":
-case "select":
-return true;
-}
-if(activeBoard!=this){
-return true;
-}
-switch(YAHOO.util.Event.getCharCode(e)){
-case 37:
-this.backMove();
-break;
-case 39:
-this.forwardMove();
-break;
-case 32:
-var ret=this.spaceBar();
-if(!ret){
-YAHOO.util.Event.preventDefault(e);
-}
-return ret;
-break;
-default:
-}
-return true;
-},this,true);
-YAHOO.util.Event.addListener(this.boardName+"-forward","click",this.forwardMove,this,true);
-YAHOO.util.Event.addListener(this.boardName+"-back","click",this.backMove,this,true);
-YAHOO.util.Event.addListener(this.boardName+"-start","click",this.gotoStart,this,true);
-YAHOO.util.Event.addListener(this.boardName+"-end","click",this.gotoEnd,this,true);
-YAHOO.util.Event.addListener(this.boardName+"-play","click",this.playMoves,this,true);
-YAHOO.util.Event.addListener(this.boardName+"-stop","click",this.stopPlayingMoves,this,true);
-if(this.r){
-YAHOO.util.Event.addListener(this.boardName+"-analyse","click",this.analysePosition,this,true);
-YAHOO.util.Event.addListener(this.boardName+"-showfen","click",this.showBoardFen,this,true);
-}
-if(this.canPasteFen){
-YAHOO.util.Event.addListener(this.boardName+"-pastefen","click",this.pasteFen,this,true);
-}
-if(this.g2){
-YAHOO.util.Event.addListener(this.boardName+"-playcomp","click",this.playComp,this,true);
-}
-};
-Board.prototype.addFlipListener=function(_3cb){
-this.registeredFlipListeners.push(_3cb);
-};
-Board.prototype.addSpaceListener=function(_3cc){
-this.registeredSpaceListeners.push(_3cc);
-};
-Board.prototype.flipBoard=function(){
-this.isUserFlipped=!this.isUserFlipped;
-this.isFlipped=!this.isFlipped;
-this.redrawBoard();
-this.updateToPlay();
-for(var i=0;i<this.registeredFlipListeners.length;i++){
-this.registeredFlipListeners[i].boardFlipped(this);
-}
-};
-Board.prototype.spaceBar=function(){
-var ret=true;
-for(var i=0;i<this.registeredSpaceListeners.length;i++){
-ret=this.registeredSpaceListeners[i].spacePressed(this);
-}
-return ret;
-};
-Board.prototype.lostFocus=function(){
-this.tlf++;
-};
-Board.prototype.redrawBoard=function(){
-for(var i=0;i<8;i++){
-for(var j=0;j<8;j++){
-var cp=this.boardPieces[i][j];
-if(cp){
-var xy=cp.getNewXYPosition(cp.column,cp.row);
-YAHOO.util.Dom.setXY(cp.div,xy,false);
-}
-}
-}
-if(this.moveArray){
-var move=this.moveArray[0];
-while(move!=null){
-if(move.taken){
-var cp=move.taken;
-if(cp.getNewXYPosition){
-var xy=cp.getNewXYPosition(cp.column,cp.row);
-YAHOO.util.Dom.setXY(cp.div,xy,false);
-}
-}
-move=move.next;
-}
-}
-this.createBoardCoords();
-if(this.oldSelectedSquare){
-YAHOO.util.Dom.removeClass(this.oldSelectedSquare,"ct-source-square");
-}
-this.oldSelectedSquare=null;
-this.oldSelectedPiece=null;
-if(this.highlightFromTo){
-if(!this.isFlipped){
-var _3d5=YAHOO.util.Dom.get(this.boardName+"-s"+this.lastFromColumn+""+this.lastFromRow);
-var _3d6=YAHOO.util.Dom.get(this.boardName+"-s"+this.lastToColumn+""+this.lastToRow);
-}else{
-var _3d5=YAHOO.util.Dom.get(this.boardName+"-s"+(7-this.lastFromColumn)+""+(7-this.lastFromRow));
-var _3d6=YAHOO.util.Dom.get(this.boardName+"-s"+(7-this.lastToColumn)+""+(7-this.lastToRow));
-}
-this.updateFromTo(_3d5,_3d6,this.lastFromRow,this.lastFromColumn,this.lastToRow,this.lastToColumn);
-}
-};
-Board.prototype.getMaxMoveNumber=function(_3d7){
-var _3d8=this.getMaxPly(_3d7);
-if(_3d8>0){
-return parseInt((_3d8+1)/2);
-}else{
-return 0;
-}
-};
-Board.prototype.getMaxPly=function(_3d9){
-var mv=null;
-if(_3d9){
-if(this.currentMove){
-mv=this.currentMove;
-if(mv.atEnd){
-if(mv.prev){
-return mv.prev.moveNum;
-}else{
-return 0;
-}
-}
-}else{
-return 0;
-}
-}else{
-if(this.moveArray){
-mv=this.moveArray[0];
-}
-}
-if(!mv){
-return 0;
-}
-while(mv!=null){
-if(mv.atEnd){
-if(mv.prev){
-return mv.prev.moveNum;
-}else{
-return 0;
-}
-}
-mv=mv.next;
-}
-return 0;
-};
-Board.fenPositionOnly=function(fen){
-var _3dc=fen.split(" ");
-return _3dc[0]+" "+_3dc[1];
-};
-Board.fenStripMoveClock=function(fen){
-var _3de=fen.split(" ");
-return _3de[0]+" "+_3de[1]+" "+_3de[2]+" "+_3de[3];
-};
-Board.fenSamePosition=function(fen1,fen2,_3e1){
-if(!fen1||!fen2){
-return false;
-}
-var f1=null;
-var f2=null;
-if(_3e1){
-f1=Board.fenPositionOnly(fen1);
-f2=Board.fenPositionOnly(fen2);
-}else{
-f1=Board.fenStripMoveClock(fen1);
-f2=Board.fenStripMoveClock(fen2);
-}
-return (f1==f2);
-};
-Board.prototype.findFen=function(mv,brd,fen,_3e7){
-var res=this.findFen2(mv,brd,fen,true);
-if(res.move){
-return res.move;
-}else{
-if(_3e7){
-if(res.clockStrip){
-return res.clockStrip;
-}else{
-if(res.fullStrip){
-return res.fullStrip;
-}
-}
-}
-}
-return null;
-};
-Board.prototype.findFen2=function(mv,brd,fen,_3ec){
-var _3ed=brd.cloneBoard();
-var res=Object();
-var _3ef=null;
-var _3f0=null;
-res.move=null;
-if(_3ec){
-_3ed.gotoMoveIndex(-1,true,true,true,true);
-}
-var _3f1=null;
-while(mv){
-var _3f2=_3ed.boardToFen();
-if(_3f2==fen){
-res.move=_3f1;
-res.clockStrip=null;
-res.fullStrip=null;
-return res;
-}else{
-if(Board.fenSamePosition(fen,_3f2)){
-_3ef=_3f1;
-}else{
-if(Board.fenSamePosition(fen,_3f2,true)){
-_3f0=_3f1;
-}
-}
-}
-if(mv.atEnd){
-break;
-}
-if(mv.vars&&mv.vars.length>0){
-for(var i=0;i<mv.vars.length;i++){
-var _3f4=this.findFen2(mv.vars[i],_3ed,fen,false);
-if(_3f4){
-if(_3f4.move){
-return _3f4;
-}else{
-if(_3f4.clockStrip){
-_3ef=_3f4.clockStrip;
-}else{
-if(_3f4.fullStrip){
-_3f0=_3f4.fullStrip;
-}
-}
-}
-}
-}
-}
-if(clog){
-console.log("about to make mv:"+mv.output()+" fen:"+_3ed.boardToFen());
-}
-_3ed.makeMove(mv,_3ed.boardPieces[mv.fromColumn][mv.fromRow],false,this.moveAnimationLength,false,false);
-if(clog){
-console.log("finished making mv");
-}
-_3f1=mv;
-mv=mv.next;
-if(clog){
-console.log("toMove:"+_3ed.toMove);
-}
-_3ed.setCurrentMove(mv);
-_3ed.toggleToMove();
-}
-if(_3ef){
-res.clockStrip=_3ef;
-}
-if(_3f0){
-res.fullStrip=_3f0;
-}
-return res;
-};
-Board.prototype.gotoFen=function(fen,_3f6){
-if(clog){
-console.log("about to find fen for:"+fen);
-}
-var _3f7=this.findFen(this.moveArray[0],this,fen,_3f6);
-if(_3f7){
-if(clog){
-console.log("found move:"+_3f7.output()+" for fen:"+fen);
-}
-this.gotoMoveIndex(_3f7.index);
-}else{
-if(clog){
-console.log("didn't find move for fen:"+fen);
-}
-}
-};
-Board.prototype.getMaxMoveIndex=function(){
-return this.moveArray.length-1;
-};
-Board.prototype.gotoMoveIndex=function(_3f8,_3f9,_3fa,_3fb,_3fc){
-if(clog){
-console.log("going to move index:"+_3f8);
-}
-var _3fd=!_3fa;
-if(!this.moveArray||this.moveArray.length<=_3f8||(_3f8==-1&&this.moveArray.length==0)){
-return;
-}
-var _3fe=this.boardName+"-piecestaken";
-var _3ff=YAHOO.util.Dom.get(_3fe);
-if(_3ff){
-_3ff.innerHTML="";
-}
-if(_3f8==-1){
-var flip=false;
-if(this.prev_move&&!this.prev_move.prevMoveEnpassant){
-flip=true;
-}
-this.setupFromFen(this.startFen,flip,false,_3fc);
-if(this.prev_move&&!this.prev_move.prevMoveEnpassant){
-this.makeMove(this.prev_move,this.boardPieces[this.prev_move.fromColumn][this.prev_move.fromRow],!_3fa,this.moveAnimationLength,true,true);
-this.updateToPlay();
-}
-if(this.moveArray&&this.moveArray.length>0){
-this.setCurrentMove(this.moveArray[0],_3f9);
-}else{
-this.setCurrentMove(this.firstMove,_3f9);
-}
-if(!_3f9){
-this.setForwardBack();
-}
-if(!_3fb){
-for(var i=0;i<this.registeredGotoMoveIndexListeners.length;i++){
-var _402=this.registeredGotoMoveIndexListeners[i].gotoMoveIndexCallback(_3f8);
-}
-}
-return;
-}
-var _403=new Array();
-var move=this.moveArray[_3f8];
-if(clog&&move){
-console.log("gotomoveindex move:"+move.output());
-if(move.next){
-console.log("gotomoveindex move.next:"+move.next.output());
-}
-if(move.prev){
-console.log("gotomoveindex move.prev:"+move.prev.output());
-}
-}
-var _405=0;
-if(move.next!=null){
-this.setCurrentMove(move.next,_3f9);
-}else{
-if(clog){
-console.log("move next null with move:"+move.output());
-}
-}
-while(move!=null&&!move.dummy){
-_403[_405++]=move;
-move=move.prev;
-}
-var flip=false;
-if(this.prev_move&&!this.prev_move.prevMoveEnpassant){
-flip=true;
-}
-this.setupFromFen(this.startFen,flip,false,true);
-if(this.prev_move&&!this.prev_move.prevMoveEnpassant){
-if(clog){
-console.log("gotomoveindex prev_move:"+this.prev_move.output());
-}
-this.makeMove(this.prev_move,this.boardPieces[this.prev_move.fromColumn][this.prev_move.fromRow],false,this.moveAnimationLength,true,true);
-this.updateToPlay();
-}
-for(var i=_405-1;i>=1;i--){
-var move=_403[i];
-this.makeMove(move,this.boardPieces[move.fromColumn][move.fromRow],false,this.moveAnimationLength,true,false);
-this.toggleToMove();
-}
-if(!_3f9){
-this.convertPiecesFromLightWeight(_3f8);
-}
-var move=_403[0];
-this.makeMove(move,this.boardPieces[move.fromColumn][move.fromRow],_3fd,this.moveAnimationLength,true,true);
-this.toggleToMove();
-this.updateToPlay();
-if(!_3f9){
-this.setForwardBack();
-}
-if(!_3fb){
-for(var i=0;i<this.registeredGotoMoveIndexListeners.length;i++){
-var _402=this.registeredGotoMoveIndexListeners[i].gotoMoveIndexCallback(_3f8);
-}
-}
-};
-Board.prototype.gotoStart=function(e){
-if(this.disableNavigation){
-return;
-}
-if(this.lastFromSquare){
-YAHOO.util.Dom.removeClass(this.lastFromSquare,"ct-from-square");
-}
-if(this.lastToSquare){
-YAHOO.util.Dom.removeClass(this.lastToSquare,"ct-to-square");
-}
-this.gotoMoveIndex(-1);
-if(this.problem){
-if(this.currentMove&&this.currentMove.bestMoves){
-this.problem.showBestMoves(this.currentMove,this.currentMove.bestMoves,this.currentMove.correctMove,this.currentMove.wrongMove);
-}else{
-this.problem.clearBestMoves();
-}
-}
-};
-Board.prototype.gotoEnd=function(e){
-if(this.disableNavigation){
-return;
-}
-if(clog){
-console.log("goto end called");
-}
-if(this.tactics&&this.tactics.problemActive){
-this.tactics.autoForward=false;
-this.tactics.markProblem(false,false,"NULL","NULL");
-}
-if(clog){
-console.log("jumping to start");
-}
-this.gotoMoveIndex(-1,true,true,true);
-var _408=0;
-while(this.currentMove&&this.currentMove.next!=null){
-var move=this.currentMove;
-if(clog){
-console.log("going to end move:"+move.output());
-}
-this.makeMove(move,this.boardPieces[move.fromColumn][move.fromRow],false,this.moveAnimationLength,true,true);
-_408=move.index;
-this.toggleToMove();
-this.setCurrentMove(move.next);
-}
-for(var i=0;i<this.registeredGotoMoveIndexListeners.length;i++){
-var _40b=this.registeredGotoMoveIndexListeners[i].gotoMoveIndexCallback(_408);
-}
-};
-Board.prototype.gotoPly=function(_40c,_40d){
-if(clog){
-console.log("goto ply called");
-}
-this.gotoMoveIndex(-1,true,true,true);
-var cnt=1;
-var _40f=0;
-while(cnt<=_40c&&this.currentMove&&this.currentMove.next!=null){
-var move=this.currentMove;
-if(clog){
-console.log("going to end move:"+move.output());
-}
-this.makeMove(move,this.boardPieces[move.fromColumn][move.fromRow],false,this.moveAnimationLength,true,true);
-_40f=move.index;
-this.toggleToMove();
-this.setCurrentMove(move.next);
-cnt++;
-}
-if(_40d){
-for(var i=0;i<this.registeredGotoMoveIndexListeners.length;i++){
-var _412=this.registeredGotoMoveIndexListeners[i].gotoMoveIndexCallback(_40f);
-}
-}
-};
-Board.prototype.playMove=function(self){
-if(!self.keepPlayingMoves||!self.currentMove||!self.currentMove.next){
-var play=YAHOO.util.Dom.get(this.boardName+"-play");
-play.src=this.boardImagePath+"/images/control_play_blue"+this.getVersString()+".gif";
-self.keepPlayingMoves=false;
-return;
-}
-self.forwardMove();
-setTimeout(function(){
-self.playMove(self);
-},self.pauseBetweenMoves);
-};
-Board.prototype.insertLineToMoveIndexPosition=function(_415,_416,_417,_418,_419){
-var _418=Board.copyMoves(_418,true,true);
-var mv=null;
-if(!this.moveArray||this.moveArray.length==0||this.moveArray[0]==null||this.moveArray[0].atEnd||_416==this.startFen){
-mv=null;
-if(clog){
-console.log("no moves or initial position, using first move");
-}
-}else{
-if(clog){
-console.log("calling find fen....");
-}
-if(_415>=0){
-mv=this.moveArray[_415];
-}
-if(!mv){
-mv=this.findFen(this.moveArray[0],this,_416,false);
-}
-if(clog){
-console.log("finished calling find fen");
-}
-if(!mv){
-return;
-}
-}
-var _41b=-1;
-if(this.currentMove){
-if(this.currentMove.prev){
-_41b=this.currentMove.prev.index;
-}
-}
-if(_417){
-_418[0].beforeComment=_417;
-}
-if(clog){
-if(mv){
-console.log("mv:"+mv.output()+" mv next:"+mv.next+" oldCurrentMoveIndex:"+_41b);
-}else{
-console.log("mv: null oldCurrentMoveIndex:"+_41b);
-}
-}
-var _41c=null;
-var _41d=null;
-if(mv&&mv.next&&!mv.next.atEnd){
-_41d=mv.next;
-}else{
-_41c=mv;
-}
-if(mv){
-this.gotoMoveIndex(mv.index);
-}else{
-if(this.moveArray&&this.moveArray.length>0){
-_41d=this.moveArray[0];
-if(_41d){
-if(clog){
-console.log("variation parent from first move:"+_41d.output());
-}
-this.gotoMoveIndex(-1);
-}
-}else{
-this.currentMove=null;
-}
-}
-if(clog){
-if(this.currentMove){
-console.log("current move before insertline:"+this.currentMove.output());
-}else{
-console.log("no current move before insertline");
-}
-}
-if(clog){
-if(_41d){
-console.log("var parent:"+_41d.output());
-}else{
-console.log("var null");
-}
-if(_41c){
-console.log("move ins after:"+_41c.output());
-}else{
-console.log("moveinsafter null");
-}
-}
-this.insertMovesFromMoveList(_418[0],true,_41d,_41c,_419);
-if(clog){
-if(this.currentMove){
-console.log("current move after insertline:"+this.currentMove.output());
-}else{
-console.log("no current move after insertline");
-}
-}
-this.gotoMoveIndex(_41b);
-};
-Board.prototype.getVersString=function(){
-var _41e=".vers"+SITE_VERSION;
-if(!this.addVersion){
-_41e="";
-}
-return _41e;
-};
-Board.prototype.playMoves=function(e){
-if(this.disableNavigation){
-return;
-}
-this.keepPlayingMoves=true;
-var play=YAHOO.util.Dom.get(this.boardName+"-play");
-play.src=this.boardImagePath+"/images/disabled_control_play_blue"+this.getVersString()+".gif";
-this.playMove(this);
-};
-Board.prototype.stopPlayingMoves=function(e){
-this.keepPlayingMoves=false;
-};
-Board.prototype.pasteFen=function(e){
-for(var i=0;i<this.registeredPasteFenClickedListeners.length;i++){
-var _424=this.registeredPasteFenClickedListeners[i].pasteFenClickedCallback();
-}
-};
-Board.prototype.playComp=function(e){
-window.open("/play-computer/"+this.boardToFen());
-};
-Board.prototype.showBoardFen=function(e){
-var fen=this.boardToFen();
-var _428=new YAHOO.widget.SimpleDialog("fenDialog",{fixedcenter:false,visible:true,draggable:true,constraintoviewport:false,buttons:[{id:"linkbutton4",text:"Test"},{text:_js("Ok"),handler:function(){
-_428.hide();
-},isDefault:true}]});
-_428.setHeader(_js("Position FEN"));
-_428.setBody("<textarea class=\"showPgn\" id=\"fenText\" rows=\"1\" readonly=\"true\" cols=\""+(fen.length+9)+"\">"+fen+"</textarea>");
-_428.render(document.body);
-_428.setFooter("<span id=\"copyToComment\"></span><span id=\"fenok\"></span>");
-_428.center();
-var _429=this;
-if(this.problem&&this.problem.comments){
-var _42a=new YAHOO.widget.Button({type:"button",label:_js("Copy To Comment"),container:"fenok",onclick:{fn:function(){
-_429.copyFenToComment(fen,Board.COPY_COMMENT_PROBLEM);
-_428.hide();
-}}});
-}
-if(this.gameComments){
-var _42b=new YAHOO.widget.Button({type:"button",label:_js("Copy To Game Comment"),container:"fenok",onclick:{fn:function(){
-_429.copyFenToComment(fen,Board.COPY_COMMENT_GAME);
-_428.hide();
-}}});
-}
-if(this.playerComments){
-var _42c=new YAHOO.widget.Button({type:"button",label:_js("Copy To Player Comment"),container:"fenok",onclick:{fn:function(){
-_429.copyFenToComment(fen,Board.COPY_COMMENT_PLAYER);
-_428.hide();
-}}});
-}
-if(this.openingComments){
-var _42d=new YAHOO.widget.Button({type:"button",label:_js("Copy To Opening Comment"),container:"fenok",onclick:{fn:function(){
-_429.copyFenToComment(fen,Board.COPY_COMMENT_OPENING);
-_428.hide();
-}}});
-}
-var _42e=new YAHOO.widget.Button({type:"button",label:_js("Ok"),container:"fenok",onclick:{fn:function(){
-_428.hide();
-}}});
-};
-Board.prototype.copyFenToComment=function(fen,_430){
-switch(_430){
-case (Board.COPY_COMMENT_PROBLEM):
-if(this.problem){
-var flip=false;
-var col=fen.split(" ")[1];
-var col2=this.startFen.split(" ")[1];
-if(col==col2){
-flip=true;
-}
-this.problem.comments.copyFenToComment(fen,flip);
-}
-break;
-case (Board.COPY_COMMENT_GAME):
-this.gameComments.copyFenToComment(fen);
-break;
-case (Board.COPY_COMMENT_PLAYER):
-this.playerComments.copyFenToComment(fen);
-break;
-case (Board.COPY_COMMENT_OPENING):
-this.openingComments.copyFenToComment(fen);
-break;
-}
-};
-Board.COPY_COMMENT_PROBLEM=0;
-Board.COPY_COMMENT_PLAYER=1;
-Board.COPY_COMMENT_GAME=2;
-Board.COPY_COMMENT_OPENING=3;
-Board.prototype.copyAnalysisToComment=function(_434,fen,flip,_437){
-switch(_437){
-case (Board.COPY_COMMENT_PROBLEM):
-if(this.problem){
-this.problem.comments.copyAnalysisToComment(_434,fen,flip);
-}
-break;
-case (Board.COPY_COMMENT_GAME):
-this.gameComments.copyAnalysisToComment(_434,fen,flip);
-break;
-case (Board.COPY_COMMENT_PLAYER):
-this.playerComments.copyAnalysisToComment(_434,fen,flip);
-break;
-case (Board.COPY_COMMENT_OPENING):
-this.openingComments.copyAnalysisToComment(_434,fen,flip);
-break;
-}
-};
-Board.squareColours=new Array(8);
-var pCol=ChessPiece.BLACK;
-for(var i=0;i<8;i++){
-Board.squareColours[i]=new Array(8);
-for(var j=0;j<8;j++){
-Board.squareColours[i][j]=pCol;
-pCol=Board.invertToMove(pCol);
-}
-pCol=Board.invertToMove(pCol);
-}
-Board.getSquareColour=function(i,j){
-return Board.squareColours[i][j];
-};
-Board.prototype.isInsufficientMaterial=function(_43a){
-var _43b=0;
-var _43c=0;
-var _43d=0;
-var _43e=0;
-var _43f=0;
-var _440=0;
-var _441=0;
-var _442=0;
-var _443=0;
-var _444=0;
-for(var i=0;i<8;i++){
-for(var j=0;j<8;j++){
-var p=this.boardPieces[i][j];
-if(p){
-if(p.piece==ChessPiece.PAWN){
-if(p.colour==ChessPiece.WHITE){
-_43b++;
-}else{
-_43c++;
-}
-}else{
-if(p.piece!=ChessPiece.KING){
-if(p.colour==ChessPiece.WHITE){
-_43d++;
-if(p.piece==ChessPiece.KNIGHT){
-_43f++;
-}else{
-if(p.piece==ChessPiece.BISHOP){
-if(Board.getSquareColour(i,j)==ChessPiece.WHITE){
-_441++;
-}else{
-_442++;
-}
-}
-}
-}else{
-_43e++;
-if(p.piece==ChessPiece.KNIGHT){
-_440++;
-}else{
-if(p.piece==ChessPiece.BISHOP){
-if(Board.getSquareColour(i,j)==ChessPiece.WHITE){
-_443++;
-}else{
-_444++;
-}
-}
-}
-}
-}
-}
-}
-}
-}
-function checkBothPieces(){
-if(_43b>0||_43c>0){
-return false;
-}
-if(_43d==_43e==0){
-return true;
-}else{
-if(_43d==_43f&&_43e==0){
-return true;
-}else{
-if(_43e==_440&&_43d==0){
-return true;
-}else{
-if(_43d==_441&&_43e==_443){
-return true;
-}else{
-if(_43d==_442&&_43e==_444){
-return true;
-}else{
-if(_43e==_443&&_43d==_441){
-return true;
-}else{
-if(_43d==_444&&_43d==_442){
-return true;
-}
-}
-}
-}
-}
-}
-}
-return false;
-}
-if(_43a==-1){
-return checkBothPieces();
-}else{
-if(_43a==ChessPiece.WHITE){
-if(checkBothPieces()){
-return true;
-}
-if(_43b==0&&_43d==0){
-return true;
-}else{
-if(_43d==_441&&_43e==_443){
-return true;
-}else{
-if(_43d==_442&&_43e==_444){
-return true;
-}else{
-if(_43d==_43f&&(_43e==0&&_43c==0)){
-return true;
-}
-}
-}
-}
-return false;
-}else{
-if(checkBothPieces()){
-return true;
-}
-if(_43c==0&&_43e==0){
-return true;
-}else{
-if(_43e==_443&&_43d==_441){
-return true;
-}else{
-if(_43e==_444&&_43d==_442){
-return true;
-}else{
-if(_43e==_440&&(_43d==0&&_43b==0)){
-return true;
-}
-}
-}
-}
-return false;
-}
-}
-};
-Board.prototype.analysePosition=function(e){
-window.parentBoard=this;
-var _449=(this.pieceSize*8)+450+50;
-var _44a=(this.pieceSize*8)+250;
-var _44b=window.open("/windows/analyse.html",this.analysisWindowName,"width="+_449+",height="+_44a+",resizable=1,scrollbars=1,location=0,copyhistory=0,status=0,toolbar=0,menubar=0");
-_44b.focus();
-};
-Board.prototype.backMove=function(e){
-if(this.disableNavigation){
-return;
-}
-if(this.blockFowardBack||this.deferredBlockForwardBack){
-return;
-}
-var _44d=this.currentMove;
-if(this.tactics){
-if(this.tactics.problemActive){
-return;
-}
-}
-this.blockForwardBack=true;
-if(this.currentMove&&this.currentMove.prev!=null){
-YAHOO.util.Dom.removeClass(this.lastFromSquare,"ct-from-square");
-YAHOO.util.Dom.removeClass(this.lastToSquare,"ct-to-square");
-this.lastFromRow=null;
-if(this.oldSelectedSquare){
-YAHOO.util.Dom.removeClass(this.oldSelectedSquare,"ct-source-square");
-}
-this.oldSelectedSquare=null;
-this.oldSelectedPiece=null;
-var col=this.toMove;
-if(col==ChessPiece.WHITE){
-col=ChessPiece.BLACK;
-}else{
-col=ChessPiece.WHITE;
-}
-if(!this.dontUpdatePositionReachedTable){
-var _44f=this.boardToUniqueFen(col);
-if(this.positionsSeen[_44f]){
-this.positionsSeen[_44f]--;
-}
-}
-this.toggleToMove();
-this.updateToPlay();
-move=this.currentMove.prev;
-if(move){
-if(clog){
-console.log("backwards moving to prev move:"+move.output()+" from current move:"+this.currentMove.output());
-}
-}
-this.setCurrentMove(move);
-piece=this.boardPieces[move.toColumn][move.toRow];
-if(!piece){
-if(clog){
-console.log("got empty piece in backMove");
-}
-}
-takenPiece=move.taken;
-this.board_xy=null;
-piece.setPosition(move.fromColumn,move.fromRow,true,null,this.moveAnimationLength);
-this.boardPieces[move.fromColumn][move.fromRow]=piece;
-if(move.promotion){
-piece.changePiece("p");
-}
-piece.setVisible(true);
-this.canCastleQueenSide[0]=move.preCastleQueenSide[0];
-this.canCastleQueenSide[1]=move.preCastleQueenSide[1];
-this.canCastleKingSide[0]=move.preCastleKingSide[0];
-this.canCastleKingSide[1]=move.preCastleKingSide[1];
-this.halfMoveNumber=move.preHalfMoveNumber;
-var _450=false;
-if(piece.piece==ChessPiece.KING&&Math.abs(move.fromColumn-move.toColumn)>1){
-_450=true;
-}
-this.moveNumber--;
-if(this.moveNumber<=0){
-this.moveNumber=1;
-}
-if(takenPiece&&!_450){
-this.board_xy=null;
-var _451=move.toColumn;
-var _452=move.toRow;
-if(piece.piece==ChessPiece.PAWN&&move.fromColumn!=move.toColumn&&takenPiece.enPassant){
-_452=move.fromRow;
-this.boardPieces[move.toColumn][move.toRow]=null;
-}
-takenPiece.setPosition(_451,_452,false,null,this.moveAnimationLength);
-this.boardPieces[_451][_452]=takenPiece;
-move.taken=null;
-this.processTaken(takenPiece,false);
-}else{
-this.boardPieces[move.toColumn][move.toRow]=null;
-}
-if(_450){
-var _453=move.toRow;
-var _454;
-var _455;
-if(move.fromColumn>move.toColumn){
-_454=0;
-_455=3;
-}else{
-_454=7;
-_455=5;
-}
-var _456=this.boardPieces[_455][_453];
-_456.setPosition(_454,_453,true,null,this.moveAnimationLength);
-this.boardPieces[_454][_453]=_456;
-this.boardPieces[_455][_453]=null;
-}
-if(move!=null&&move.prev!=null&&move.prev.next!=move){
-move=move.prev.next;
-if(clog){
-if(move){
-console.log("moving backwards out of variation moving to:"+move.output());
-}else{
-console.log("jumping out of variation to null move");
-}
-}
-}
-for(var i=0;i<this.registeredBackMovePreCurrentListeners.length;i++){
-var _458=this.registeredBackMovePreCurrentListeners[i].backMovePreCurrentCallback(move,_44d);
-}
-this.setCurrentMove(move);
-this.setForwardBack();
-}
-this.blockForwardBack=false;
-};
-Board.prototype.getMovesToCurrent=function(){
-var mvs=[];
-var res=[];
-var mv=this.currentMove;
-if(!mv||!mv.prev){
-return res;
-}
-mv=mv.prev;
-while(mv){
-mvs.push(mv);
-mv=mv.prev;
-}
-for(var i=mvs.length-1;i>=0;i--){
-res.push(mvs[i].toMoveString());
-}
-return res;
-};
-Board.prototype.getAllMoves=function(){
-var mv=null;
-if(this.moveArray&&this.moveArray.length>0){
-mv=this.moveArray[0];
-}else{
-mv=this.firstMove;
-}
-if(!mv){
-return [];
-}
-var mvs=[];
-var res=[];
-while(mv&&!mv.atEnd){
-res.push(mv.toMoveString());
-mv=mv.next;
-}
-return res;
-};
-Board.prototype.countPly=function(){
-var mv=null;
-if(this.moveArray&&this.moveArray.length>0){
-mv=this.moveArray[0];
-}else{
-mv=this.firstMove;
-}
-var _461=0;
-while(mv&&!mv.atEnd){
-_461++;
-mv=mv.next;
-}
-return _461;
-};
-Board.prototype.processTaken=function(_462,_463){
-var _464=this.boardName+"-piecestaken";
-var _465=YAHOO.util.Dom.get(_464);
-if(_465){
-if(_463){
-var _466=get_image_str(ChessPiece.pieceIconNames[_462.colour][_462.piece],this.boardImagePath,this.pieceSet,this.pieceTakenSize,this.addVersion);
-_465.innerHTML=_465.innerHTML+"<img src=\""+_466+"\"/>";
-}else{
-var _467=_465.innerHTML.split("<");
-_465.innerHTML="";
-for(var i=1;i<_467.length-1;i++){
-_465.innerHTML=_465.innerHTML+"<"+_467[i];
-}
-}
-}
-};
-Pool=function(){
-this.pool=new Array();
-this.count=-1;
-this.numGot=0;
-this.numPut=0;
-};
-Pool.prototype.getObject=function(){
-var o=null;
-if(this.count>=0){
-this.numGot++;
-o=this.pool[this.count--];
-}
-return o;
-};
-Pool.prototype.putObject=function(o){
-if(o!=null){
-this.numPut++;
-this.pool[++this.count]=o;
-}
-};
-var boardPool=new Pool();
-function touchHandler(_46b){
-if(_46b.changedTouches&&_46b.changedTouches.length>1){
-return;
-}
-_46b.preventDefault();
-var _46c=_46b.changedTouches,_46d=_46c[0],type="";
-switch(_46b.type){
-case "touchstart":
-type="mousedown";
-break;
-case "touchmove":
-type="mousemove";
-break;
-case "touchend":
-type="mouseup";
-break;
-default:
-return;
-}
-var _46f=document.createEvent("MouseEvents");
-_46f.initMouseEvent(type,true,true,window,1,_46d.screenX,_46d.screenY,_46d.clientX,_46d.clientY,false,false,false,false,0,null);
-_46d.target.dispatchEvent(_46f);
-}
-function initIphone(_470){
-_470.addEventListener("touchstart",touchHandler,true);
-_470.addEventListener("touchmove",touchHandler,true);
-_470.addEventListener("touchend",touchHandler,true);
-_470.addEventListener("touchcancel",touchHandler,true);
-}
-FenBoard=function(fen,_472){
-if(typeof _472.pieceSize=="undefined"){
-_472.pieceSize=24;
-}
-_472.fenBoard=true;
-_472.dontOutputNavButtons=true;
-_472.avoidMouseoverActive=true;
-this.chessapp=new ChessApp(_472);
-this.chessapp.init();
-this.chessapp.board.disableUpdateToPlay=true;
-this.chessapp.board.setupFromFen(fen,false,false,false);
-this.board=this.chessapp.board;
-this.board.startFen=fen;
+(PgnViewer = function (e, r) {
+	var t = new BoardConfig();
+	e && t.applyConfig(e),
+		window._pvObject || (window._pvObject = new Array()),
+		(window._pvObject[t.boardName] = this),
+		((e = t).pgnMode = !0),
+		(e.scrollVariations = !0),
+		(this.chessapp = new ChessApp(e)),
+		(this.finishedCallback = r),
+		e.loadImmediately ? (this.chessapp.init(null, null, null, this, !0), (this.board = this.chessapp.board)) : YAHOO.util.Event.onDOMReady(this.setup, this, !0);
+}),
+	(PgnViewer.prototype.setup = function () {
+		this.chessapp.init(null, null, null, this, !0), (this.board = this.chessapp.board);
+	}),
+	(PgnViewer.prototype.updatePieceCallback = function (e, r, t, s, a, i, o, n, h, l, d, c) {
+		var b = new Object(),
+			u = d,
+			g = !1,
+			p = Board.getVarMove(u, s, t, r, e);
+		return u.fromColumn != r.column || u.fromRow != r.row || u.toRow != s || u.toColumn != t || ("" != e && e != u.promotion) ? p && ((u = p), (g = !0)) : (g = !0), (b.move = u), (b.allowMove = g), (b.dontMakeOpponentMove = !1), b;
+	}),
+	(PgnViewer.prototype.setupFromPgn = function (e, r) {
+		this.chessapp.pgn.setupFromPGN(e, r);
+	}),
+	(PgnViewer.prototype.setupFromFen = function (e, r, t, s) {
+		this.chessapp.pgn.board.setupFromFen(e, r, t, s);
+	}),
+	(PGNGame = function (e, r, t, s, a, i, o, n, h, l, d, c, b) {
+		(this.movesseq = e),
+			(this.startFen = r),
+			(this.blackPlayer = t),
+			(this.whitePlayer = s),
+			(this.pgn_result = a),
+			(this.event = i),
+			(this.site = o),
+			(this.date = n),
+			(this.round = h),
+			(this.start_movenum = l),
+			(this.whitePlayerElo = d),
+			(this.blackPlayerElo = c),
+			(this.eco = b);
+	}),
+	(PGN = function (e) {
+		(this.board = e), (this.pgnGames = new Array()), (this.lastShownGame = 0);
+	}),
+	(PGN.prototype.pollPGNFromURL = function (e, r, t) {
+		var s = this;
+		this.getPGNFromURL(e, r),
+			this.foundResult && ((t = this.board.pollPGNMillisecondsPostResult), this.foundResultPolls++),
+			this.foundResultPolls >= this.board.numberPollsAfterResult
+				? (this.finishedPolling = !0)
+				: ((this.pollTime = t),
+				  (this.lastPoll = new Date().getTime()),
+				  setTimeout(function () {
+					  s.pollPGNFromURL(e, r, t);
+				  }, t));
+	}),
+	(PGN.prototype.getPGNFromURL = function (url, gotoEnd) {
+		var randString = new Date().getTime() + "-" + parseInt(99999 * Math.random());
+		YAHOO.util.Connect.asyncRequest(
+			"GET",
+			url + "?rs=" + randString,
+			{
+				success: function (o) {
+					var resTag = "",
+						site = "",
+						moveText = "",
+						re = eval("/\\n[^[]/");
+					o.responseText.indexOf("\r") >= 0 && eval("/\\r[^[]/");
+					var ind = o.responseText.search(re);
+					if ((ind >= 0 && (moveText = o.responseText.substring(ind)), (re = eval("/\\[Result /")), (ind = o.responseText.search(re)) >= 0)) {
+						var ind2 = o.responseText.indexOf("\n", ind);
+						ind2 < 0 && (ind2 = o.responseText.indexOf("\r", ind)), ind2 >= 0 && (resTag = o.responseText.substring(ind, ind2));
+					}
+					if (((re = eval("/\\[Site /")), (ind = o.responseText.search(re)) >= 0)) {
+						var ind2 = o.responseText.indexOf("]", ind);
+						ind2 >= 0 && (site = o.responseText.substring(ind + 6, ind2 - 1));
+					}
+					if (site)
+						if (this.board.fideClock) {
+							var whiteClock = YAHOO.util.Dom.get(this.board.boardName + "-whitePlayerClock"),
+								blackClock = YAHOO.util.Dom.get(this.board.boardName + "-blackPlayerClock"),
+								ss = site.split("-"),
+								whiteTime = ss[0],
+								blackTime = "0";
+							'"' == whiteTime.charAt(0) && (whiteTime = whiteTime.substr(1)), ss.length > 1 && (blackTime = ss[1]), whiteClock && (whiteClock.innerHTML = whiteTime), blackClock && (blackClock.innerHTML = blackTime);
+						} else {
+							var siteDiv = YAHOO.util.Dom.get(this.board.boardName + "-site");
+							siteDiv && (siteDiv.innerHTML = site);
+						}
+					(this.currentMoveText == moveText && this.currentResultTag == resTag) || ((this.currentMoveText = moveText), (this.currentResultTag = resTag), this.setupFromPGN(o.responseText, gotoEnd));
+				},
+				failure: function (e) {
+					this.board.hidePGNErrors || alert("pgn load failed:" + e.statusText + " for file:" + url);
+				},
+				scope: this,
+			},
+			"rs2=" + randString
+		);
+	}),
+	(PGN.prototype.getMoveFromPGNMove = function (e, r, t) {
+		var s = null,
+			a = !1,
+			i = null;
+		if (
+			("#" == e.charAt(e.length - 1)
+				? (!0, !0, (e = e.substr(0, e.length - 1)))
+				: "+" == e.charAt(e.length - 1) && (!0, e.length > 1 && "+" == e.charAt(e.length - 2) ? (!0, (e = e.substr(0, e.length - 2))) : (e = e.substr(0, e.length - 1))),
+			"O-O-O" == e)
+		)
+			return "w" == r ? this.board.createMoveFromString("e1c1") : this.board.createMoveFromString("e8c8");
+		if ("O-O" == e) return "w" == r ? this.board.createMoveFromString("e1g1") : this.board.createMoveFromString("e8g8");
+		var o = e.indexOf("=");
+		if (o >= 0) {
+			var n;
+			(n = (s = e.substr(o + 1, 1)).charAt(0)), this.board.pieceCharToPieceNum(n), !0, (e = e.substr(0, o));
+		}
+		var h = e.charAt(e.length - 1);
+		("Q" != h && "R" != h && "N" != h && "B" != h) || ((s = h + ""), this.board.pieceCharToPieceNum(s), !0, (e = e.substr(0, e.length - 1)));
+		var l = e.substr(e.length - 2, 2),
+			d = l.charCodeAt(0) - "a".charCodeAt(0),
+			c = l.charCodeAt(1) - "1".charCodeAt(0);
+		if (d > 7 || d < 0 || c > 7 || c < 0)
+			return (
+				(this.lastMoveFromError = __js("Error processing to Square:{TO_SQUARE} on move:{MOVE}", [
+					["TO_SQUARE", l],
+					["MOVE", e],
+				])),
+				null
+			);
+		e.length > 2 && ("x" == e.charAt(e.length - 3) ? ((a = !0), (i = e.substr(0, e.length - 3))) : (i = e.substr(0, e.length - 2)));
+		var b = new Array(),
+			u = 0,
+			g = null,
+			p = "w" == r ? ChessPiece.WHITE : ChessPiece.BLACK;
+		switch (e.charAt(0)) {
+			case "K":
+			case "k":
+				g = ChessPiece.KING;
+				break;
+			case "Q":
+			case "q":
+				g = ChessPiece.QUEEN;
+				break;
+			case "R":
+			case "r":
+				g = ChessPiece.ROOK;
+				break;
+			case "B":
+				g = ChessPiece.BISHOP;
+				break;
+			case "N":
+			case "n":
+				g = ChessPiece.KNIGHT;
+				break;
+			case "P":
+			case "p":
+				g = ChessPiece.PAWN;
+				break;
+			default:
+				g = ChessPiece.PAWN;
+		}
+		var m = null,
+			v = null;
+		if (i) {
+			var f = i.toLowerCase().charAt(0);
+			if (f == i.charAt(0) && f >= "a" && f <= "h") (v = f), 2 == i.length && (m = i.charAt(1));
+			else if (i.length > 1)
+				if (2 == i.length) {
+					var P = i.charAt(1);
+					P >= "1" && P <= "8" ? (m = P) : (v = P);
+				} else {
+					if (3 != i.length) return (this.lastMoveFromError = __js("Error: unhandled fromChars:{FROM_CHARS}", [["FROM_CHARS", i]])), null;
+					if (((v = i.charAt(1)), (m = i.charAt(2)), v >= "1" && v <= "9")) {
+						var A = v;
+						(v = m), (m = A);
+					}
+				}
+		}
+		for (var O = 0; O < 8; O++)
+			for (var w = 0; w < 8; w++) {
+				var M = this.board.boardPieces[O][w];
+				if (null != M && M.colour == p && M.piece == g && this.board.canMove(M, d, c, t, !0)) {
+					var T = String.fromCharCode("a".charCodeAt(0) + O).charAt(0),
+						C = String.fromCharCode("1".charCodeAt(0) + w).charAt(0);
+					(null != v && v != T) || (null != m && m != C) || (b[u++] = M);
+				}
+			}
+		if (0 == u) return (this.lastMoveFromError = __js("no candidate pieces for:{MOVE}", [["MOVE", e]])), null;
+		if (u > 1)
+			return (
+				(this.lastMoveFromError = __js("Ambiguous:{MOVE} with fromChars:{FROM_CHARS} disambigRow:{DISAMBIG_ROW} disambigCol:{DISAMBIG_COL}", [
+					["MOVE", e],
+					["FROM_CHARS", i],
+					["DISAMBIG_ROW", m],
+					["DISAMBIG_COL", v],
+				])),
+				null
+			);
+		var N = b[0],
+			k = "";
+		return (k += String.fromCharCode("a".charCodeAt(0) + N.column)), (k += String.fromCharCode("1".charCodeAt(0) + N.row)), a && (k += "x"), (k += l), s && (k += s), this.board.createMoveFromString(k);
+	}),
+	(PGN.prototype.parseTag = function (e, r, t) {
+		if (r.substr(t, e.length + 3) == "[" + e + ' "') {
+			var s = r.indexOf('"', t + e.length + 3);
+			if (s >= 0) return r.substring(t + e.length + 3, s);
+		}
+		return null;
+	}),
+	(PGN.prototype.parsePGN = function (e, r, t) {
+		ctime && console.time("parsePGN"), (e = (e = e.replace(/&nbsp;/g, " ")).replace(/^\s+|\s+$/g, ""));
+		this.pgn = e;
+		var s = new Array();
+		(this.pgnGames = new Array()), (this.finishedParseCallback = r), (this.startParseTime = new Date().getTime());
+		var a = this.parsePGN_cont(s, 1, 0, 0, t),
+			i = new Object();
+		return a ? ((i.parsedOk = !1), (i.errorString = a), (i.pgnGames = null)) : ((i.parsedOk = !0), (i.pgnGames = this.pgnGames)), ctime && console.timeEnd("parsePGN"), i;
+	}),
+	(PGN.prototype.parsePGN_cont = function (e, r, t, s, a) {
+		for (var i = this.pgn, o = this.board.boardName + "-progress", n = YAHOO.util.Dom.get(o); s < i.length; ) {
+			var h = "",
+				l = "",
+				d = "",
+				c = "",
+				b = "",
+				u = "?",
+				g = "",
+				p = "?",
+				m = "?",
+				v = "",
+				f = "w",
+				P = 0,
+				A = (new Array(), 0),
+				O = "",
+				w = null,
+				M = null,
+				T = new Array(),
+				C = new Array(),
+				N = new Array(),
+				k = new Array(),
+				G = new Array();
+			(this.board.pieceMoveDisabled = !0), this.board.initialFen ? (this.board.startFen = this.board.initialFen) : (this.board.startFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+			var y = 0;
+			for (y = s; y < i.length; y++) {
+				var E = this.parseTag("FEN", i, y);
+				if (
+					(E && "?" != E
+						? (this.board.startFen = E)
+						: (E = this.parseTag("White", i, y)) && "?" != E
+						? (g = E)
+						: (E = this.parseTag("Black", i, y)) && "?" != E
+						? (l = E)
+						: (E = this.parseTag("Result", i, y)) && "?" != E
+						? (h = E)
+						: (E = this.parseTag("Event", i, y)) && "?" != E
+						? (d = E)
+						: (E = this.parseTag("Site", i, y)) && "?" != E
+						? (c = E)
+						: (E = this.parseTag("Date", i, y)) && "?" != E
+						? (b = E)
+						: (E = this.parseTag("Round", i, y)) && "?" != E
+						? (u = E)
+						: (E = this.parseTag("WhiteElo", i, y)) && "?" != E
+						? (p = E)
+						: (E = this.parseTag("BlackElo", i, y)) && "?" != E
+						? (m = E)
+						: (E = this.parseTag("ECO", i, y)) && "?" != E && (v = E),
+					"[" != i.charAt(y))
+				)
+					if ("{" != i.charAt(y)) {
+						if ("." == i.substr(y, 1)) {
+							for (L = y - 1; L >= 0 && i.charAt(L) >= "0" && i.charAt(L) <= "9"; ) L--;
+							L++, i.charAt(L) >= "0" && i.charAt(L) <= "9" && (r = parseInt(i.substring(L, y)));
+							break;
+						}
+					} else {
+						if (!((H = i.indexOf("}", y + 1)) >= 0)) {
+							W = _js("PgnViewer: Error parsing PGN. Found unclosed {");
+							return this.finishedParseCallback && this.finishedParseCallback(a, W), W;
+						}
+						S = i.substring(y + 1, H);
+						(y = H), (O += "{ " + S + " } ");
+					}
+				else {
+					for (L = y + 1; L < i.length && "]" != i.charAt(L); L++);
+					if (L == i.length) {
+						W = _js("PgnViewer: Error parsing PGN. Found unclosed [");
+						return this.finishedParseCallback && this.finishedParseCallback(a, W), W;
+					}
+					y = L - 1;
+				}
+			}
+			i.substr(y, 1), (this.board.prev_move = null), this.board.setupFromFen(this.board.startFen, !1, !1, !0, !0), (w = this.board.prev_move);
+			var R = y,
+				F = null;
+			for (y = y; y < i.length; y++) {
+				var _ = -1;
+				if (("1-0" == i.substr(y, 3) || "0-1" == i.substr(y, 3) ? (_ = 3) : "1/2-1/2" == i.substr(y, 7) ? (_ = 7) : "*" == i.substr(y, 1) && (_ = 1), _ > 0)) {
+					(F = i.substr(y, _)), (s = y + _);
+					break;
+				}
+				if ("[" == i.charAt(y)) {
+					s = y;
+					break;
+				}
+				if (" " != i.charAt(y) && "\t" != i.charAt(y) && "\n" != i.charAt(y) && "\r" != i.charAt(y)) {
+					if (!(i.charAt(y) >= "0" && i.charAt(y) <= "9"))
+						if ("." == i.charAt(y)) {
+							i.substring(R, y).replace(/^\s+|\s+$/g, "");
+							for (R = y; y + 1 < i.length && "." == i.charAt(y + 1); ) y++;
+							(f = R != y ? "b" : "w"), (R = y + 1);
+						} else if ("{" == i.charAt(y)) {
+							var H = i.indexOf("}", y + 1);
+							if (H >= 0) {
+								var S = i.substring(y + 1, H);
+								(y = H), (O += "{ " + S + " } ");
+							}
+							R = y + 1;
+						} else if ("(" == i.charAt(y))
+							(T[P] = this.board.boardPieces), (C[P] = f), (k[P] = w), (G[P] = M), (this.board.boardPieces = N[P]), (this.board.boardPieces = this.board.copyBoardPieces(!1)), (w = M), P++, (R = y + 1), (O += "( ");
+						else if (")" == i.charAt(y)) boardPool.putObject(T[P]), P--, (this.board.boardPieces = T[P]), (f = C[P]), (w = k[P]), (M = G[P]), (R = y + 1), (O += ") ");
+						else {
+							if ("$" == i.charAt(y)) {
+								for (L = y + 1; L < i.length && i.charAt(L) >= "0" && i.charAt(L) <= "9"; L++);
+								if (--L > y) {
+									var D = parseInt(i.substr(y + 1, L + 1));
+									if (D <= 9)
+										switch (D) {
+											case 1:
+												O = O.substr(0, O.length - 1) + "! ";
+												break;
+											case 2:
+												O = O.substr(0, O.length - 1) + "? ";
+												break;
+											case 3:
+												O = O.substr(0, O.length - 1) + "!! ";
+												break;
+											case 4:
+												O = O.substr(0, O.length - 1) + "?? ";
+												break;
+											case 5:
+												O = O.substr(0, O.length - 1) + "!? ";
+												break;
+											case 6:
+												O = O.substr(0, O.length - 1) + "?! ";
+										}
+									else O += i.substring(y, L + 1) + " ";
+									y = L;
+								}
+								continue;
+							}
+							for (var x = -1, L = y + 1; L < i.length; L++)
+								if (")" == i.charAt(L) || "(" == i.charAt(L) || "{" == i.charAt(L) || "}" == i.charAt(L) || " " == i.charAt(L) || "\t" == i.charAt(L) || "\n" == i.charAt(L) || "\r" == i.charAt(L)) {
+									x = L;
+									break;
+								}
+							-1 == x && (x = i.length);
+							var I = R,
+								Y = i.substring(R, x).replace(/^\s+|\s+$/g, "");
+							if (((R = x), (y = R - 1), Y.length >= 4 && "e.p." == Y.substring(0, 4))) continue;
+							if (0 == Y.length) {
+								W = __js("PgnViewer: Error: got empty move endMoveInd:{ENDMOVE_INDEX} upto:{UPTO} from:{FROM}", [
+									["ENDMOVE_INDEX", x],
+									["UPTO", I],
+									["FROM", i.substr(I)],
+								]);
+								return this.finishedParseCallback && this.finishedParseCallback(a, W), W;
+							}
+							for (var V = Y.length - 1; V >= 0; )
+								if ("?" == Y.charAt(V)) V--;
+								else {
+									if ("!" != Y.charAt(V)) break;
+									V--;
+								}
+							var B = Y.substring(0, V + 1),
+								j = this.getMoveFromPGNMove(B, f, w);
+							if (null == j) {
+								O += "unknown ";
+								W = __js("PgnViewer: Error parsing:{MOVE}, {ERROR_REASON}", [
+									["MOVE", Y],
+									["ERROR_REASON", this.lastMoveFromError],
+								]);
+								return this.finishedParseCallback && this.finishedParseCallback(a, W), W;
+							}
+							(M = w), (w = j);
+							var U = this.board.boardPieces[j.fromColumn][j.fromRow];
+							boardPool.putObject(N[P]), (N[P] = this.board.copyBoardPieces(!1)), U && this.board.makeMove(j, U, !1, 0.5, !1, !1), P, A++, (f = this.board.flipToMove(f)), (O += j.moveString + "|" + Y + " ");
+						}
+				} else R = y + 1;
+			}
+			s < y && (s = y);
+			var q = i.indexOf("{", s),
+				K = i.indexOf("[", s);
+			if (q >= 0 && (-1 == K || q < K)) {
+				var Q = i.indexOf("}", q + 1);
+				if (!(Q >= 0)) {
+					var W = _js("PgnViewer: Error: Unclosed {");
+					return this.finishedParseCallback && this.finishedParseCallback(a, W), W;
+				}
+				(s = Q + 1), (O += "{ " + (S = i.substring(q + 1, Q)) + " } ");
+			}
+			if (
+				((O = O.replace(/^\s+|\s+$/g, "")),
+				(this.board.pieceMoveDisabled = !1),
+				null != F && ((0 != h.length && "?" != h) || (h = F)),
+				this.board.ignoreMultipleGames && F && h && "*" == h && "*" != F && "?" != F && "" != F && (h = F),
+				(this.pgnGames[t++] = new PGNGame(O, this.board.startFen, l, g, h, d, c, b, u, r, p, m, v)),
+				n && (n.innerHTML = "Loaded " + t + " games"),
+				this.board.ignoreMultipleGames)
+			)
+				break;
+			if (this.finishedParseCallback && new Date().getTime() - this.startParseTime > 500)
+				return (this.startParseTime = new Date().getTime()), void setTimeout('window._pvObject["' + this.board.boardName + '"].chessapp.pgn.parsePGN_cont("' + e + '","' + r + '","' + t + '","' + s + '",' + a + ");", 0);
+		}
+		return this.finishedParseCallback && this.finishedParseCallback(a), !1;
+	}),
+	(PGN.prototype.setupFromPGN = function (e, r) {
+		this.parsePGN(e, this.setupFromPGNCallback, r);
+	}),
+	(PGN.prototype.setupFromPGNCallback = function (e, r) {
+		var t = this.board.boardName + "-progress",
+			s = YAHOO.util.Dom.get(t);
+		if (r) {
+			if (!this.board.hidePGNErrors) {
+				var a = YAHOO.util.Dom.get(this.board.boardName + "-pgnError");
+				a ? (a.innerHTML = r) : alert(r);
+			}
+			return !1;
+		}
+		if (0 == this.pgnGames.length) return this.board.hidePGNErrors || alert("PgnViewer: Error: Unable to find any pgn games in:" + pgn), !1;
+		if (1 == this.pgnGames.length || this.board.ignoreMultipleGames) {
+			v = 0;
+			e && (v = -1), this.showGame(0, v);
+		} else {
+			var o = this.board.boardName + "-container",
+				n = YAHOO.util.Dom.get(o),
+				h = YAHOO.util.Dom.get(this.board.boardName + "-problemSelector"),
+				l = document.createElement("div"),
+				d = '<form id="' + this.board.boardName + '-problemSelectorForm" action="" method="">',
+				c = '<select id="' + this.board.boardName + '-problemSelector" name="' + this.board.boardName + '-problemSelector" style="width: ' + 8 * this.board.pieceSize + 'px;">',
+				b = "";
+			for (i = 0; i < this.pgnGames.length; i++) {
+				var u = this.pgnGames[i],
+					g = this.board.boardName + "-game-" + i,
+					p = i + 1 + ". " + u.whitePlayer + " vs " + u.blackPlayer;
+				u.pgn_result.length > 0 && "?" != u.pgn_result && 1 == this.board.showResult && (p += " " + u.pgn_result),
+					u.event.length > 0 && "?" != u.event && 1 == this.board.showEvent && (p += " " + u.event),
+					u.round.length > 0 && "?" != u.round && 1 == this.board.showRound && (p += " Rnd:" + u.round),
+					u.site.length > 0 && "?" != u.site && 1 == this.board.showSite && (p += " " + u.site),
+					u.date.length > 0 && "?" != u.date && 1 == this.board.showDate && (p += " " + u.date);
+				var m = "";
+				i == this.lastShownGame && (m = 'selected=""'), (b += "<option " + m + ' id="' + g + '" value="' + i + '">' + p + "</option>");
+			}
+			h ? this.board.selectorBody != b && ((h.innerHTML = b), (this.board.selectorBody = b)) : ((d += c + b + "</select></form>"), (l.innerHTML = d), n.insertBefore(l, n.firstChild), (this.board.selectorBody = b));
+			h = YAHOO.util.Dom.get(this.board.boardName + "-problemSelector");
+			YAHOO.util.Event.addListener(h, "change", this.selectGame, this, !0);
+			var v = 0,
+				f = 0;
+			e && ((v = -1), (f = this.lastShownGame)), this.showGame(f, v);
+		}
+		s && YAHOO.util.Dom.setStyle(s, "visibility", "hidden"), window._pvObject[this.board.boardName].finishedCallback && window._pvObject[this.board.boardName].finishedCallback();
+	}),
+	(PGN.prototype.selectGame = function (e) {
+		var r = YAHOO.util.Event.getTarget(e).selectedIndex,
+			t = 0;
+		this.board.gotoEndOnRefresh && (t = -1), this.showGame(r, t);
+		var s = this.board.boardName + "-piecestaken",
+			a = YAHOO.util.Dom.get(s);
+		a && (a.innerHTML = ""), this.board.resetMoveListScrollPosition();
+	}),
+	(PGN.prototype.showGame = function (e, r) {
+		r = void 0 === r ? 0 : r;
+		var t = this.lastShownGame;
+		this.lastShownGame = e;
+		var s = this.board.moveArray,
+			a = this.board.currentMove,
+			i = !1;
+		a && a.atEnd && (i = !0);
+		var o = this.pgnGames[e],
+			n = o.pgn_result;
+		!n || ("1/2-1/2" != n && "0-1" != n && "1-0" != n) ? ((this.foundResult = !1), (this.foundResultPolls = 0)) : (this.foundResult = !0),
+			(this.board.startFen = o.startFen),
+			this.board.setupFromFen(o.startFen, !1, !1, !1),
+			this.board.setMoveSequence(o.movesseq, "NA", o.start_movenum, o.pgn_result);
+		var h = !0,
+			l = -1;
+		if ((e == t && i && (l = this.board.moveArray.length - 1), Move.moveArraysEqual(s, this.board.moveArray))) {
+			var d = Move.findMoveInNewArray(s, this.board.moveArray, a);
+			d && d.prev && (l = d.prev.index);
+		} else h = !1;
+		if ((this.board.displayPendingMoveList(), this.board.moveArray.length > 0 && this.board.setCurrentMove(this.board.moveArray[0]), h))
+			l > 0 && l < this.board.moveArray.length && (clog && console.log("going to currMoveIndex:" + l), this.board.gotoMoveIndex(l, !1, !0));
+		else {
+			if (-1 == r) {
+				var c = this.board.moveArray.length - 1;
+				c >= 0 && this.board.gotoMoveIndex(c, !1, !0);
+			} else 0 != r && this.board.gotoMoveIndex(r);
+			-1 != r && this.board.autoplayFirst && this.board.forwardMove();
+		}
+		this.board.displayMode = !0;
+		var b = this.board.boardName,
+			u = YAHOO.util.Dom.get(b + "-whitePlayer");
+		u && (u.innerHTML = o.whitePlayer);
+		var g = YAHOO.util.Dom.get(b + "-blackPlayer");
+		g && (g.innerHTML = o.blackPlayer);
+		var p = YAHOO.util.Dom.get(b + "-event");
+		p && (p.innerHTML = o.event);
+		var m = YAHOO.util.Dom.get(b + "-site");
+		m && (m.innerHTML = o.site);
+		var v = YAHOO.util.Dom.get(b + "-date");
+		v && (v.innerHTML = o.date);
+		var f = YAHOO.util.Dom.get(b + "-round");
+		f && (f.innerHTML = o.round);
+		var P = YAHOO.util.Dom.get(b + "-whiteElo");
+		P && (P.innerHTML = o.whitePlayerElo);
+		var A = YAHOO.util.Dom.get(b + "-blackElo");
+		A && (A.innerHTML = o.blackPlayerElo);
+		var O = YAHOO.util.Dom.get(b + "-result");
+		O && (O.innerHTML = o.pgn_result), clog && (this.board.currentMove ? console.log("after show game currentMove:" + this.board.currentMove.output()) : console.log("after show game currentMove is null"));
+	});
+function isMouseOver(e, t) {
+	var o = YAHOO.util.Dom.get(e);
+	if (!o) return !1;
+	var i = YAHOO.util.Dom.getRegion(o);
+	if (!i) return !1;
+	i.top, i.left, i.bottom, i.right;
+	var s = YAHOO.util.Event.getXY(t);
+	s[0], s[1];
+}
+function trimStr(e) {
+	if (!e) return "";
+	for (var t = /\s/, o = (e = e.replace(/^\s\s*/, "")).length; t.test(e.charAt(--o)); );
+	return e.slice(0, o + 1);
+}
+function clearClone(e) {
+	if (null != e) for (prop in e) "object" == typeof e[prop] && null != e[prop] && e[prop].alreadyCloned && ((e[prop].alreadyCloned = !1), clearClone(e[prop]));
+}
+function cloneWork(e) {
+	if (null == e) return null;
+	var t = new Object();
+	for (prop in e) e[prop], (t[prop] = e[prop]);
+	return t;
+}
+function clone(e) {
+	return cloneWork(e);
+}
+function getTagValue(e, t) {
+	var o = e.getElementsByTagName(t);
+	return null == o
+		? (YAHOO.log("got null node for tag:" + t), null)
+		: 0 == o.length
+		? (YAHOO.log("got empty array node for tag:" + t), null)
+		: null == o[0].firstChild
+		? (YAHOO.log("firstChild is null for tag:" + t), null)
+		: null == o[0].firstChild.nodeValue
+		? (YAHOO.log("firstChild.nodeValue is null for tag:" + t), null)
+		: void 0 !== o[0].textContent
+		? o[0].textContent
+		: o[0].firstChild.nodeValue;
+}
+function unescapeHtml(e) {
+	var t = document.createElement("div");
+	return (t.innerHTML = e), t.innerText ? t.innerText : t.textContent;
+}
+function insertBefore(e, t) {
+	t && t.parentNode.insertBefore(e, t);
+}
+function insertAfter(e, t) {
+	t.parentNode.insertBefore(e, t.nextSibling);
+}
+function touchHandler(e) {
+	if (!(e.changedTouches && e.changedTouches.length > 1)) {
+		e.preventDefault();
+		var t = e.changedTouches[0],
+			o = "";
+		switch (e.type) {
+			case "touchstart":
+				o = "mousedown";
+				break;
+			case "touchmove":
+				o = "mousemove";
+				break;
+			case "touchend":
+				o = "mouseup";
+				break;
+			default:
+				return;
+		}
+		var i = document.createEvent("MouseEvents");
+		i.initMouseEvent(o, !0, !0, window, 1, t.screenX, t.screenY, t.clientX, t.clientY, !1, !1, !1, !1, 0, null), t.target.dispatchEvent(i);
+	}
+}
+function initIphone(e) {
+	e.addEventListener("touchstart", touchHandler, !0), e.addEventListener("touchmove", touchHandler, !0), e.addEventListener("touchend", touchHandler, !0), e.addEventListener("touchcancel", touchHandler, !0);
+}
+var SITE_VERSION = 1,
+	clog = !1,
+	ctime = !1,
+	cprof = !1,
+	move_obj_id_counter = 0,
+	activeBoard = null,
+	boardSounds = new CTSound({ soundPath: "bundles/contaopgnviewer/sounds" });
+window.console || (window.console = {}),
+	window.console.log || (window.console.log = function () {}),
+	YAHOO.util.Event.onDOMReady(function () {
+		boardSounds.createSound("takesounds/78263__sugu14__metall01", "takePiece1"),
+		boardSounds.createSound("movesounds/77971__sugu14__fusta_0_05", "movePiece3"),
+		boardSounds.createSound("movesounds/10537__batchku__hit_knuckle_15_004", "movePiece7"),
+		boardSounds.createSound("analysis/76426__spazzo_1493__finished", "finished");
+	}),
+	(BoardConfig = function () {
+		(this.boardName = "board"),
+			(this.puzzle = !1),
+			(this.showToMoveIndicators = !1),
+			(this.scrollVariations = !1),
+			(this.pgnString = null),
+			(this.pgnDiv = null),
+			(this.pgnFile = null),
+			(this.scrollOffsetCorrection = 0),
+			(this.handleCommentClicks = !1),
+			(this.pollPGNMilliseconds = 0),
+			(this.pollPGNMillisecondsPostResult = 3e4),
+			(this.numberPollsAfterResult = 5),
+			(this.gotoEndOnRefresh = !1),
+			(this.allowPreMoveSelection = !1),
+			(this.pieceSet = "merida"),
+			(this.newAnalysis = !1),
+			(this.pieceSize = 46),
+			(this.isEndgame = !1),
+			(this.tr = !1),
+			(this.ie6FixCoordsOffsetSize = 4),
+			(this.allIeFixCoordsOffsetSize = 0),
+			(this.addVersion = !0),
+			(this.ignoreMultipleGames = !1),
+			(this.ml = 9999),
+			(this.r = !1),
+			(this.g = !1),
+			(this.g2 = !1),
+			(this.canPasteFen = !1),
+			(this.makeActive = !1),
+			(this.showSolutionButton = !1),
+			(this.avoidMouseoverActive = !1),
+			(this.autoScrollMoves = !1),
+			(this.moveAnimationLength = 0.5),
+			(this.showBracketsOnVariation = !0),
+			(this.hideBracketsOnTopLevelVariation = !1),
+			(this.variationStartString = " ( "),
+			(this.variationEndString = " ) "),
+			(this.ignoreCommentRegex = null),
+			(this.newlineForEachMainMove = !0),
+			(this.useDivClearForNewline = !1),
+			(this.showNPS = !1),
+			(this.squareColorClass = ""),
+			(this.analysisWindowName = "analysis_window"),
+			(this.pieceTakenSize = this.pieceSize),
+			(this.pauseBetweenMoves = 800),
+			(this.pgnMode = !1),
+			(this.hidePGNErrors = !1),
+			(this.previewMode = !1),
+			(this.movesFormat = "default"),
+			(this.boardImagePath = "https://chesstempo.com"),
+			(this.showCoordinates = !1),
+			(this.highlightFromTo = !1),
+			(this.highlightValidSquares = !1),
+			(this.fideClock = !1),
+			(this.disableFlipper = !1),
+			(this.showResult = 1),
+			(this.showEvent = 1),
+			(this.showRound = 1),
+			(this.showSite = 1),
+			(this.showDate = 1),
+			(this.ignoreFlipping = !1),
+			(this.reverseFlip = !1),
+			(this.autoplayFirst = !1),
+			(this.dontOutputNavButtons = !1),
+			(this.dontCheckLeavingPage = !1),
+			(this.clickAndClick = !1),
+			(this.clickAndClickDisabled = !1),
+			(this.whiteMoveSoundName = "movePiece3"),
+			(this.blackMoveSoundName = "movePiece7"),
+			(this.whiteTakeSoundName = "takePiece1"),
+			(this.blackTakeSoundName = "takePiece1"),
+			(this.finishedSoundName = "finished"),
+			(this.soundEnabled = !1),
+			(this.gamedb = !1);
+	}),
+	(BoardConfig.prototype.applyConfig = function (e) {
+		for (var t in e) this[t] = e[t];
+	}),
+	(ChessApp = function (e) {
+		(this.displayMode = !1), (this.config = e), (this.board = null);
+	}),
+	(ChessApp.prototype.setDisplayMode = function (e) {
+		this.displayMode = e;
+	}),
+	(ChessApp.prototype.setProblemNumber = function (e, t) {
+		(this.problemNumber = e), (this.attId = t);
+	}),
+	(ChessApp.prototype.init = function (e, t, o, i, s) {
+		function r() {
+			var e = YAHOO.util.Dom.get(l.config.boardName + "-nextUpdate");
+			if (e)
+				if (l.pgn.finishedPolling || l.pgn.foundResult) {
+					var t = "00",
+						o = "00";
+					e.innerHTML = '<span id="minutes">' + t + '</span>:<span id="seconds">' + o + "</span>";
+				} else {
+					var i = new Date().getTime(),
+						s = (l.pgn.lastPoll + l.pgn.pollTime - i) / 1e3;
+					s < 0 && (s = 0);
+					var a = s,
+						n = parseInt(a / 60),
+						h = parseInt(a % 60);
+					(t = n < 10 ? "0" + n : n), (o = h < 10 ? "0" + h : h), (e.innerHTML = '<span id="minutes">' + t + '</span>:<span id="seconds">' + o + "</span>"), setTimeout(r, 1e3);
+				}
+		}
+		ChessPiece.init(),
+			(this.board = new Board(this.config.boardName)),
+			s && this.board.addUpdatePieceListener(i),
+			(this.board.moveArray = new Array()),
+			this.hideOnInit || (YAHOO.util.Dom.setStyle(this.config.boardName + "-container", "display", "block"), YAHOO.util.Dom.setStyle("toPlaySpan", "display", "inline")),
+			(this.tactics = this.displayMode || this.config.pgnMode || this.config.previewMode || this.config.fenBoard ? null : new TacticsUI(this.board)),
+			(this.problem = this.config.pgnMode || this.config.previewMode || this.config.fenBoard ? null : new ProblemUI(this.board, this.tactics)),
+			(this.board.tactics = this.tactics),
+			(this.board.problem = this.problem),
+			(this.board.puzzle = this.config.puzzle),
+			this.problem && (this.problem.autoPlayOpponent = 1),
+			(this.pgn = this.config.pgnMode ? new PGN(this.board) : null);
+		var a = MovesDisplay.DEFAULT_DISPLAY_TYPE;
+		if (
+			("main_on_own_line" == this.config.movesFormat && (a = MovesDisplay.MAIN_ON_OWN_LINE),
+			(this.movesDisplay = new MovesDisplay(this.board, a)),
+			(this.movesDisplay.variationOnOwnLine = this.config.variationOnOwnLine),
+			(this.board.movesDisplay = this.movesDisplay),
+			(this.board.boardImagePath = this.config.boardImagePath),
+			(this.board.showNPS = this.config.showNPS),
+			(this.board.showSolutionButton = this.config.showSolutionButton),
+			(this.board.analysisWindowName = this.config.analysisWindowName),
+			(this.board.squareColorClass = this.config.squareColorClass),
+			(this.board.tr = this.config.tr),
+			(this.board.scrollToBoardTop = this.config.scrollToBoardTop),
+			(this.board.ml = this.config.ml),
+			(this.board.r = this.config.r),
+			(this.board.g = this.config.g),
+			(this.board.g2 = this.config.g2),
+			(this.board.canPasteFen = this.config.canPasteFen),
+			(this.board.addVersion = this.config.addVersion),
+			(this.board.ignoreMultipleGames = this.config.ignoreMultipleGames),
+			(this.board.ie6FixCoordsOffsetSize = this.config.ie6FixCoordsOffsetSize),
+			(this.board.allIeFixCoordsOffsetSize = this.config.allIeFixCoordsOffsetSize),
+			(this.board.allowingFreeMovement = this.config.allowingFreeMovement),
+			(this.board.autoScrollMoves = this.config.autoScrollMoves),
+			(this.board.moveAnimationLength = this.config.moveAnimationLength),
+			(this.board.showBracketsOnVariation = this.config.showBracketsOnVariation),
+			(this.board.hideBracketsOnTopLevelVariation = this.config.hideBracketsOnTopLevelVariation),
+			(this.board.variationStartString = this.config.variationStartString),
+			(this.board.variationEndString = this.config.variationEndString),
+			(this.board.ignoreCommentRegex = this.config.ignoreCommentRegex),
+			(this.board.newlineForEachMainMove = this.config.newlineForEachMainMove),
+			(this.board.useDivClearForNewline = this.config.useDivClearForNewline),
+			(this.board.pieceSize = this.config.pieceSize),
+			(this.board.showToMoveIndicators = this.config.showToMoveIndicators),
+			(this.board.handleCommentClicks = this.config.handleCommentClicks),
+			(this.board.scrollOffsetCorrection = this.config.scrollOffsetCorrection),
+			(this.board.pollPGNMilliseconds = this.config.pollPGNMilliseconds),
+			(this.board.pollPGNMillisecondsPostResult = this.config.pollPGNMillisecondsPostResult),
+			(this.board.numberPollsAfterResult = this.config.numberPollsAfterResult),
+			(this.board.gotoEndOnRefresh = this.config.gotoEndOnRefresh),
+			(this.board.allowPreMoveSelection = this.config.allowPreMoveSelection),
+			(this.board.newAnalysis = this.config.newAnalysis),
+			(this.board.pieceTakenSize = this.config.pieceTakenSize),
+			(this.board.pieceSet = this.config.pieceSet),
+			(this.board.pauseBetweenMoves = this.config.pauseBetweenMoves),
+			(this.board.showCoordinates = this.config.showCoordinates),
+			(this.board.highlightFromTo = this.config.highlightFromTo),
+			(this.board.highlightValidSquares = this.config.highlightValidSquares),
+			(this.board.fideClock = this.config.fideClock),
+			(this.board.disableFlipper = this.config.disableFlipper),
+			(this.board.showDate = this.config.showDate),
+			(this.board.showEvent = this.config.showEvent),
+			(this.board.showGame = this.config.showGame),
+			(this.board.showResult = this.config.showResult),
+			(this.board.showRound = this.config.showRound),
+			(this.board.showSite = this.config.showSite),
+			(this.board.ignoreFlipping = this.config.ignoreFlipping),
+			(this.board.reverseFlip = this.config.reverseFlip),
+			(this.board.autoplayFirst = this.config.autoplayFirst),
+			(this.board.scrollVariations = this.config.scrollVariations),
+			(this.board.dontOutputNavButtons = this.config.dontOutputNavButtons),
+			(this.board.clickAndClick = this.config.clickAndClick),
+			(this.board.clickAndClickDisabled = this.config.clickAndClickDisabled),
+			(this.board.avoidMouseoverActive = this.config.avoidMouseoverActive),
+			(this.board.dontCheckLeavingPage = this.config.dontCheckLeavingPage),
+			(this.board.whiteMoveSoundName = this.config.whiteMoveSoundName),
+			(this.board.whiteTakeSoundName = this.config.whiteTakeSoundName),
+			(this.board.blackMoveSoundName = this.config.blackMoveSoundName),
+			(this.board.blackTakeSoundName = this.config.blackTakeSoundName),
+			(this.board.soundEnabled = this.config.soundEnabled),
+			(this.board.hidePGNErrors = this.config.hidePGNErrors),
+			(this.board.gamedb = this.config.gamedb),
+			this.config.makeActive && (activeBoard = this.board),
+			this.problem && (this.problem.isEndgame = this.config.isEndgame),
+			this.board.puzzle ||
+				"undefined" == typeof loginManager ||
+				(this.tactics && (loginManager.setLoginCallback(this.tactics.loginCallback, this.tactics), loginManager.setLogoutCallback(this.tactics.logoutCallback, this.tactics)),
+				this.problem && loginManager.setSessionCallback(this.problem.sessionCallback, this.problem)),
+			(YAHOO.util.DragDropMgr.clickTimeThresh = 50),
+			(YAHOO.util.DragDropMgr.clickPixelThresh = 1),
+			this.board.createBoardUI(),
+			!this.board.puzzle)
+		)
+			if ((this.problem && this.problem.createProblemUI(), this.tactics && this.tactics.initProblemCompleteOverlay(), this.problem && this.problem.initLoadingOverlay(), this.config.pgnMode)) {
+				if (this.config.pgnFile)
+					if (this.config.pollPGNMilliseconds) {
+						(this.pgn.foundResult = !1), (this.pgn.foundResultPolls = 0);
+						l = this;
+						(this.pgn.pollTime = this.config.pollPGNMilliseconds), this.pgn.pollPGNFromURL(this.config.pgnFile, this.config.gotoEndOnRefresh, this.config.pollPGNMilliseconds), setTimeout(r, 1e3);
+					} else this.pgn.getPGNFromURL(this.config.pgnFile, this.config.gotoEndOnRefresh);
+				else if (this.config.pgnString) this.pgn.setupFromPGN(this.config.pgnString);
+				else if (this.config.pgnDiv) {
+					var n = YAHOO.util.Dom.get(this.config.pgnDiv);
+					n && this.pgn.setupFromPGN(n.innerHTML);
+				}
+			} else if (!this.board.dontCheckLeavingPage && this.tactics)
+				if (
+					(YAHOO.util.Event.addListener(window, "beforeunload", this.tactics.checkLeavingPage, this.tactics, !0),
+					YAHOO.util.Event.addListener(window, "unload", this.tactics.leavingPage, this.tactics, !0),
+					this.tactics.updateSessionDisplay(0, 0),
+					"undefined" != typeof showingStart && showingStart)
+				) {
+					var l = this,
+						h = "";
+					loggedIn &&
+						(h = this.config.isEndgame
+							? _js("Endgame Problem Set") + ': <span id="startProblemSetStr">' + _js(startEndgameSetName) + "</span>"
+							: _js("Tactics Problem Set") + ': <span id="startProblemSetStr">' + _js(startTacticsSetName) + "</span>"),
+						this.board.preloadPieces();
+					var c = new YAHOO.widget.SimpleDialog("starttacticdialog1", {
+						width: "300px",
+						fixedcenter: !0,
+						modal: !1,
+						visible: !0,
+						draggable: !0,
+						close: !1,
+						text: '<div style="color:black">' + h + '</div><br/><div style="color:black">' + _js("Click start to begin solving problems") + "</div>",
+						icon: YAHOO.widget.SimpleDialog.ICON_INFO,
+						constraintoviewport: !0,
+						buttons: [
+							{
+								text: _js("Start"),
+								handler: function () {
+									if (l.board.imagesLoaded) this.hide(), l.problem.getProblem();
+									else {
+										var e = _js(
+											"Still trying to load piece images.\n If you keep receiving this message you may need to reload the page.\n If you continue to get this message, you can disable it by going into your preferences and turning 'show problem start dialog' (available under the other tab) off."
+										);
+										alert(e);
+									}
+								},
+								isDefault: !0,
+							},
+						],
+					});
+					YAHOO.util.Dom.get("ctb-" + this.board.boardName);
+					c.render(document.body);
+				} else this.problem.getProblem();
+			else this.problem && "" != this.problemNumber && (YAHOO.util.Dom.setStyle("boardandmoves", "display", "block"), this.problem.getProblem(this.problemNumber, this.attId));
+		if ((this.board.setupEventHandlers(), this.problem && this.problem.setupEventHandlers(), this.tactics && this.tactics.setupEventHandlers(), this.board.scrollToBoardTop)) {
+			var d = YAHOO.util.Dom.getXY(this.board.boardName + "-boardBorder");
+			window.scrollTo(d[0], d[1]);
+		}
+		this.config.flipListener && this.board.addFlipListener(this.config.flipListener);
+	}),
+	(get_image_str = function (e, t, o, i, s) {
+		var r = ".vers" + SITE_VERSION;
+		return s || (r = ""), check_bad_msie(), t + "/images/" + o + "/" + e + i + r + ".png";
+	}),
+	(check_bad_msie = function () {
+		return window.ActiveXObject && void 0 === document.body.style.maxHeight;
+	}),
+	(fix_ie_png = function (e) {
+		if (check_bad_msie()) {
+			var t = e.id ? "id='" + e.id + "' " : "",
+				o = e.className ? "class='" + e.className + "' " : "",
+				i = e.title ? "title='" + e.title + "' " : "title='" + e.alt + "' ",
+				s = "display:inline-block;" + e.style.cssText;
+			"left" == e.align && (s = "float:left;" + s), "right" == e.align && (s = "float:right;" + s), e.parentElement.href && (s = "cursor:hand;" + s);
+			var r = "<span " + t + o + i + ' style="width:' + e.width + "px; height:" + e.height + "px;" + s + ";filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src='" + e.src + "', sizingMethod='image');\"></span>";
+			e.outerHTML = r;
+		}
+	}),
+	(Move = function (e, t, o, i, s, r, a) {
+		(this.fromColumn = e),
+			(this.fromRow = t),
+			(this.toColumn = o),
+			(this.toRow = i),
+			(this.take = s),
+			(this.promotion = r),
+			(this.moveString = a),
+			(this.prev = null),
+			(this.next = null),
+			(this.numVars = 0),
+			(this.prevMoveEnpassant = !1),
+			(this.ravLevel = 0),
+			(this.atEnd = !1),
+			(this.obj_id = move_obj_id_counter++),
+			(this.beforeComment = ""),
+			(this.afterComment = "");
+	}),
+	(Move.prototype.freeMove = function () {
+		if ((this.taken && (this.taken = null), this.vars && this.vars.length > 0)) for (var e = 0, e = 0; e < this.vars.length; e++) this.vars[e].freeMove();
+	}),
+	(Move.prototype.clone = function (e) {
+		var t = this.take;
+		e && t && (t = t.makeLightWeight());
+		var o = new Move(this.fromColumn, this.fromRow, this.toColumn, this.toRow, t, this.promotion, this.moveString);
+		if (((o.moveNum = this.moveNum), (o.atEnd = this.atEnd), (o.beforeComment = this.beforeComment), (o.afterComment = this.afterComment), (o.prevMoveEnpassant = this.prevMoveEnpassant), (o.index = this.index), this.vars)) {
+			o.vars = [];
+			for (var i = 0, s = 0; s < this.vars.length; s++) (o.vars[s] = this.vars[s].clone(e)), i++;
+			o.numVars = i;
+		}
+		return o;
+	}),
+	(Move.columnToChar = function (e) {
+		return String.fromCharCode("a".charCodeAt(0) + e);
+	}),
+	(Move.prototype.output = function () {
+		return (
+			Move.columnToChar(this.fromColumn) +
+			"" +
+			(this.fromRow + 1) +
+			":" +
+			Move.columnToChar(this.toColumn) +
+			(this.toRow + 1) +
+			" prom:" +
+			this.promotion +
+			" objid:" +
+			this.obj_id +
+			" dummy:" +
+			this.dummy +
+			" endNode:" +
+			this.endNode +
+			" index:" +
+			this.index +
+			" moveNum:" +
+			this.moveNum +
+			" atEnd:" +
+			this.atEnd +
+			" beforeCom:" +
+			this.beforeComment +
+			" afterCom:" +
+			this.afterComment
+		);
+	}),
+	(Move.prototype.equals = function (e) {
+		return e && this.fromColumn == e.fromColumn && this.fromRow == e.fromRow && this.promotion == e.promotion && this.toColumn == e.toColumn && this.toRow == e.toRow;
+	}),
+	(Move.moveArraysEqual = function (e, t) {
+		if (e == t) return !0;
+		if (null == e || null == t) return !1;
+		if (e.length != t.length) return !1;
+		for (var o = 0; o < e.length; o++) {
+			if (!e[o].equals(t[o])) return !1;
+			if (!Move.moveArraysEqual(e[o].vars, t[o].vars)) return !1;
+		}
+		return !0;
+	}),
+	(Move.findMoveInNewArray = function (e, t, o) {
+		if (e == t) return o;
+		if (null == e || null == t) return null;
+		if (e.length != t.length) return null;
+		for (var i = 0; i < e.length; i++) {
+			if (!e[i].equals(t[i])) return null;
+			if (!Move.moveArraysEqual(e[i].vars, t[i].vars)) return null;
+			if (e[i] == o) return t[i];
+		}
+		return null;
+	}),
+	(Move.prototype.toLALG = function () {
+		return this.toMoveString();
+	}),
+	(Move.prototype.toMoveString = function () {
+		var e = "";
+		return this.promotion && (e = this.promotion), Move.columnToChar(this.fromColumn) + "" + (this.fromRow + 1) + Move.columnToChar(this.toColumn) + (this.toRow + 1) + e;
+	});
+var ua = navigator.userAgent.toLowerCase(),
+	isOpera = ua.indexOf("opera") > -1,
+	isIphone = navigator.userAgent.match(/iPhone/i) || navigator.userAgent.match(/iPod/i),
+	isIpad = navigator.userAgent.match(/iPad/i),
+	isSafari = ua.indexOf("safari") > -1,
+	isGecko = !isOpera && !isSafari && ua.indexOf("gecko") > -1,
+	isIE = !isOpera && ua.indexOf("msie") > -1;
+(ChessPiece = function (e, t, o, i) {
+	var s = e.id;
+	(this.board = i),
+		(this.icon = get_image_str(ChessPiece.pieceIconNames[t][o], this.board.boardImagePath, this.board.pieceSet, this.board.pieceSize, this.board.addVersion)),
+		(this.colour = t),
+		(this.piece = o),
+		(this.id = s),
+		(this.div = e);
+	var r = i.getPieceDragDiv(),
+		a = !1;
+	if (
+		(null == r &&
+			(((r = document.createElement("div")).id = "pieceDragDiv"), (a = !0), YAHOO.util.Dom.setStyle(r, "visibility", "hidden"), YAHOO.util.Dom.setStyle(r, "border", "0px"), YAHOO.util.Dom.setStyle(r, "position", "absolute")),
+		(this.pieceDragEl = r),
+		(this.pieceDragElId = "pieceDragDiv"),
+		a)
+	) {
+		var n = this.board.getDocBody();
+		n && n.appendChild(r);
+	}
+	if (YAHOO.util.Event.isIE || isOpera) {
+		var l = this.div;
+		l.innerHTML = '<img src="' + this.icon + '"/>';
+		var h = l.firstChild;
+		fix_ie_png(h);
+	} else YAHOO.util.Dom.setStyle([this.div], "backgroundImage", "url(" + this.icon + ")");
+	if (
+		(YAHOO.util.Dom.setStyle([this.div], "height", this.board.pieceSize + "px"),
+		YAHOO.util.Dom.setStyle([this.div], "width", this.board.pieceSize + "px"),
+		YAHOO.util.Dom.setStyle([this.div], "position", "relative"),
+		this.board.clickAndClick || (this.init(s, "ct-" + this.board.boardName + "-boardandpieces", { dragElId: this.pieceDragElId, resizeFrame: !0, centerFrame: !1, isTarget: !1 }), this.initFrame()),
+		(isIphone || isIpad) && this.board.clickAndClickDisabled)
+	) {
+		var c = this.div,
+			d = this;
+		this.div.addEventListener(
+			"DOMNodeInserted",
+			function (e) {
+				d.touchAttached || initIphone(c), (d.touchAttached = !0);
+			},
+			!1
+		);
+	}
+}),
+	(ChessPiece.prototype = new YAHOO.util.DDProxy()),
+	(ChessPiece.PAWN = 0),
+	(ChessPiece.BISHOP = 1),
+	(ChessPiece.KNIGHT = 2),
+	(ChessPiece.ROOK = 3),
+	(ChessPiece.KING = 4),
+	(ChessPiece.QUEEN = 5),
+	(ChessPiece.WHITE = 0),
+	(ChessPiece.BLACK = 1),
+	(ChessPiece.init = function () {
+		(ChessPiece.pieceIconNames = new Array(2)),
+			(ChessPiece.pieceIconNames[0] = new Array(6)),
+			(ChessPiece.pieceIconNames[1] = new Array(6)),
+			(ChessPiece.pieceIconNames[ChessPiece.WHITE][ChessPiece.PAWN] = "whitepawn"),
+			(ChessPiece.pieceIconNames[ChessPiece.WHITE][ChessPiece.BISHOP] = "whitebishop"),
+			(ChessPiece.pieceIconNames[ChessPiece.WHITE][ChessPiece.KNIGHT] = "whiteknight"),
+			(ChessPiece.pieceIconNames[ChessPiece.WHITE][ChessPiece.ROOK] = "whiterook"),
+			(ChessPiece.pieceIconNames[ChessPiece.WHITE][ChessPiece.KING] = "whiteking"),
+			(ChessPiece.pieceIconNames[ChessPiece.WHITE][ChessPiece.QUEEN] = "whitequeen"),
+			(ChessPiece.pieceIconNames[ChessPiece.BLACK][ChessPiece.PAWN] = "blackpawn"),
+			(ChessPiece.pieceIconNames[ChessPiece.BLACK][ChessPiece.BISHOP] = "blackbishop"),
+			(ChessPiece.pieceIconNames[ChessPiece.BLACK][ChessPiece.KNIGHT] = "blackknight"),
+			(ChessPiece.pieceIconNames[ChessPiece.BLACK][ChessPiece.ROOK] = "blackrook"),
+			(ChessPiece.pieceIconNames[ChessPiece.BLACK][ChessPiece.KING] = "blackking"),
+			(ChessPiece.pieceIconNames[ChessPiece.BLACK][ChessPiece.QUEEN] = "blackqueen");
+	}),
+	(ChessPiece.materialValue = function (e) {
+		switch (e) {
+			case ChessPiece.PAWN:
+				return 1;
+			case ChessPiece.BISHOP:
+			case ChessPiece.KNIGHT:
+				return 3;
+			case ChessPiece.ROOK:
+				return 5;
+			case ChessPiece.KING:
+				return 0;
+			case ChessPiece.QUEEN:
+				return 9;
+		}
+		return 0;
+	}),
+	(ChessPiece.prototype.free = function () {
+		this.board.clickAndClick || this.unreg();
+	}),
+	(ChessPiece.prototype.clickValidator = function (e) {
+		if (this.board.dragDisabled) return !1;
+		if (!this.board.allowPreMoveSelection && this.board.toMove != this.colour) return !1;
+		if (-1 == this.board.restrictedColourMovement || this.colour == this.board.restrictedColourMovement) {
+			var t = YAHOO.util.Event.getTarget(e),
+				o = this.isValidHandleChild(t) && (this.id == this.handleElId || this.DDM.handleWasClicked(t, this.id));
+			return this.board.selectDestSquare(e), YAHOO.util.Event.preventDefault(e), o;
+		}
+	}),
+	(ChessPiece.prototype.onDragOut = function (e, t) {
+		this.insideBoard = !1;
+	}),
+	(ChessPiece.prototype.onDragEnter = function (e, t) {
+		this.insideBoard = !0;
+	}),
+	(ChessPiece.prototype.endDrag = function (e) {
+		this.board.lastOverSquare && (YAHOO.util.Dom.removeClass(this.board.lastOverSquare, "ct-over-valid-square"), YAHOO.util.Dom.removeClass(this.board.lastOverSquare, "ct-over-invalid-square")),
+			(this.board.lastOverSquare = null),
+			this.insideBoard || ((this.board.board_xy = null), this.setPosition(this.column, this.row, !1, null, this.board.moveAnimationLength)),
+			this.hideAfterDragEnd ? (this.hideAfterDragEnd = !1) : YAHOO.util.Dom.setStyle(this.getEl(), "visibility", "visible");
+	}),
+	(ChessPiece.prototype.startDrag = function (e, t) {
+		this.insideBoard = !0;
+		var o = null;
+		if (((o = this.board.currentMove && this.board.currentMove.prev ? this.board.currentMove.prev : this.board.prev_move), this.board.highlightValidSquares)) {
+			(this.candidates = null), (this.candidates = new Array(8));
+			for (s = 0; s < 8; s++) {
+				this.candidates[s] = new Array(8);
+				for (r = 0; r < 8; r++) this.candidates[s][r] = !1;
+			}
+		}
+		this.pieceDragEl.innerHTML = '<img src="' + this.icon + '"/>';
+		var i = this.pieceDragEl.firstChild;
+		if (
+			(fix_ie_png(i),
+			YAHOO.util.Dom.setStyle(this.pieceDragEl, "zIndex", 1e3),
+			YAHOO.util.Dom.setStyle(this.pieceDragEl, "height", this.board.pieceSize + "px"),
+			YAHOO.util.Dom.setStyle(this.pieceDragEl, "width", this.board.pieceSize + "px"),
+			YAHOO.util.Dom.setStyle(this.getEl(), "visibility", "hidden"),
+			this.board.highlightValidSquares)
+		)
+			for (var s = 0; s < 8; s++)
+				for (var r = 0; r < 8; r++) {
+					var a = 7 - s,
+						n = r;
+					this.board.isFlipped && ((a = 7 - a), (n = 7 - n)), ((a == this.row && n == this.column) || this.board.canMove(this.makeLightWeight(), n, a, o, !0)) && (this.candidates[r][s] = !0);
+				}
+	}),
+	(ChessPiece.prototype.onDragOver = function (e, t) {
+		var o = YAHOO.util.Event.getPageX(e),
+			i = YAHOO.util.Event.getPageY(e),
+			s = YAHOO.util.Dom.getX("ctb-" + this.board.boardName),
+			r = YAHOO.util.Dom.getY("ctb-" + this.board.boardName),
+			a = parseInt((o - s) / this.board.pieceSize),
+			n = parseInt((i - r) / this.board.pieceSize),
+			l = this.board.boardName + "-s" + a + (7 - n),
+			h = YAHOO.util.Dom.get(l);
+		this.board.highlightValidSquares &&
+			(this.board.lastOverSquare &&
+				this.board.lastOverSquare != h &&
+				(YAHOO.util.Dom.removeClass(this.board.lastOverSquare, "ct-over-valid-square"),
+				YAHOO.util.Dom.removeClass(this.board.lastOverSquare, "ct-over-invalid-square"),
+				(this.board.lastOverSquare = null),
+				this.candidates && a < 8 && a >= 0 && n < 8 && n >= 0 && this.candidates[a][n] ? YAHOO.util.Dom.addClass(h, "ct-over-valid-square") : YAHOO.util.Dom.addClass(h, "ct-over-invalid-square")),
+			(this.board.lastOverSquare = h));
+	}),
+	(ChessPiece.prototype.onDragDrop = function (e, t) {
+		if (this.board.blockFowardBack || this.board.deferredBlockForwardBack) return !1;
+		if (this.board.allowPreMoveSelection && this.board.toMove != this.colour) return !1;
+		this.board.lastOverSquare && (YAHOO.util.Dom.removeClass(this.board.lastOverSquare, "ct-over-valid-square"), YAHOO.util.Dom.removeClass(this.board.lastOverSquare, "ct-over-invalid-square"));
+		var o = YAHOO.util.Event.getPageX(e),
+			i = YAHOO.util.Event.getPageY(e),
+			s = YAHOO.util.Dom.getX("ctb-" + this.board.boardName),
+			r = YAHOO.util.Dom.getY("ctb-" + this.board.boardName),
+			a = parseInt((o - s) / this.board.pieceSize),
+			n = parseInt((i - r) / this.board.pieceSize);
+		if ((this.board.isFlipped && ((n = 7 - n), (a = 7 - a)), this.board.allowPreMoveSelection && this.board.boardPieces[this.column][this.row] != this)) return this.setVisible(!1), (this.hideAfterDragEnd = !0), !1;
+		var l = !1;
+		(this.board.currentMove && !this.board.currentMove.atEnd) || (l = !0),
+			this.board.updatePiece(this, a, 7 - n, !1, !1, !0),
+			!l && this.board.currentMove && !this.board.allowingFreeMovement && this.board.currentMove.atEnd && (this.board.toggleToMove(), this.board.updateToPlay());
+	}),
+	(ChessPiece.prototype.makeLightWeight = function () {
+		var e = this.board.createPiece(this.colour, this.piece, !0);
+		return (e.column = this.column), (e.row = this.row), (e.enPassant = this.enPassant), (e.castled = this.castled), e;
+	}),
+	(ChessPiece.prototype.removeFromParent = function () {
+		var e = this.div;
+		e.parentNode && e.parentNode.removeChild(e);
+	}),
+	(ChessPiece.prototype.setVisible = function (e) {
+		var t;
+		e ? ("block", (t = "visible")) : ("none", (t = "hidden")), YAHOO.util.Dom.setStyle(this.id, "visibility", t);
+	}),
+	(ChessPiece.prototype.moveResponse = function (e) {}),
+	(ChessPiece.prototype.getIcon = function () {
+		return this.icon;
+	}),
+	(ChessPiece.prototype.makeHeavyWeight = function () {
+		return this.copyPiece();
+	}),
+	(ChessPiece.prototype.copyPiece = function () {
+		var e = new ChessPiece(this.div, this.colour, this.piece, this.board);
+		return (e.column = this.column), (e.row = this.row), (e.enPassant = this.enPassant), (e.castled = this.castled), e;
+	}),
+	(ChessPiece.prototype.changePieceKeepImage = function (e) {
+		switch ((e + "").toLowerCase().charAt(0)) {
+			case "k":
+				this.piece = ChessPiece.KING;
+				break;
+			case "q":
+				this.piece = ChessPiece.QUEEN;
+				break;
+			case "r":
+				this.piece = ChessPiece.ROOK;
+				break;
+			case "b":
+				this.piece = ChessPiece.BISHOP;
+				break;
+			case "n":
+				this.piece = ChessPiece.KNIGHT;
+				break;
+			case "p":
+				this.piece = ChessPiece.PAWN;
+		}
+	}),
+	(ChessPiece.prototype.changePiece = function (e) {
+		if (
+			(this.changePieceKeepImage(e),
+			(this.icon = get_image_str(ChessPiece.pieceIconNames[this.colour][this.piece], this.board.boardImagePath, this.board.pieceSet, this.board.pieceSize, this.board.addVersion)),
+			YAHOO.util.Event.isIE || isOpera)
+		) {
+			var t = this.div;
+			t.innerHTML = '<img src="' + this.icon + '"/>';
+			var o = t.firstChild;
+			isOpera || fix_ie_png(o);
+		} else YAHOO.util.Dom.setStyle(this.div, "backgroundImage", "url(" + this.icon + ")"), YAHOO.util.Dom.setStyle(this.div, "background-repeat", "no-repeat");
+	}),
+	(ChessPiece.prototype.getNewXYPosition = function (e, t) {
+		this.board.getBoardDiv();
+		var o = this.board.getXY(),
+			i = o[0],
+			s = o[1],
+			r = [0, 0];
+		return this.board.isFlipped ? ((r[0] = i + (7 - e) * this.board.pieceSize), (r[1] = s + t * this.board.pieceSize)) : ((r[0] = i + e * this.board.pieceSize), (r[1] = s + (7 - t) * this.board.pieceSize)), r;
+	}),
+	(ChessPiece.prototype.setPosition = function (e, t, o, i, s, r, a) {
+		if (((this.column = e), (this.row = t), !this.board.pieceMoveDisabled)) {
+			var n = this.div,
+				l = null;
+			l = this.board.isFlipped ? this.board.boardName + "-s" + (7 - this.column) + (7 - this.row) : this.board.boardName + "-s" + this.column + this.row;
+			var h = this.board.getBoardDivFromId(l),
+				c = null;
+			if (((c = r ? (this.colour == ChessPiece.WHITE ? this.board.whiteTakeSoundName : this.board.blackTakeSoundName) : this.colour == ChessPiece.WHITE ? this.board.whiteMoveSoundName : this.board.blackMoveSoundName), o)) {
+				v = this.getNewXYPosition(e, t);
+				this.board.oldAnim && this.board.oldAnim.isAnimated() && (this.board.oldAnim.stop(), YAHOO.util.Dom.setXY(this.board.oldAnimPieceDiv, this.board.old_new_xy, !1));
+				var d = new YAHOO.util.Motion(n, { points: { to: v } });
+				(this.board.oldAnim = d), (this.board.oldAnimPieceDiv = n), (this.board.old_new_xy = v), (d.duration = s);
+				var u = this;
+				d.onComplete.subscribe(function () {
+					u.board.soundEnabled && boardSounds.playSound(c);
+				}),
+					i && d.onComplete.subscribe(i),
+					d.animate();
+			} else {
+				if (this.board.settingUpPosition) n.parentNode && n.parentNode.removeChild(n), h.appendChild(n);
+				else {
+					var v = this.getNewXYPosition(e, t);
+					YAHOO.util.Dom.setXY(n, v, !1);
+				}
+				this.setVisible(!0), a && this.board.soundEnabled && boardSounds.playSound(c), i && i();
+			}
+		}
+	}),
+	(ChessPiece.prototype.getFenLetter = function () {
+		var e = ChessPiece.pieceTypeToChar(this.piece) + "";
+		return this.colour != ChessPiece.WHITE && (e = e.toLowerCase()), e;
+	}),
+	(ChessPiece.pieceTypeToChar = function (e) {
+		switch (e) {
+			case ChessPiece.KING:
+				return "K";
+			case ChessPiece.QUEEN:
+				return "Q";
+			case ChessPiece.ROOK:
+				return "R";
+			case ChessPiece.BISHOP:
+				return "B";
+			case ChessPiece.KNIGHT:
+				return "N";
+			case ChessPiece.PAWN:
+				return "P";
+		}
+		return "?";
+	}),
+	(LightweightChessPiece = function (e, t, o, i) {
+		(this.board = i), (this.colour = t), (this.piece = o), (this.div = e);
+	}),
+	(LightweightChessPiece.prototype.getFenLetter = ChessPiece.prototype.getFenLetter),
+	(LightweightChessPiece.prototype.makeLightWeight = function () {
+		return this.copyPiece();
+	}),
+	(LightweightChessPiece.prototype.makeHeavyWeight = function () {
+		var e = this.board.createPiece(this.colour, this.piece, !1);
+		return (e.column = this.column), (e.row = this.row), (e.enPassant = this.enPassant), (e.castled = this.castled), e;
+	}),
+	(LightweightChessPiece.prototype.setVisible = function (e) {}),
+	(LightweightChessPiece.prototype.free = function () {}),
+	(LightweightChessPiece.prototype.setPosition = function (e, t, o, i, s) {
+		(this.column = e), (this.row = t);
+	}),
+	(LightweightChessPiece.prototype.copyPiece = function () {
+		var e = new LightweightChessPiece(this.id, this.colour, this.piece, this.board);
+		return (e.column = this.column), (e.row = this.row), e;
+	}),
+	(LightweightChessPiece.prototype.changePiece = function (e) {
+		this.changePieceKeepImage(e);
+	}),
+	(LightweightChessPiece.prototype.changePieceKeepImage = function (e) {
+		switch ((e + "").toLowerCase().charAt(0)) {
+			case "k":
+				this.piece = ChessPiece.KING;
+				break;
+			case "q":
+				this.piece = ChessPiece.QUEEN;
+				break;
+			case "r":
+				this.piece = ChessPiece.ROOK;
+				break;
+			case "b":
+				this.piece = ChessPiece.BISHOP;
+				break;
+			case "n":
+				this.piece = ChessPiece.KNIGHT;
+				break;
+			case "p":
+				this.piece = ChessPiece.PAWN;
+		}
+	}),
+	(MovesDisplay = function (e, t) {
+		(this.board = e), (this.displayType = t);
+	}),
+	(MovesDisplay.DEFAULT_DISPLAY_TYPE = 0),
+	(MovesDisplay.MAIN_ON_OWN_LINE = 1),
+	(Board = function (e) {
+		(this.boardName = e),
+			e && (this.initTarget("ctb-" + e, "ct-" + this.boardName + "-boardandpieces"), (this.boardPieces = Board.createBoardArray())),
+			(this.imagesLoaded = !1),
+			(this.newAnalysis = !1),
+			(this.disableNavigation = !1),
+			(this.currentMove = null),
+			(this.outputWithoutDisplay = !1),
+			(this.moveIndex = -1),
+			(this.dontUpdatePositionReachedTable = !1),
+			(this.restrictedColourMovement = -1),
+			(this.settingUpPosition = !1),
+			(this.pendingLevelZeroCommentaryClose = !1),
+			(this.isUserFlipped = !1),
+			(this.registeredFlipListeners = []),
+			(this.registeredSpaceListeners = []),
+			(this.registeredForwardAtEndListeners = []),
+			(this.registeredPasteFenClickedListeners = []),
+			(this.registeredGotoMoveIndexListeners = []),
+			(this.registeredBackMovePreCurrentListeners = []),
+			(this.registeredForwardMovePostUpdateListeners = []),
+			(this.registeredUpdateListeners = []),
+			(this.registeredUpdatePieceFinishedListeners = []),
+			(this.registeredUpdateEndOfMovesListeners = []),
+			(this.registeredUpdateHaveAltListeners = []),
+			(this.registeredUpdateWrongMoveListeners = []),
+			(this.registeredUpdateAllowMoveListeners = []),
+			(this.registeredMakeMoveListeners = []),
+			(this.moveNumber = 1),
+			(this.halfMoveNumber = 0);
+	}),
+	(Board.prototype = new YAHOO.util.DDTarget()),
+	(Board.invertToMove = function (e) {
+		return e == ChessPiece.WHITE ? ChessPiece.BLACK : ChessPiece.WHITE;
+	}),
+	(Board.boardStyleToClassName = function (e) {
+		var t = "";
+		switch (e) {
+			case 0:
+				t = "-lightgrey";
+				break;
+			case 1:
+				t = "-grey";
+				break;
+			case 2:
+				t = "-brown";
+				break;
+			case 3:
+				t = "-green";
+				break;
+			case 4:
+				t = "-woodlight";
+				break;
+			case 5:
+				t = "-wooddark";
+				break;
+			case 6:
+				t = "-metal";
+				break;
+			case 7:
+				t = "-marblebrown";
+				break;
+			case 8:
+				t = "-stucco";
+				break;
+			case 9:
+				t = "-goldsilver";
+				break;
+			case 10:
+				t = "-sandsnow";
+				break;
+			case 11:
+				t = "-crackedstone";
+				break;
+			case 12:
+				t = "-granite";
+				break;
+			case 13:
+				t = "-marblegreen";
+				break;
+			case 14:
+				t = "-greenwhite";
+		}
+		return t;
+	}),
+	(Board.createBoardArray = function () {
+		var e = boardPool.getObject();
+		if (null == e) {
+			e = new Array(8);
+			for (var t = 0; t < 8; t++) e[t] = new Array(8);
+		}
+		return e;
+	}),
+	(Board.prototype.preloadPieces = function () {
+		function e() {
+			for (var o = !0, i = 0; i < t.length; i++) {
+				var s = document.createElement("img");
+				(s.src = t[i]), (!s.complete || (void 0 !== s.naturalWidth && 0 == s.naturalWidth)) && (o = !1);
+			}
+			o ? (r.imagesLoaded = !0) : setTimeout(e, 1e3);
+		}
+		for (var t = [], o = 0; o < ChessPiece.QUEEN; o++)
+			for (var i = 0; i < 2; i++) {
+				var s = get_image_str(ChessPiece.pieceIconNames[i][o], this.boardImagePath, this.pieceSet, this.pieceSize, !0);
+				t.push(s);
+			}
+		var r = this;
+		e();
+	}),
+	(Board.prototype.selectDestSquare = function (e) {
+		if (this.clickAndClickDisabled) return !0;
+		var t = new Date().getTime(),
+			o = !1;
+		t - this.lastDestClick < 100 && (o = !0), (this.lastDestClick = t);
+		var i = YAHOO.util.Event.getPageX(e),
+			s = YAHOO.util.Event.getPageY(e),
+			r = YAHOO.util.Dom.getX("ctb-" + this.boardName),
+			a = YAHOO.util.Dom.getY("ctb-" + this.boardName),
+			n = parseInt((i - r) / this.pieceSize),
+			l = parseInt((s - a) / this.pieceSize),
+			h = this.boardName + "-s" + n + (7 - l),
+			c = YAHOO.util.Dom.get(h);
+		if (c == this.oldSelectedSquare)
+			return (
+				o ||
+					(YAHOO.util.Dom.removeClass(c, "ct-source-square"),
+					(this.oldSelectedSquare = null),
+					(this.oldSelectedPiece = null),
+					this.oldDestSquare && (YAHOO.util.Dom.removeClass(this.oldDestSquare, "ct-dest-square"), (this.oldDestSquare = null))),
+				!0
+			);
+		this.isFlipped && ((n = 7 - n), (l = 7 - l)), (l = 7 - l);
+		var d = this.boardPieces[n][l];
+		if (!d || (d.colour != this.toMove && !this.allowPreMoveSelection) || (-1 != this.restrictedColourMovement && d.colour != this.restrictedColourMovement)) {
+			if (!this.oldSelectedSquare) return !0;
+			if (this.oldSelectedPiece && this.oldSelectedPiece.colour != this.toMove) return !1;
+			var u = null;
+			if (((u = this.currentMove && this.currentMove.prev ? this.currentMove.prev : this.prev_move), this.canMove(this.oldSelectedPiece.makeLightWeight(), n, l, u, !0))) {
+				(this.lastDestSquare = c), (this.lastDestRow = l), (this.lastDestColumn = n), YAHOO.util.Dom.removeClass(this.oldSelectedSquare, "ct-source-square");
+				var v = !1;
+				(this.currentMove && !this.currentMove.atEnd) || (v = !0),
+					this.updatePiece(this.oldSelectedPiece, n, l, !1, !1, !0),
+					(this.oldSelectedPiece = null),
+					(this.oldSelectedSquare = null),
+					!v && this.currentMove && !this.allowingFreeMovement && this.currentMove.atEnd && (this.toggleToMove(), this.updateToPlay());
+			}
+		} else
+			this.oldSelectedSquare && YAHOO.util.Dom.removeClass(this.oldSelectedSquare, "ct-source-square"),
+				this.oldDestSquare && (YAHOO.util.Dom.removeClass(this.oldDestSquare, "ct-dest-square"), (this.oldDestSquare = null)),
+				YAHOO.util.Dom.addClass(c, "ct-source-square"),
+				(this.oldSelectedSquare = c),
+				(this.oldSelectedPiece = d);
+	}),
+	(Board.prototype.selectSourcePiece = function (e) {
+		this.lastSourceSquare && YAHOO.util.Dom.removeClass(s, "ct-source-square");
+		var t = e.row,
+			o = e.column;
+		this.isFlipped && ((t = 7 - t), (o = 7 - o));
+		var i = this.boardName + "-s" + o + t,
+			s = YAHOO.util.Dom.get(i);
+		YAHOO.util.Dom.addClass(s, "ct-source-square"), (this.lastSourceSquare = s), (this.lastSourcePiece = e), (this.lastSourceRow = e.row), (this.lastSourceColumn = e.column);
+	}),
+	(Board.prototype.toggleToMove = function () {
+		this.toMove == ChessPiece.WHITE ? (this.toMove = ChessPiece.BLACK) : (this.toMove = ChessPiece.WHITE);
+	}),
+	(Board.prototype.setupPieceDivs = function () {
+		this.getBoardDiv();
+		if (this.pieces) for (e = 0; e < 32; e++) this.pieces[e] && (this.pieces[e].setVisible(!1), this.pieces[e].free(), (this.pieces[e] = null));
+		if (this.availPieceDivs) for (var e = 0; e < 32; e++) this.availPieceDivs[e] && this.availPieceDivs[e].parentNode && this.availPieceDivs[e].parentNode.removeChild(this.availPieceDivs[e]);
+		(this.availids = null), (this.availIds = new Array(32)), (this.availPieceDivs = null), (this.availPieceDivs = new Array(32)), (this.pieces = null), (this.pieces = new Array(32)), (this.uptoId = 0), (this.uptoPiece = 0);
+	}),
+	(Board.prototype.getXY = function () {
+		return (this.board_xy = YAHOO.util.Dom.getXY("ctb-" + this.boardName)), this.board_xy;
+	}),
+	(Board.prototype.updateFromTo = function (e, t, o, i, s, r) {
+		YAHOO.util.Dom.removeClass(this.lastFromSquare, "ct-from-square"),
+			YAHOO.util.Dom.removeClass(this.lastToSquare, "ct-to-square"),
+			null != o &&
+				((this.lastFromSquare = e),
+				(this.lastToSquare = t),
+				(this.lastFromRow = o),
+				(this.lastFromColumn = i),
+				(this.lastToRow = s),
+				(this.lastToColumn = r),
+				this.highlightFromTo && (YAHOO.util.Dom.addClass(e, "ct-from-square"), YAHOO.util.Dom.addClass(t, "ct-to-square")));
+	}),
+	(Board.prototype.makeMove = function (e, t, o, i, s, r, a, n, l) {
+		var h, c;
+		this.isFlipped
+			? ((h = YAHOO.util.Dom.get(this.boardName + "-s" + (7 - e.fromColumn) + (7 - e.fromRow))), (c = YAHOO.util.Dom.get(this.boardName + "-s" + (7 - e.toColumn) + (7 - e.toRow))))
+			: ((h = YAHOO.util.Dom.get(this.boardName + "-s" + e.fromColumn + e.fromRow)), (c = YAHOO.util.Dom.get(this.boardName + "-s" + e.toColumn + e.toRow))),
+			this.oldSelectedSquare &&
+				(!this.allowPreMoveSelection || (this.oldSelectedPiece && t && this.oldSelectedPiece.colour == t.colour)) &&
+				(YAHOO.util.Dom.removeClass(this.oldSelectedSquare, "ct-source-square"), (this.oldSelectedSquare = null), (this.oldSelectedPiece = null)),
+			r && this.updateFromTo(h, c, e.fromRow, e.fromColumn, e.toRow, e.toColumn);
+		var d = this.boardPieces[e.toColumn][e.toRow];
+		null != d && ((d.enPassant = !1), (d.castled = !1)),
+			t.piece == ChessPiece.PAWN &&
+				e.toColumn != e.fromColumn &&
+				null == this.boardPieces[e.toColumn][e.toRow] &&
+				((d = this.boardPieces[e.toColumn][e.fromRow]), (this.boardPieces[e.toColumn][e.fromRow] = null), null != d && (d.enPassant = !0));
+		var u = null;
+		if (t.piece == ChessPiece.KING && Math.abs(e.toColumn - e.fromColumn) > 1) {
+			var v, m;
+			e.toColumn > e.fromColumn
+				? ((u = this.boardPieces[7][e.fromRow]), (v = e.fromRow), (m = 5), (this.boardPieces[7][e.toRow] = null))
+				: ((u = this.boardPieces[0][e.fromRow]), (v = e.fromRow), (m = 3), (this.boardPieces[0][e.toRow] = null)),
+				u ? (u.setPosition(m, v, o, null, i, null, l), (this.boardPieces[u.column][u.row] = u), (u.castled = !0)) : alert("No castle piece");
+		}
+		(e.taken = d),
+			d && s && this.processTaken(d, !0),
+			this.moveNumber++,
+			(e.preHalfMoveNumber = this.halfMoveNumber),
+			this.halfMoveNumber++,
+			(d || t.piece == ChessPiece.PAWN) && (this.halfMoveNumber = 0),
+			(this.board_xy = null),
+			null != e.promotion && t.changePieceKeepImage(e.promotion),
+			t.setPosition(
+				e.toColumn,
+				e.toRow,
+				o,
+				function () {
+					var o = d;
+					o && o.setVisible(!1), null != e.promotion && t.changePiece(e.promotion), a && a.call(n);
+				},
+				i,
+				d,
+				l
+			),
+			o || (null != e.promotion && t.changePiece(e.promotion)),
+			(this.boardPieces[e.fromColumn][e.fromRow] = null),
+			(this.boardPieces[e.toColumn][e.toRow] = t),
+			null != u && (e.taken = u),
+			(e.preCastleQueenSide = new Array(2)),
+			(e.preCastleKingSide = new Array(2)),
+			(e.preCastleQueenSide[0] = this.canCastleQueenSide[0]),
+			(e.preCastleQueenSide[1] = this.canCastleQueenSide[1]),
+			(e.preCastleKingSide[0] = this.canCastleKingSide[0]),
+			(e.preCastleKingSide[1] = this.canCastleKingSide[1]),
+			t.piece == ChessPiece.ROOK
+				? ((t.colour == ChessPiece.WHITE && 0 == e.fromRow) || (t.colour == ChessPiece.BLACK && 7 == e.fromRow)) &&
+				  (0 == e.fromColumn ? (this.canCastleQueenSide[t.colour] = !1) : 7 == e.fromColumn && (this.canCastleKingSide[t.colour] = !1))
+				: t.piece == ChessPiece.KING && ((this.canCastleQueenSide[t.colour] = !1), (this.canCastleKingSide[t.colour] = !1)),
+			d &&
+				d.piece == ChessPiece.ROOK &&
+				(0 == e.toColumn
+					? ((d.colour == ChessPiece.WHITE && 0 == e.toRow) || (d.colour == ChessPiece.BLACK && 7 == e.toRow)) && (this.canCastleQueenSide[d.colour] = !1)
+					: 7 == e.toColumn && ((d.colour == ChessPiece.WHITE && 0 == e.toRow) || (d.colour == ChessPiece.BLACK && 7 == e.toRow)) && (this.canCastleKingSide[d.colour] = !1)),
+			this.updatePositionReached(t.colour);
+		for (var p = 0; p < this.registeredMakeMoveListeners.length; p++) this.registeredMakeMoveListeners[p].makeMoveCallback(e);
+	}),
+	(Board.prototype.isThreeFoldRep = function (e) {
+		var t = this.toMove;
+		e && (t = t == ChessPiece.WHITE ? ChessPiece.BLACK : ChessPiece.WHITE);
+		var o = this.boardToUniqueFen(t);
+		return this.positionsSeen[o] >= 3;
+	}),
+	(Board.prototype.updatePositionReached = function (e) {
+		if (!this.dontUpdatePositionReachedTable) {
+			var t = this.boardToUniqueFen(e);
+			this.positionsSeen || (this.positionsSeen = []), this.positionsSeen[t] ? this.positionsSeen[t]++ : (this.positionsSeen[t] = 1);
+		}
+	}),
+	(Board.prototype.promptPromotion = function (e, t, o, i, s) {
+		(e.prePromotionColumn = e.column), (e.prePromotionRow = e.row), e.setPosition(t, o, !1, null, this.moveAnimationLength);
+		var r = this,
+			a = new YAHOO.widget.Dialog("promotionDialogId", {
+				width: "300px",
+				fixedcenter: !0,
+				visible: !0,
+				modal: !0,
+				close: !1,
+				constraintoviewport: !0,
+				buttons: [
+					{
+						text: _js("Queen"),
+						handler: function () {
+							a.hide(), r.updatePiece(e, t, o, i, s, !1, "q");
+						},
+						isDefault: !0,
+					},
+					{
+						text: _js("Rook"),
+						handler: function () {
+							a.hide(), r.updatePiece(e, t, o, i, s, !1, "r");
+						},
+						isDefault: !1,
+					},
+					{
+						text: _js("Bishop"),
+						handler: function () {
+							a.hide(), r.updatePiece(e, t, o, i, s, !1, "b");
+						},
+						isDefault: !1,
+					},
+					{
+						text: _js("Knight"),
+						handler: function () {
+							a.hide(), r.updatePiece(e, t, o, i, s, !1, "n");
+						},
+						isDefault: !1,
+					},
+				],
+			});
+		a.setHeader(_js("Select Promotion Piece")), a.setBody("<div></div>"), a.render(document.body);
+	}),
+	(Board.moveToLocale = function (e) {
+		if (!e || "" == e) return e;
+		for (var t = "", o = 0; o < e.length; o++) {
+			var i = e.charAt(o);
+			switch (i) {
+				case "K":
+					i = _js("K");
+					break;
+				case "Q":
+					i = _js("Q");
+					break;
+				case "R":
+					i = _js("R");
+					break;
+				case "N":
+					i = _js("N");
+					break;
+				case "B":
+					i = _js("B");
+					break;
+				case "P":
+					i = _js("P");
+					break;
+				case "a":
+					i = _js("a");
+					break;
+				case "b":
+					i = _js("b");
+					break;
+				case "c":
+					i = _js("c");
+					break;
+				case "d":
+					i = _js("d");
+					break;
+				case "e":
+					i = _js("e");
+					break;
+				case "f":
+					i = _js("f");
+					break;
+				case "g":
+					i = _js("g");
+					break;
+				case "h":
+					i = _js("h");
+					break;
+				case "x":
+					i = _js("x");
+					break;
+				case "#":
+					i = _js("#");
+			}
+			t += i;
+		}
+		return t;
+	}),
+	(Board.prototype.updatePiece = function (e, t, o, i, s, r, a, n) {
+		if ((a && ((this.board_xy = null), e.prePromotionRow && ((e.row = e.prePromotionRow), (e.column = e.prePromotionColumn))), null == a && e.column == t && e.row == o))
+			return (this.board_xy = null), e.setPosition(e.column, e.row, !1, null, this.moveAnimationLength), void (clog && console.log("moved piece back to its orig position"));
+		var l = null;
+		if (
+			((l = this.currentMove && this.currentMove.prev ? this.currentMove.prev : this.prev_move),
+			clog && (this.currentMove ? console.log("updatepiece currentMove:" + this.currentMove.output()) : console.log("updatepiece currentmove null")),
+			!i && !this.canMove(e.makeLightWeight(), t, o, l, !0))
+		)
+			return (
+				(this.board_xy = null),
+				e.setPosition(e.column, e.row, !1, null, 0.5),
+				void (clog && (console.log("move not legal , move back to orig:" + this.toMove), l ? console.log("prevMove was:" + l.output()) : console.log("prevMove was null")))
+			);
+		var h = "";
+		if (!r || e.piece != ChessPiece.PAWN || (7 != o && 0 != o)) {
+			null != a && (h = a);
+			var c = "";
+			(c += Move.columnToChar(e.column)), (c += String.fromCharCode("1".charCodeAt(0) + e.row)), (c += Move.columnToChar(t)), (c += String.fromCharCode("1".charCodeAt(0) + o)), h && (c += h);
+			var d = this.createMoveFromString(c);
+			(m = this.currentMove) && (d.moveNum = m.moveNum);
+			for (var u = null, v = 0; v < this.registeredUpdateListeners.length; v++) {
+				if (!(g = this.registeredUpdateListeners[v].updatePieceCallback(h, e, t, o, i, s, r, a, n, l, this.currentMove, d))) return !1;
+				g.ignoreRetVal || (u = g);
+			}
+			if (!u) return clog && console.log("Got no update piece callbak"), !1;
+			if (u.allowMove) {
+				this.oldSelectedSquare && YAHOO.util.Dom.removeClass(this.oldSelectedSquare, "ct-source-square");
+				for (var m = u.move, v = 0; v < this.registeredUpdateAllowMoveListeners.length; v++) this.registeredUpdateAllowMoveListeners[v].updateAllowMoveCallback(h, e, t, o, i, s, r, a, n, m);
+				this.makeMove(m, e, s, this.moveAnimationLength, !0, !0, null, null, !0);
+				var p = !u.dontMakeOpponentMove && !i && this.currentMove && this.currentMove.next && !this.currentMove.next.atEnd;
+				if ((clog && (m.next ? console.log("setting current move in updatepiece to:" + m.next.output()) : console.log("in updatepiece, current move being set to null")), this.setCurrentMove(m.next, !1, p), this.currentMove.atEnd))
+					for (v = 0; v < this.registeredUpdateEndOfMovesListeners.length; v++) u = this.registeredUpdateEndOfMovesListeners[v].updateEndOfMovesCallback(h, e, t, o, i, s, r, a, n);
+				p &&
+					((opponentMove = this.currentMove),
+					this.currentMove && this.currentMove.next.atEnd && this.toggleToMove(),
+					this.updatePiece(this.boardPieces[opponentMove.fromColumn][opponentMove.fromRow], opponentMove.toColumn, opponentMove.toRow, !0, !0, !1));
+			} else {
+				(m = u.move), e.column, e.row;
+				(this.board_xy = null), e.setPosition(e.column, e.row, !1, null, this.moveAnimationLength);
+				for (v = 0; v < this.registeredUpdateWrongMoveListeners.length; v++) u = this.registeredUpdateWrongMoveListeners[v].updateWrongMoveCallback(h, e, t, o, i, s, r, a, n, m);
+			}
+			for (v = 0; v < this.registeredUpdatePieceFinishedListeners.length; v++) var g = this.registeredUpdatePieceFinishedListeners[v].updatePieceFinishedCallback(h, e, t, o, i, s, r, a, n, l, this.currentMove, d);
+		} else this.promptPromotion(e, t, o, i, s);
+	}),
+	(Board.prototype.addGotoMoveIndexListener = function (e) {
+		this.registeredGotoMoveIndexListeners.push(e);
+	}),
+	(Board.prototype.addPasteFenClickedListener = function (e) {
+		this.registeredPasteFenClickedListeners.push(e);
+	}),
+	(Board.prototype.addBackMovePreCurrentListener = function (e) {
+		this.registeredBackMovePreCurrentListeners.push(e);
+	}),
+	(Board.prototype.addForwardMovePostUpdateListener = function (e) {
+		this.registeredForwardMovePostUpdateListeners.push(e);
+	}),
+	(Board.prototype.addForwardAtEndListener = function (e) {
+		this.registeredForwardAtEndListeners.push(e);
+	}),
+	(Board.prototype.addUpdatePieceListener = function (e) {
+		this.registeredUpdateListeners.push(e);
+	}),
+	(Board.prototype.addUpdatePieceFinishedListener = function (e) {
+		this.registeredUpdatePieceFinishedListeners.push(e);
+	}),
+	(Board.prototype.addUpdatePieceEndOfMovesListener = function (e) {
+		this.registeredUpdateEndOfMovesListeners.push(e);
+	}),
+	(Board.prototype.addUpdatePieceHaveAltListener = function (e) {
+		this.registeredUpdateHaveAltListeners.push(e);
+	}),
+	(Board.prototype.addUpdatePieceAllowMoveListener = function (e) {
+		this.registeredUpdateAllowMoveListeners.push(e);
+	}),
+	(Board.prototype.addMakeMoveListener = function (e) {
+		this.registeredMakeMoveListeners.push(e);
+	}),
+	(Board.prototype.addUpdatePieceWrongMoveListener = function (e) {
+		this.registeredUpdateWrongMoveListeners.push(e);
+	}),
+	(Board.prototype.scoreToShortString = function (e) {
+		return "draw" == e ? "D" : e >= 0 ? "M" + e : "L" + -1 * e;
+	}),
+	(Board.prototype.scoreToLongString = function (e) {
+		return "draw" == e ? _js("Draw") : 0 == e ? _js("Mate") : e > 0 ? __js("Mate in {NUMBER_MOVES}", [["NUMBER_MOVES", e]]) : __js("Lose in {NUMBER_MOVES}", [["NUMBER_MOVES", -1 * e]]);
+	}),
+	(Board.prototype.egMoveToScoreString = function (e) {
+		var t = e.score,
+			o = e.optimal_score,
+			i = this.scoreToShortString(t),
+			s = this.scoreToShortString(o),
+			r = this.scoreToLongString(t),
+			a = this.scoreToLongString(o);
+		if (t == o) return ["", r];
+		var n = "ct-subopt-move-score";
+		return ("draw" == t || t < 0) && (n = "ct-bad-move-score"), ['<span class="' + n + '">' + i + "(" + s + ")</span>", r + "(" + a + ")"];
+	}),
+	(Board.prototype.makeShortAlgabraic = function (e, t, o, i, s) {
+		clog && console.log("fromCol:" + e + " fromRow:" + t + " toCol:" + o + " toRow:" + i);
+		var r = this.boardPieces[e][t],
+			a = r.piece,
+			n = ChessPiece.pieceTypeToChar(a),
+			l = "";
+		if (a == ChessPiece.PAWN) e == o ? (l = Move.columnToChar(e) + "" + (i + 1)) : ((l = Move.columnToChar(e) + "x" + Move.columnToChar(o) + (i + 1)), this.boardPieces[o][i] || (l += " e.p."));
+		else if (a == ChessPiece.KING) {
+			var h = Math.abs(e - o);
+			1 == h || 0 == h ? ((l = n), this.boardPieces[o][i] && (l += "x"), (l += Move.columnToChar(o) + "" + (i + 1))) : (l = 6 == o ? "O-O" : "O-O-O");
+		} else {
+			for (var c = [], d = 0; d < 8; d++)
+				for (var u = 0; u < 8; u++) {
+					var v = this.boardPieces[u][d];
+					if (v && v.colour == r.colour && v.piece == a && (r.column != v.column || r.row != v.row)) {
+						var m = null;
+						this.currentMove && (m = this.currentMove.prev), this.canMove(v.makeLightWeight(), o, i, m, !0) && c.push(v);
+					}
+				}
+			if (((l = n), c.length > 0)) {
+				for (var p = !1, g = !1, f = 0; f < c.length; f++) c[f].row == t && (g = !0), c[f].column == e && (p = !0);
+				(g || (!g && !p)) && (l += Move.columnToChar(e)), p && (l += "" + (t + 1));
+			}
+			this.boardPieces[o][i] && (l += "x"), (l += Move.columnToChar(o) + "" + (i + 1));
+		}
+		var b = "",
+			C = "";
+		if (s) {
+			var M = this.cloneBoard(),
+				y = ChessPiece.WHITE;
+			M.boardPieces[s.fromColumn][s.fromRow].colour == ChessPiece.WHITE && (y = ChessPiece.BLACK),
+				M.makeMove(s, M.boardPieces[s.fromColumn][s.fromRow], !1, M.moveAnimationLength, !1, !1),
+				M.isKingSafe(y, s) || ((b = "+"), M.isKingMated(y, s) && (b = "#")),
+				s.promotion && (C = "=" + (s.promotion + "").toUpperCase());
+		}
+		return (l += C + b);
+	}),
+	(Board.getVarMove = function (e, t, o, i, s) {
+		if (e.vars && e.vars.length > 0)
+			for (var r = 0, r = 0; r < e.vars.length; r++) {
+				var a = e.vars[r];
+				if (a.fromColumn == i.column && a.fromRow == i.row && a.toRow == t && a.toColumn == o && ("" == s || s == a.promotion)) return a;
+			}
+	}),
+	(Board.prototype.createMoveFromString = function (e) {
+		var t = 0,
+			o = !1,
+			i = null,
+			s = e.charCodeAt(t++),
+			r = e.charCodeAt(t++),
+			a = e.split("|"),
+			n = null;
+		a.length > 1 ? ((n = a[1]), (e = a[0])) : (e = a[0]), "x" == e.charAt(t) && (t++, (o = !0));
+		var l = e.charCodeAt(t++),
+			h = e.charCodeAt(t++);
+		t < e.length && (i = e.charAt(t));
+		var c = new Move(s - "a".charCodeAt(0), r - "1".charCodeAt(0), l - "a".charCodeAt(0), h - "1".charCodeAt(0), o, i, e);
+		return (c.pgn = n), c;
+	}),
+	(Board.prototype.getBackButton = function () {
+		return this.backButton || (this.backButton = YAHOO.util.Dom.get(this.boardName + "-back")), this.backButton;
+	}),
+	(Board.prototype.getForwardButton = function () {
+		return this.forwardButton || (this.forwardButton = YAHOO.util.Dom.get(this.boardName + "-forward")), this.forwardButton;
+	}),
+	(Board.prototype.getEndButton = function () {
+		return this.endButton || (this.endButton = YAHOO.util.Dom.get(this.boardName + "-end")), this.endButton;
+	}),
+	(Board.prototype.getStartButton = function () {
+		return this.startButton || (this.startButton = YAHOO.util.Dom.get(this.boardName + "-start")), this.startButton;
+	}),
+	(Board.prototype.setForwardBack = function () {
+		var e = this.getBackButton(),
+			t = this.getForwardButton(),
+			o = this.getEndButton(),
+			i = this.getStartButton();
+		if (!this.currentMove)
+			return (
+				e && (e.src = this.boardImagePath + "/images/play/resultset_previous_disabled" + this.getVersString() + ".svg"),
+				i && (i.src = this.boardImagePath + "/images/play/disabled_resultset_first" + this.getVersString() + ".svg"),
+				t && (t.src = this.boardImagePath + "/images/play/resultset_next_disabled" + this.getVersString() + ".svg"),
+				void (o && (o.src = this.boardImagePath + "/images/play/disabled_resultset_last" + this.getVersString() + ".svg"))
+			);
+		null == this.currentMove.prev
+			? (e && (e.src = this.boardImagePath + "/images/play/resultset_previous_disabled" + this.getVersString() + ".svg"), i && (i.src = this.boardImagePath + "/images/play/disabled_resultset_first" + this.getVersString() + ".svg"))
+			: (e && (e.src = this.boardImagePath + "/images/play/resultset_previous" + this.getVersString() + ".svg"), i && (i.src = this.boardImagePath + "/images/play/resultset_first" + this.getVersString() + ".svg")),
+			this.currentMove.atEnd
+				? (t && (t.src = this.boardImagePath + "/images/play/resultset_next_disabled" + this.getVersString() + ".svg"), o && (o.src = this.boardImagePath + "/images/play/disabled_resultset_last" + this.getVersString() + ".svg"))
+				: (t && (t.src = this.boardImagePath + "/images/play/resultset_next" + this.getVersString() + ".svg"), o && (o.src = this.boardImagePath + "/images/play/resultset_last" + this.getVersString() + ".svg"));
+	}),
+	(Board.prototype.convertPiecesFromLightWeight = function (e) {
+		var t = this.settingUpPosition;
+		this.settingUpPosition = !0;
+		for (var o = 0; o < 8; o++)
+			for (var i = 0; i < 8; i++)
+				if (null != this.boardPieces[o][i]) {
+					var s = this.boardPieces[o][i].makeHeavyWeight();
+					(this.boardPieces[o][i] = s), s.setPosition(s.column, s.row, !1, null, this.moveAnimationLength), s.setVisible(!0);
+				}
+		for (var r = this.moveArray[e]; null != r; ) r.taken && (r.taken = r.taken.makeHeavyWeight()), (r = r.prev);
+		this.settingUpPosition = t;
+	}),
+	(MovesDisplay.prototype.setToMove = function (e) {
+		this.toMove = e;
+	}),
+	(MovesDisplay.prototype.clickComment = function (e) {
+		var t = e.currentTarget ? e.currentTarget : !!e.targetElement && e.targetElement;
+		t || (t = YAHOO.util.Event.getTarget(e)), t.id || (t = t.parentNode);
+		var o = t.id.substr((this.board.boardName + "-mcX").length),
+			i = !0;
+		t.id.indexOf("-mca") >= 0 && (i = !1);
+		var s = this.board.moveArray[o],
+			r = "";
+		(r = i ? s.beforeComment : s.afterComment),
+			(mySimpleDialog = new YAHOO.widget.SimpleDialog(this.boardName + "-editCommentDialog", { width: "20em", fixedcenter: !0, modal: !0, visible: !1, draggable: !1 })),
+			mySimpleDialog.setHeader("Edit Comment"),
+			mySimpleDialog.setBody('<textarea id="' + this.board.boardName + '-editComment">' + r + "</textarea>"),
+			mySimpleDialog.cfg.setProperty("icon", YAHOO.widget.SimpleDialog.ICON_INFO);
+		var a = this,
+			n = [
+				{
+					text: "Delete",
+					handler: function () {
+						i ? (s.beforeComment = null) : (s.afterComment = null), (t.innerHTML = ""), this.hide();
+					},
+				},
+				{
+					text: "Save",
+					handler: function () {
+						var e = trimStr(YAHOO.util.Dom.get(a.board.boardName + "-editComment").value);
+						i ? (s.beforeComment = e) : (s.afterComment = e), (t.innerHTML = i ? a.outputComment(e, 0) + " " : " " + a.outputComment(e, 0)), this.hide();
+					},
+				},
+				{
+					text: "Cancel",
+					handler: function () {
+						this.hide();
+					},
+					isDefault: !0,
+				},
+			];
+		mySimpleDialog.cfg.queueProperty("buttons", n), mySimpleDialog.render(document.body), mySimpleDialog.show();
+	}),
+	(MovesDisplay.prototype.gotoMove = function (e) {
+		if (!this.board.disableNavigation && !((this.board.tactics && this.board.tactics.problemActive) || this.board.blockFowardBack || this.board.deferredBlockForwardBack)) {
+			activeBoard = this.board;
+			var t = e.currentTarget ? e.currentTarget : !!e.targetElement && e.targetElement;
+			t || (t = YAHOO.util.Event.getTarget(e)), t.id || (t = t.parentNode);
+			var o = t.id.substr((this.board.boardName + "-m").length);
+			clog && console.log("got goto move index:" + o),
+				this.board.gotoMoveIndex(o, !1, !1, !1, !1),
+				this.board.problem &&
+					(this.board.currentMove.bestMoves
+						? this.board.problem.showBestMoves(this.board.currentMove, this.board.currentMove.bestMoves, this.board.currentMove.correctMove, this.board.currentMove.wrongMove)
+						: this.board.problem.clearBestMoves());
+		}
+	}),
+	(MovesDisplay.prototype.getMovesDisplay = function () {
+		if (!this.cachedMovesDisplay && !this.allreadyCachedMovesDisplay) {
+			var e = this.board.boardName + "-moves";
+			this.moveListName && (e = this.moveListName), (this.cachedMovesDisplay = YAHOO.util.Dom.get(e)), (this.allreadyCachedMovesDisplay = !0);
+		}
+		return this.cachedMovesDisplay;
+	}),
+	(MovesDisplay.prototype.outputVariationStart = function (e, t, o, i) {
+		var s = "";
+		return t > this.board.ml
+			? s
+			: 1 == this.board.ml && i > 1
+			? s
+			: ((this.getMovesDisplay() || this.board.outputWithoutDisplay) &&
+				  (0 == e &&
+					  this.displayType == MovesDisplay.MAIN_ON_OWN_LINE &&
+					  this.firstNonMove &&
+					  (this.board.useDivClearForNewline && (s += '<div style="clear:both;"></div>'), (s += '<div class="ct-mainline-commentary"/>'), (this.pendingLevelZeroCommentaryClose = !0)),
+				  this.variationOnOwnLine && (this.board.useDivClearForNewline ? (s += '<div style="clear:both;"></div>') : (s += "<br/>")),
+				  this.board.showBracketsOnVariation && (!this.board.hideBracketsOnTopLevelVariation || e > 0) && (s += "<span>" + this.board.variationStartString + "</span>")),
+			  (this.firstNonMove = !1),
+			  s);
+	}),
+	(MovesDisplay.prototype.outputVariationEnd = function (e, t, o, i) {
+		var s = this.getMovesDisplay(),
+			r = "";
+		return 1 == this.board.ml && t > 0 && this.board.outputFirstVar
+			? r
+			: ((this.board.outputFirstVar = !0),
+			  (s || this.board.outputWithoutDisplay) && this.board.showBracketsOnVariation && (!this.board.hideBracketsOnTopLevelVariation || e > 1) && (r += "<span>" + this.board.variationEndString + "</span>"),
+			  1 == e && (this.displayType, MovesDisplay.MAIN_ON_OWN_LINE),
+			  (this.firstNonMove = !1),
+			  r);
+	}),
+	(MovesDisplay.prototype.outputComment = function (e, t, o, i) {
+		if (this.board.ignoreCommentRegex && new RegExp(this.board.ignoreCommentRegex).test(e)) return "";
+		var s = "";
+		if (1 == this.board.ml) return s;
+		if (this.getMovesDisplay() || this.board.outputWithoutDisplay) {
+			0 == t && this.displayType == MovesDisplay.MAIN_ON_OWN_LINE && (this.firstNonMove && (s += "<br/>"), (s += '<div class="ct-mainline-commentary">'), (this.pendingLevelZeroCommentaryClose = !0));
+			var r = "ct-board-move-comment";
+			o && (r = "ct-board-move-alt-comment"), this.board.handleCommentClicks && (r += " ct-board-clickable-comment"), (s += '<span class="' + r + '"> ' + e + " </span>"), 0 == t && (this.displayType, MovesDisplay.MAIN_ON_OWN_LINE);
+		}
+		return i || (this.firstNonMove = !1), s;
+	}),
+	(MovesDisplay.prototype.outputNag = function (e) {
+		var t = "";
+		if (this.getMovesDisplay() || this.board.outputWithoutDisplay) {
+			var o = null;
+			switch (e) {
+				case 11:
+					o = "=";
+					break;
+				case 14:
+					o = "+=";
+					break;
+				case 15:
+					o = "=+";
+					break;
+				case 16:
+					o = "+/-";
+					break;
+				case 17:
+					o = "-/+";
+					break;
+				case 18:
+					o = "+-";
+					break;
+				case 19:
+					o = "-+";
+					break;
+				case 20:
+					o = "+--";
+					break;
+				case 21:
+					o = "--+";
+			}
+			o && (t += "<span> " + o + " </span>");
+		}
+		return t;
+	}),
+	(MovesDisplay.prototype.outputResult = function (e) {
+		return '<span class="ct-result">' + e + "</span>";
+	}),
+	(MovesDisplay.prototype.outputMove = function (e, t, o, i, s, r, a, n, l, h, c, d, u, v, m) {
+		var p = "",
+			g = this.getMovesDisplay();
+		if (this.board.tr && t > 0 && (r > 1 || a > 3) && !s) return p;
+		if (1 == this.board.ml && r > 0 && this.board.outputFirstVar) return p;
+		if (g || this.board.outputWithoutDisplay) {
+			var f = Math.round(o / 2) + ". ",
+				b = !1;
+			o % 2 != 1 && (s || !this.firstNonMove ? ((f = Math.round(o / 2) + "... "), (b = !0)) : (f = "")),
+				this.displayType != MovesDisplay.MAIN_ON_OWN_LINE ||
+					0 != t ||
+					(this.firstNonMove && o % 2 != 1) ||
+					(this.pendingLevelZeroCommentaryClose && ((this.pendingLevelZeroCommentaryClose = !1), (p += "</div>")),
+					this.board.newlineForEachMainMove && (this.board.useDivClearForNewline ? (p += '<div style="clear:both;"></div>') : (p += "<br/>")));
+			var C = "",
+				M = "";
+			if (n && n.eg_move) {
+				var y = this.board.egMoveToScoreString(n.eg_move);
+				(C = y[0]), (M = y[1]);
+			}
+			var O = "";
+			l && (O = "initially_hidden"), "" != C && (C = " " + C);
+			var P = "title";
+			l && (P = "alt");
+			var A = "";
+			h && ((A = ' rel="' + i + '" '), (i = "___"));
+			var S = "";
+			b && 0 == t && (S = '<span class="ct-board-move-dottedempty">&nbsp;</span>');
+			var w = "";
+			f && (w = '<span class="ct-board-move-movenum">' + f + "</span>");
+			var N = "";
+			0 == e && (N = c ? " ct-best-move " : u ? " ct-bad-move " : d ? " ct-good-move " : v ? " ct-current-move " : " ct-first-move "),
+				m && (N = " ct-current-move "),
+				(p +=
+					"<span " +
+					A +
+					P +
+					'="' +
+					M +
+					'" id="' +
+					this.board.boardName +
+					"-m" +
+					e +
+					'" class="' +
+					(0 == t ? "ct-board-move-mainline" : "ct-board-move-variation") +
+					N +
+					'">' +
+					w +
+					S +
+					'<span class="ct-board-move-movetext">' +
+					i +
+					'</span><span id="' +
+					this.board.boardName +
+					"-msc" +
+					e +
+					'" class="' +
+					O +
+					'">' +
+					C +
+					"</span></span>");
+		}
+		return (this.firstNonMove = !0), p;
+	}),
+	(Board.prototype.setMoveSeqLalg = function (e, t, o, i, s, r, a, n, l, h, c, d) {
+		var u = new Array();
+		e && e.length > 0 && (u = e.replace(/\s+$/g, "").split(" ")), this.setupFromLalgArray(u, i, o, t, s, r, a, n, l, h, c, d);
+	}),
+	(Board.prototype.setupFromLalgArray = function (
+		movesArr,
+		pgnResult,
+		startMoveNum,
+		moveArray,
+		dontHandleVariations,
+		dontPurgeEventHandlers,
+		isBestLine,
+		highlightAsWinningLine,
+		highlightAsLosingLine,
+		dontPlayPrevMove,
+		isCurrentMove,
+		currMove
+	) {
+		var clog = !1;
+		if ((clog && console.log("top of setupFromLalgArray"), (this.outputFirstVar = !1), this.movesDisplay)) {
+			this.movesDisplay.pendingLevelZeroCommentaryClose = !1;
+			var md = this.movesDisplay.getMovesDisplay();
+			md && (dontPurgeEventHandlers || YAHOO.util.Event.purgeElement(md, !0), (md.innerHTML = ""));
+		}
+		moveArray || (moveArray = new Array());
+		var tmpBoard = this.cloneBoard();
+		this.movesDisplay.firstNonMove = !1;
+		var prevTmpBoards = null,
+			prevOldTmpBoards = null;
+		dontHandleVariations || ((prevTmpBoards = new Array()), (prevOldTmpBoards = new Array())),
+			!dontPlayPrevMove &&
+				this.prev_move &&
+				(clog && console.log("this.prev_move:" + this.prev_move.output()),
+				tmpBoard.boardPieces[this.prev_move.fromColumn][this.prev_move.fromRow] &&
+					tmpBoard.makeMove(this.prev_move, tmpBoard.boardPieces[this.prev_move.fromColumn][this.prev_move.fromRow], !1, tmpBoard.moveAnimationLength, !1, !1));
+		var oldTmpBoard = null;
+		dontHandleVariations || (oldTmpBoard = tmpBoard.cloneBoard());
+		var oldMove = null,
+			count = 0,
+			comment = "",
+			isComment = !1,
+			isAlt = !1,
+			ravLevel = 0,
+			firstRav = !1,
+			ravMoves = new Array(),
+			ravCount = new Array();
+		ravCount[0] = 0;
+		for (
+			var prevMoves = new Array(),
+				prevToMoves = new Array(),
+				moveNum = 2 * startMoveNum - 1,
+				firstMoveNum = 2 * startMoveNum - 1,
+				movesOutput = new Array(),
+				toMove = ChessPiece.WHITE,
+				lastMoveIndex = 0,
+				eval = "",
+				depth = "",
+				nodes = "",
+				time = "",
+				mainMateMoves = -1,
+				lastMateInMoves = 0,
+				i = 0;
+			i < movesArr.length;
+			i++
+		) {
+			var mateInMoves = 0;
+			if ((clog && console.log("movesArr[" + i + "]:" + movesArr[i]), "ALT" != movesArr[i]))
+				if (0 != movesArr[i].indexOf("EVAL"))
+					if (0 != movesArr[i].indexOf("DEPTH"))
+						if (0 != movesArr[i].indexOf("NODES")) {
+							if (0 == movesArr[i].indexOf("TIME")) {
+								time = movesArr[i].split(":")[1];
+								var e = eval;
+								if (0 != eval.indexOf("mate")) (e = (parseFloat(eval) / 100).toFixed(2)) > 0 && (e = "+" + e);
+								else {
+									e = e.replace(/_/, " ");
+									var mateStr = e.split(" ");
+									(mateInMoves = parseInt(mateStr[1])), (e = _js("mate") + " " + mateStr[1]), 1 == ravCount[ravLevel] && (mainMateMoves = mateInMoves);
+								}
+								(lastMateInMoves = mateInMoves), mateInMoves < 0 ? (isAlt = !1) : mateInMoves > 0 && mateInMoves < 8 && ravLevel > 0 && ravCount[ravLevel] > 1 && (isAlt = !0);
+								var altStr = "";
+								isAlt && (altStr = _js("ALT") + " ");
+								var t = parseInt(time),
+									nps = " " + __js("nps:{NODES_PER_SECOND}", [["NODES_PER_SECOND", Math.round(parseInt(nodes) / (parseInt(time) / 1e3))]]);
+								this.showNPS || (nps = ""), ravLevel > 0 && ravCount[ravLevel] > this.ml ? (movesArr[i] = "") : (movesArr[i] = altStr + e + " (" + __js("depth:{DEPTH}", [["DEPTH", depth]]) + nps + ")");
+							}
+							if ("}" != movesArr[i])
+								if (isComment) comment += movesArr[i] + " ";
+								else if ("{" != movesArr[i])
+									if ("(" != movesArr[i])
+										if (")" != movesArr[i])
+											if ("$" != movesArr[i].charAt(0)) {
+												var move = this.createMoveFromString(movesArr[i]),
+													firstMoveBlack = !1;
+												moveNum == firstMoveNum && this.boardPieces[move.fromColumn][move.fromRow].colour == ChessPiece.BLACK && (moveNum++, (firstMoveBlack = !0), (toMove = ChessPiece.BLACK)), (move.index = count);
+												var moveOut = move.pgn ? move.pgn : move.moveString;
+												if (
+													(move.pgn ? (moveOut = move.pgn) : ((moveOut = tmpBoard.makeShortAlgabraic(move.fromColumn, move.fromRow, move.toColumn, move.toRow, move)), (move.SAN = moveOut)),
+													(moveOut = Board.moveToLocale(moveOut)),
+													this.movesDisplay)
+												) {
+													this.movesDisplay.setToMove(toMove);
+													var inCurrentMoveLine = !1;
+													if (isCurrentMove && currMove && !currMove.atEnd) {
+														var lalgCurr = currMove.toMoveString();
+														(currMove = currMove.next), lalgCurr == movesArr[i] ? (inCurrentMoveLine = !0) : (isCurrentMove = !1);
+													}
+													movesOutput.push(
+														this.movesDisplay.outputMove(
+															count,
+															ravLevel,
+															moveNum,
+															moveOut + " ",
+															firstRav,
+															ravCount[ravLevel],
+															ravMoves[0],
+															null,
+															!1,
+															!1,
+															isBestLine,
+															highlightAsWinningLine,
+															highlightAsLosingLine,
+															isCurrentMove,
+															inCurrentMoveLine
+														)
+													);
+												}
+												if (((toMove = toMove == ChessPiece.BLACK ? ChessPiece.WHITE : ChessPiece.BLACK), (move.moveNum = moveNum), moveNum++, ravLevel > 0))
+													if (firstRav) {
+														var curMove = oldMove;
+														null == curMove && alert("Got no previous move for variation:" + movesArra[i]),
+															0 == curMove.numVars && (curMove.vars = new Array()),
+															(move.isAlt = isAlt),
+															(move.mateInMoves = lastMateInMoves),
+															(curMove.vars[curMove.numVars++] = move),
+															(move.prev = curMove.prev),
+															(firstRav = !1);
+													} else (move.prev = oldMove), null != oldMove && (oldMove.next = move);
+												else (move.prev = oldMove), null != oldMove && (oldMove.next = move);
+												(ravCount[ravLevel + 1] = 0),
+													0 == ravLevel && (lastMoveIndex = count),
+													(moveArray[count++] = move),
+													(tmpBoard.moveArray[count - 1] = move),
+													(oldMove = move),
+													dontHandleVariations || (oldTmpBoard = tmpBoard.cloneBoard()),
+													tmpBoard.makeMove(move, tmpBoard.boardPieces[move.fromColumn][move.fromRow], !1, tmpBoard.moveAnimationLength, !1, !1);
+											} else this.movesDisplay && movesOutput.push(this.movesDisplay.outputNag(parseInt(movesArr[i].substring(1))));
+										else {
+											this.movesDisplay && movesOutput.push(this.movesDisplay.outputVariationEnd(ravLevel, ravCount[ravLevel], moveNum, ravMoves[0]));
+											var endMove = new Move();
+											(endMove.atEnd = !0),
+												(oldMove.next = endMove),
+												(endMove.prev = oldMove),
+												ravLevel--,
+												(moveNum = ravMoves[ravLevel]),
+												(oldMove = prevMoves[ravLevel]),
+												(toMove = prevToMoves[ravLevel]),
+												(tmpBoard = prevTmpBoards[ravLevel]),
+												(oldTmpBoard = prevOldTmpBoards[ravLevel]),
+												(isAlt = !1);
+										}
+									else
+										ravCount[ravLevel + 1] || (ravCount[ravLevel + 1] = 0),
+											ravCount[ravLevel + 1]++,
+											this.movesDisplay && movesOutput.push(this.movesDisplay.outputVariationStart(ravLevel, ravCount[ravLevel + 1], moveNum, ravMoves[0])),
+											(ravMoves[ravLevel] = moveNum),
+											(prevMoves[ravLevel] = oldMove),
+											(prevToMoves[ravLevel] = toMove),
+											(prevTmpBoards[ravLevel] = tmpBoard),
+											(prevOldTmpBoards[ravLevel] = oldTmpBoard),
+											(tmpBoard = oldTmpBoard.cloneBoard()),
+											ravLevel++,
+											moveNum--,
+											(firstRav = !0);
+								else (comment = ""), (isComment = !0);
+							else (isComment = !1), this.movesDisplay && ((comment = comment.replace(/\s+$/g, "")), movesOutput.push(this.movesDisplay.outputComment(comment, ravLevel, isAlt)));
+						} else nodes = movesArr[i].split(":")[1];
+					else depth = movesArr[i].split(":")[1];
+				else (eval = movesArr[i].split(":")[1]), parseInt(eval) >= 175 && ravLevel > 0 && ravCount[ravLevel] > 1 && (isAlt = !0);
+			else isAlt = !0;
+		}
+		if (this.movesDisplay && !this.disableMoveOutput) {
+			var movesDisplay = this.movesDisplay.getMovesDisplay();
+			movesOutput.push(this.movesDisplay.outputResult(pgnResult)), (this.pendingMovesOutput = movesOutput.join("")), (this.pendingMovesOutputCount = count);
+		}
+		if (((this.lastMoveIndex = lastMoveIndex), null != oldMove)) {
+			var endMove = new Move();
+			(endMove.atEnd = !0), (oldMove.next = endMove), (endMove.prev = oldMove);
+		}
+		this.lastCount = count;
+	}),
+	(Board.prototype.getMaterialCount = function () {
+		for (var e = 0, t = 0, o = 0; o < 8; o++)
+			for (var i = 0; i < 8; i++) {
+				var s = this.boardPieces[o][i];
+				s && (s.colour == ChessPiece.WHITE ? (e += ChessPiece.materialValue(s.piece)) : (t += ChessPiece.materialValue(s.piece)));
+			}
+		return [e, t];
+	}),
+	(Board.prototype.getMaterialBalance = function () {
+		var e = this.getMaterialCount();
+		return e[0] - e[1];
+	}),
+	(Board.prototype.getMaterialBalances = function () {
+		var e = this.cloneBoard(),
+			t = this.moveArray[0];
+		e.gotoMoveIndex(-1, !0, !0, !0, !0);
+		for (var o = []; t && !t.atEnd; ) e.makeMove(t, e.boardPieces[t.fromColumn][t.fromRow], !1, this.moveAnimationLength, !1, !1), o.push(e.getMaterialBalance()), (t = t.next), e.toggleToMove();
+		return o;
+	}),
+	(Board.prototype.lalgToMoveList = function (e, t, o, i, s, r) {
+		ctime && console.time("lalgToMoveList"), clog && console.log("startMoveNum:" + o), i || (i = new Array());
+		var a = this.cloneBoard(),
+			n = null,
+			l = null;
+		r || ((n = new Array()), (l = new Array())), !s && this.prev_move && a.makeMove(this.prev_move, a.boardPieces[this.prev_move.fromColumn][this.prev_move.fromRow], !1, a.moveAnimationLength, !1, !1);
+		var h = null;
+		r || (h = a.cloneBoard());
+		var c = [],
+			d = null,
+			u = 0,
+			v = "",
+			m = !1,
+			p = 0,
+			g = !1,
+			f = new Array(),
+			b = new Array();
+		b[0] = 0;
+		for (var C = new Array(), M = new Array(), y = 2 * o - 1, O = (new Array(), ChessPiece.WHITE), P = !0, A = 0; A < e.length; A++)
+			if ("}" != e[A])
+				if (m) v += e[A] + " ";
+				else if ("{" != e[A])
+					if ("(" != e[A])
+						if (")" != e[A])
+							if ("$" != e[A].charAt(0)) {
+								var S = this.createMoveFromString(e[A]);
+								(S.nags = c),
+									(S.beforeComment = trimStr(v)),
+									(v = null),
+									(c = []),
+									P && (this.boardPieces[S.fromColumn][S.fromRow].colour == ChessPiece.BLACK && (y++, (O = ChessPiece.BLACK), clog && console.log("first move black new movenum:" + y)), (P = !1)),
+									(S.index = u);
+								var w = S.pgn ? S.pgn : S.moveString;
+								if (
+									(S.pgn ? ((w = S.pgn), (S.SAN = S.pgn)) : ((w = a.makeShortAlgabraic(S.fromColumn, S.fromRow, S.toColumn, S.toRow, S)), (S.SAN = w)),
+									(O = O == ChessPiece.BLACK ? ChessPiece.WHITE : ChessPiece.BLACK),
+									(S.moveNum = y),
+									y++,
+									p > 0)
+								)
+									if (g) {
+										var N = d;
+										null == N && alert("Got no previous move for variation:" + movesArra[A]), 0 == N.numVars && (N.vars = new Array()), (N.vars[N.numVars++] = S), (S.prev = N.prev), (g = !1);
+									} else (S.prev = d), null != d && (d.next = S);
+								else (S.prev = d), null != d && (d.next = S);
+								(b[p + 1] = 0), 0 == p && u, (i[u++] = S), (a.moveArray[u - 1] = S), (d = S), r || (h = a.cloneBoard()), a.makeMove(S, a.boardPieces[S.fromColumn][S.fromRow], !1, a.moveAnimationLength, !1, !1);
+							} else c.push(parseInt(e[A].substring(1)));
+						else
+							d && (clog && (console.log("var end comment:" + v), console.log("var end comment:" + d.output())), (d.afterComment = trimStr(v)), (v = "")),
+								((B = new Move()).atEnd = !0),
+								(d.next = B),
+								(B.prev = d),
+								(y = f[--p]),
+								(d = C[p]),
+								(O = M[p]),
+								(a = n[p]),
+								(h = l[p]);
+					else
+						clog && console.log("var start comment:" + v),
+							d && ((d.afterComment = trimStr(v)), (v = "")),
+							clog && (d ? console.log("old:" + d.output()) : console.log("no old move")),
+							b[p + 1] || (b[p + 1] = 0),
+							b[p + 1]++,
+							(f[p] = y),
+							(C[p] = d),
+							(M[p] = O),
+							(n[p] = a),
+							(l[p] = h),
+							(a = h.cloneBoard()),
+							p++,
+							y--,
+							(g = !0);
+				else v && d && (d.afterComment = trimStr(v)), (v = ""), (m = !0);
+			else (m = !1), (v = v.replace(/\s+$/g, ""));
+		if (null != d) {
+			var B = new Move();
+			(B.atEnd = !0), (d.next = B), (B.prev = d), v && (d.afterComment = trimStr(v));
+		}
+		return ctime && console.timeEnd("lalgToMoveList"), i;
+	}),
+	(Board.prototype.reset = function (e, t) {
+		this.lastFromSquare && YAHOO.util.Dom.removeClass(this.lastFromSquare, "ct-from-square"),
+			this.lastToSquare && YAHOO.util.Dom.removeClass(this.lastToSquare, "ct-to-square"),
+			this.clearMoveList(),
+			e ? ((this.startFen = e), this.setupFromFen(e, !1, this.isFlipped, !1, t, !0)) : ((this.startFen = Board.INITIAL_FEN), this.setupFromFen(Board.INITIAL_FEN, !1, this.isFlipped, !1, !1, !0)),
+			this.setForwardBack();
+	}),
+	(Board.prototype.clearMoveList = function (e) {
+		this.movesDisplay.firstNonMove = !1;
+		var t = this.movesDisplay.getMovesDisplay();
+		t && (YAHOO.util.Event.purgeElement(t, !0), (t.innerHTML = "")), (this.currentMove = null), (this.moveIndex = -1), (this.moveArray = new Array()), e ? ((e.prev = null), (this.startMoveNum = e.moveNum)) : (this.startMoveNum = 1);
+	}),
+	(Board.prototype.insertMovesFromMoveList = function (e, t, o, i, s) {
+		var r = !t;
+		if ((clog && console.log("insertMovesFromMoveList called"), ctime && r && console.time("insertMovesFromMoveList"), this.movesDisplay)) {
+			r && this.clearMoveList(e);
+			for (var a = 0, n = (e.moveNum, e); null != n && !n.atEnd; ) {
+				clog && console.log("move:" + n.output());
+				var l = n.next;
+				if (
+					(clog && (this.currentMove ? console.log("current move:" + this.currentMove.output()) : console.log("no current move"), l ? console.log("next move:" + l.output()) : console.log("no next move")),
+					r || e != n || null == o
+						? (clog && console.log("about to call insertmoveafter"),
+						  null != i
+							  ? (clog && console.log("inserting after moveToInsertAfter:" + i.output()), this.insertMoveAfter(i, n), (i = null))
+							  : (clog && console.log("inserting after current move"), this.insertMoveAfter(this.currentMove, n)),
+						  clog && console.log("finished call to insertmoveafter"))
+						: (clog && console.log("about to replace variationParent:" + o.output() + " with move:" + n.output() + " and board:" + this.boardToFen()), this.replaceMove(o, n, !0, !0, !1, !1, !0)),
+					n.beforeComment && this.insertCommentIntoMoveDisplay(n, n.beforeComment, !1),
+					n.afterComment && this.insertCommentIntoMoveDisplay(n, n.afterComment, !0),
+					clog && console.log("about to make move:" + n.output() + " with board pos:" + this.boardToFen()),
+					this.makeMove(n, this.boardPieces[n.fromColumn][n.fromRow], !1, this.moveAnimationLength, !1, !1),
+					clog && console.log("made move"),
+					this.setCurrentMove(n, !0, !0),
+					n.numVars > 0)
+				) {
+					var h = n.index,
+						c = n.prev,
+						d = -1;
+					c && (d = c.index);
+					var u = n.numVars,
+						v = n.vars;
+					(n.numVars = 0), (n.vars = []);
+					for (var m = 0; m < u; m++)
+						this.gotoMoveIndex(d, !0, !0, !0, !0),
+							clog && console.log("about to call insertMovesFromMoveList with head of variation"),
+							this.insertMovesFromMoveList(v[m], !0, n, null, 0),
+							clog && console.log("about to reset currentMoveIndex  after variation insert:" + h);
+					this.gotoMoveIndex(h, !0, !0, !0, !0), this.backMove();
+					var p = this.currentMove;
+					this.makeMove(p, this.boardPieces[p.fromColumn][p.fromRow], !1, this.moveAnimationLength, !1, !1),
+						clog && (this.currentMove ? console.log("popped up from variation, current set back to:" + this.currentMove.output()) : console.log("popped up from variation, current set to null"));
+				}
+				if (((n = l), a++, s > 0 && a >= s)) break;
+			}
+			if ((r && this.gotoMoveIndex(-1, !1, !1, !1, !1), clog)) for (var g = this.currentMove; g; ) console.log("m:" + g.output()), (g = g.next);
+			ctime && r && console.timeEnd("insertMovesFromMoveList");
+		}
+	}),
+	(Board.prototype.setupFromLalgArrayIncremental = function (e, t, o, i) {
+		if (((this.outputFirstVar = !1), this.movesDisplay && this.lastCount)) {
+			this.movesDisplay.pendingLevelZeroCommentaryClose = !1;
+			for (d = 0; d < this.lastCount; d++) {
+				var s = YAHOO.util.Dom.get(this.boardName + "-m" + d);
+				s && YAHOO.util.Event.purgeElement(s);
+			}
+		}
+		var r = 0,
+			a = 2 * o - 1,
+			n = "",
+			l = ChessPiece.WHITE,
+			h = !1,
+			c = !0;
+		this.currentMove = null;
+		for (var d = 0; d < e.length; d++)
+			if ("}" != e[d])
+				if (h) n += e[d] + " ";
+				else if ("{" != e[d])
+					if ("(" != e[d])
+						if (")" != e[d]) {
+							if ("$" != e[d].charAt(0)) {
+								var u = this.createMoveFromString(e[d]);
+								c && this.boardPieces[u.fromColumn][u.fromRow].colour == ChessPiece.BLACK && (a++, !0, (l = ChessPiece.BLACK)), (this.startMoveNum = a), (c = !1), (u.index = r++);
+								var v = u.moveString;
+								(v = Board.moveToLocale(v)),
+									(l = l == ChessPiece.BLACK ? ChessPiece.WHITE : ChessPiece.BLACK),
+									this.insertMoveAfter(this.currentMove, u),
+									clog && u.prev && (u.prev.next ? console.log("move.prev.next:" + u.prev.next.output()) : console.log("move.prev:" + u.prev.output() + " next null")),
+									this.makeMove(u, this.boardPieces[u.fromColumn][u.fromRow], !1, this.moveAnimationLength, !1, !1),
+									this.setCurrentMove(u);
+							}
+						} else !0;
+					else !0;
+				else (n = ""), (h = !0);
+			else (h = !1), this.movesDisplay && (n = n.replace(/\s+$/g, ""));
+		this.gotoMoveIndex(-1, !1, !1, !1, !1);
+	}),
+	(Board.prototype.displayPendingMoveList = function () {
+		if (this.pendingMovesOutput && this.movesDisplay) {
+			var e = this.movesDisplay.getMovesDisplay();
+			if ((e && ((e.innerHTML = this.pendingMovesOutput), new YAHOO.util.Scroll(e, { scroll: { to: [0, 0] } }, 0).animate()), this.movesDisplay))
+				for (var t = 0; t < this.pendingMovesOutputCount; t++) {
+					var o = YAHOO.util.Dom.get(this.boardName + "-m" + t);
+					if (o && (YAHOO.util.Event.addListener(o, "click", this.movesDisplay.gotoMove, this.movesDisplay, !0), this.handleCommentClicks)) {
+						var i = YAHOO.util.Dom.get(this.boardName + "-mcb" + t);
+						i && YAHOO.util.Event.addListener(i, "click", this.movesDisplay.clickComment, this.movesDisplay, !0),
+							(i = YAHOO.util.Dom.get(this.boardName + "-mca" + t)) && YAHOO.util.Event.addListener(i, "click", this.movesDisplay.clickComment, this.movesDisplay, !0);
+					}
+				}
+		}
+	}),
+	(Board.prototype.setMoveSequence = function (e, t, o, i) {
+		(this.tacticMoveArray = new Array()),
+			(this.moveArray = this.tacticMoveArray),
+			this.setMoveSeqLalg(e, this.tacticMoveArray, o, i),
+			(this.tacticsmoveArrayLastMoveIndex = this.lastMoveIndex),
+			(this.fullmoveArray = null),
+			(this.lastMoveIndex = this.tacticsmoveArrayLastMoveIndex);
+	}),
+	(Board.prototype.resetVariationsPreviousNodes = function (e, t) {
+		if (e.numVars > 0) for (var o = 0; o < e.numVars; o++) (e.vars[o].prev = t), this.resetVariationsPreviousNodes(e.vars[o], t);
+	}),
+	(Board.prototype.reconnectNextNodeVariations = function (e, t) {
+		if (t && t.numVars > 0) for (var o = 0; o < t.numVars; o++) (t.vars[o].prev = e), this.reconnectNextNodeVariations(e, t.vars[o]);
+	}),
+	(Board.prototype.findFirstMoveFromList = function (e) {
+		for (var t = e; t && null != t.prev; ) t = t.prev;
+		return t;
+	}),
+	(Board.prototype.findVariationHeadFromMove = function (e) {
+		for (var t = e; t && t.prev && t.prev.next == t; ) t = t.prev;
+		return t && t.prev && t.prev.next != t ? t : t && !t.prev && t != this.moveArray[0] ? t : null;
+	}),
+	(Board.prototype.liftVariation = function (e) {
+		if (e) {
+			var t = null,
+				o = null;
+			e.prev ? (t = e.prev.next) : ((t = this.moveArray[0]), (o = e));
+			var i = null;
+			if ((this.currentMove && this.currentMove.prev && (i = this.currentMove.prev), t)) {
+				var s = t.numVars,
+					r = t.vars;
+				(t.numVars = 0), (t.vars = []), 0 == e.numVars && (e.vars = []);
+				for (var a = 0; a < s; a++) {
+					var n = r[a];
+					clog && console.log("processing var:" + n.output()), n == e ? (clog && console.log("inserted parent var"), e.vars.push(t), e.numVars++) : (e.vars.push(n), e.numVars++);
+				}
+				e.prev && (e.prev.next = e),
+					clog && console.log("finished moving variations"),
+					o || (o = this.findFirstMoveFromList(e)),
+					(this.moveArray[0] = o),
+					this.gotoMoveIndex(-1, !0, !0, !0, !0),
+					clog && console.log("fm:" + o.output()),
+					this.insertMovesFromMoveList(o);
+			}
+			i && this.gotoMoveIndex(i.index);
+		}
+	}),
+	(Board.prototype.deleteMoveAndLine = function (e) {
+		var t = e,
+			o = t,
+			i = !1,
+			s = null,
+			r = this.moveArray[0],
+			a = null;
+		clog && console.log("delete line:" + e.output()),
+			clog && console.log("delete line prev:" + e.prev),
+			clog && e.prev && console.log("delete line prev.next:" + e.prev.next),
+			e && e.prev && e.prev.next != e
+				? (clog && console.log("var is head and not front of move list"), (i = !0), (s = e.prev.next))
+				: e && !e.prev && e != this.moveArray[0] && (clog && console.log("var is head and front of move list"), (i = !0), (s = this.moveArray[0])),
+			clog && console.log("isVariationHead:" + i),
+			clog && console.log("fm:" + r.output());
+		var n = t.prev;
+		if (i) {
+			if (((a = s), s)) {
+				clog && console.log("delete variation from parent:" + s.output());
+				for (var l = [], h = 0; h < s.numVars; h++) s.vars[h] != o ? (clog && console.log("saving var:" + s.vars[h].output()), l.push(s.vars[h])) : clog && console.log("dropping var:" + s.vars[h].output());
+				(s.vars = l), (s.numVars = l.length);
+			}
+		} else {
+			if (!n) {
+				clog && console.log("deleting entire list"),
+					this.movesDisplay && ((this.movesDisplay.firstNonMove = !1), YAHOO.util.Event.purgeElement(this.movesDisplay.getMovesDisplay(), !0), (this.movesDisplay.pendingLevelZeroCommentaryClose = !1));
+				var c = this.movesDisplay.getMovesDisplay();
+				return (
+					c && (c.innerHTML = ""),
+					(this.currentMove = null),
+					(this.startMoveNum = r.moveNum),
+					clog && console.log("startFen:" + this.startFen),
+					(this.moveIndex = -1),
+					(this.moveArray = []),
+					this.setupFromFen(this.startFen),
+					this.lastFromSquare && YAHOO.util.Dom.removeClass(this.lastFromSquare, "ct-from-square"),
+					this.lastToSquare && YAHOO.util.Dom.removeClass(this.lastToSquare, "ct-to-square"),
+					void this.setForwardBack()
+				);
+			}
+			(n.next = null), (a = n);
+		}
+		(this.moveArray[0] = r), this.gotoMoveIndex(-1, !0, !0, !0, !0), clog && console.log("fm:" + r.output()), this.insertMovesFromMoveList(r), a && this.gotoMoveIndex(a.index);
+	}),
+	(Board.prototype.insertMoveAfter = function (e, t, o, i, s, r) {
+		(addToMovelist = !o), clog && console.log("addToMovelist:" + addToMovelist);
+		var a = "null";
+		if ((e && (a = e.output()), clog && console.log("insert newMove:" + t.output() + " after:" + a), null == e))
+			(this.currentMove = t),
+				(t.atEnd = 0),
+				(t.prev = null),
+				(t.next = null),
+				(this.firstMove = t),
+				this.startMoveNum > 0 ? (this.currentMove.moveNum = this.startMoveNum) : this.toMove == ChessPiece.WHITE ? (this.currentMove.moveNum = 1) : (this.currentMove.moveNum = 2),
+				clog && console.log("startMoveNum:" + this.startMoveNum + " currMoveNum:" + this.currentMove.moveNum);
+		else {
+			if (((t.atEnd = e.atEnd), (t.prev = e), (e.atEnd = 0), clog && e.next && console.log("prevMove.next:" + e.next.output()), t.equals(e.next) || t.equals(e))) {
+				clog && console.log("inserting move that already exists in variation:" + e.next.output());
+				var n = e.next;
+				this.firstMove == n && (this.firstMove = t),
+					t.equals(e) && (n = e),
+					n.prev && n.prev.next == n && (n.prev.next = t),
+					n.next && (n.next.prev = t),
+					(addToMovelist = !1),
+					(t.moveNum = n.moveNum),
+					(t.ravLevel = n.ravLevel),
+					(t.index = n.index),
+					(t.fen = n.fen),
+					(t.nextFen = n.nextFen),
+					(t.bestMoves = n.bestMoves),
+					(t.correctMove = n.correctMove),
+					(t.wrongMove = n.wrongMove),
+					(t.next = n.next),
+					(t.vars = n.vars),
+					(t.numVars = n.numVars),
+					this.reconnectNextNodeVariations(t, n.next),
+					(this.moveArray[t.index] = t),
+					this.currentMove == n && this.setCurrentMove(t);
+			} else (t.moveNum = e.moveNum + 1), (t.ravLevel = e.ravLevel), (t.next = e.next), t.next && (t.next.prev = t);
+			e.next = t;
+		}
+		if ((addToMovelist && this.insertIntoMoveDisplay(e, t, i, s, r), null == t.next)) {
+			var l = this.createMoveFromString("i1i2");
+			(t.next = l), (l.prev = t), (l.moveNum = t.moveNum + 1), (l.ravLevel = t.ravLevel), (l.next = null), (l.atEnd = 1), (l.endNode = !0), clog && console.log("created endmove node in insertAfterMove:" + l.output());
+		} else clog && console.log("allready had a node at end:" + t.next.output()), (t.next.moveNum = t.moveNum + 1);
+	}),
+	(Board.prototype.replaceIntoMoveDisplay = function (e, t, o, i, s) {
+		y = "null";
+		if ((e && (y = e.output()), clog && console.log("replace display newMove:" + t.output() + " after:" + y + " hideScore:" + i), e)) {
+			clog && console.log("about to get movesdsiplay in replace into move display:" + this.movesDisplay);
+			var r = this.movesDisplay.getMovesDisplay();
+			if ((clog && console.log("got moves display"), !r)) return void (clog && console.log("no movesd disiplay in replace into move display"));
+			var a = t.SAN;
+			a || (clog && console.log("about to make san"), (a = this.makeShortAlgabraic(t.fromColumn, t.fromRow, t.toColumn, t.toRow, t)), clog && console.log("about to made san:" + a), (t.SAN = a)),
+				clog && console.log("oldMove.index:" + e.index);
+			var n = this.boardName + "-ms" + e.index,
+				l = -1;
+			e.next && (l = this.boardName + "-m" + e.next.index), clog && console.log("oldMoveId:" + n);
+			var h = YAHOO.util.Dom.get(n),
+				c = YAHOO.util.Dom.get(l);
+			if (o) {
+				this.moveIndex++, (t.index = this.moveIndex), (this.moveArray[this.moveIndex] = t), clog && console.log("replace as variation old:" + e.output() + " new:" + t.output());
+				var d = document.createElement("span");
+				(void 0 !== e.ravlevel && 0 != e.ravlevel) || YAHOO.util.Dom.addClass(d, "ct-top-var-start");
+				var u = this.movesDisplay.outputVariationStart(0, 0, t.moveNum, 0);
+				t.ravLevel = e.ravlevel + 1;
+				y = Board.moveToLocale(a);
+				null == t.prev && (this.movesDisplay.firstNonMove = !1);
+				O = this.movesDisplay.outputMove(this.moveIndex, t.ravLevel, t.moveNum, y, o, 0, t.moveNum, t, i, s);
+				((P = document.createElement("span")).id = this.boardName + "-ms" + t.index), (P.innerHTML = O + "&nbsp;");
+				var v = this.movesDisplay.outputVariationEnd(0, 0, t.moveNum, 0);
+				this.movesDisplay.firstNonMove = !0;
+				var m = document.createElement("span");
+				m.innerHTML = u;
+				var p = document.createElement("span");
+				(p.innerHTML = v), d.appendChild(m);
+				var g = YAHOO.util.Dom.getElementsByClassName("ct-mainline-commentary", "div", d),
+					f = d;
+				if ((g.length > 0 && (f = g[0]), f.appendChild(P), f.appendChild(p), h.appendChild(d), c && 0 == (g = YAHOO.util.Dom.getElementsByClassName("ct-board-move-movenum", "span", c)).length)) {
+					var b = e.next.moveNum,
+						C = Math.round(b / 2) + ". ",
+						M = !1;
+					b % 2 != 1 && (clog && console.log("firstRav:" + firstRav + " firstNonMove:" + this.firstNonMove), (C = Math.round(b / 2) + "... "), (M = !0)),
+						((P = document.createElement("span")).className = "ct-board-move-movenum"),
+						(P.innerHTML = C),
+						insertBefore(P, c.firstChild),
+						(P = document.createElement("span")),
+						M && ((P.className = "ct-board-move-dottedempty"), (P.innerHTML = "&nbsp;"), insertAfter(P, c.firstChild));
+				}
+			} else {
+				(t.index = e.index), (this.moveArray[t.index] = t);
+				var y = Board.moveToLocale(a);
+				null == t.prev && (this.movesDisplay.firstNonMove = !1);
+				var O = this.movesDisplay.outputMove(t.index, t.ravLevel, t.moveNum, y, o, 0, t.moveNum, t, i, s),
+					P = document.createElement("span");
+				(P.innerHTML = O + "&nbsp;"), (P.id = this.boardName + "-ms" + t.index);
+				var A = [];
+				if (h && h.childNodes) for (S = 1; S < h.childNodes.length; S++) A[S - 1] = h.childNodes[S];
+				if ((clog && console.log("replace as main line not variation old:" + e.output() + " new:" + t.output()), h.parentNode.replaceChild(P, h), A)) for (var S = 0; S < A.length; S++) P.appendChild(A[S]);
+			}
+			YAHOO.util.Event.removeListener(this.boardName + "-m" + t.index), YAHOO.util.Event.addListener(this.boardName + "-m" + t.index, "click", this.movesDisplay.gotoMove, this.movesDisplay, !0);
+		} else clog && console.log("null oldMove"), this.insertIntoMoveDisplay(null, t, !1, i);
+	}),
+	(Board.prototype.insertCommentIntoMoveDisplay = function (e, t, o) {
+		if (this.movesDisplay.getMovesDisplay()) {
+			var i = "b";
+			if ((o && (i = "a"), e)) {
+				var s = this.boardName + "-mc" + i + e.index,
+					r = YAHOO.util.Dom.get(s),
+					a = !1;
+				r || (((r = document.createElement("span")).id = s), (a = !0));
+				var n = e.moveNum % 2 != 1,
+					l = !n && !o;
+				clog && console.log("dontResetFirstNoneMove:" + l + " isBlackMoveNum:" + n + " insertCommentAfter:" + o + " move.moveNum:" + e.moveNum + " comment:" + t), (r.innerHTML = this.movesDisplay.outputComment(t, 0, !1, l));
+				var h = YAHOO.util.Dom.get(this.boardName + "-m" + e.index);
+				h && (o ? ((e.afterComment = t), a && insertAfter(r, h)) : ((e.beforeComment = t), a && insertBefore(r, h))),
+					r && a && this.handleCommentClicks && YAHOO.util.Event.addListener(r, "click", this.movesDisplay.clickComment, this.movesDisplay, !0);
+			}
+		}
+	}),
+	(Board.prototype.insertIntoMoveDisplay = function (e, t, o, i, s) {
+		var r = this.movesDisplay.getMovesDisplay();
+		if (r) {
+			if (clog) {
+				n = "null";
+				e && (n = e.output()), console.log("insert display newMove:" + t.output() + " after:" + n);
+			}
+			var a = t.SAN;
+			a || ((a = this.makeShortAlgabraic(t.fromColumn, t.fromRow, t.toColumn, t.toRow, t)), (t.SAN = a)), this.moveIndex++, (t.index = this.moveIndex), (this.moveArray[this.moveIndex] = t);
+			var n = Board.moveToLocale(a),
+				l = !1,
+				h = null;
+			e && (h = YAHOO.util.Dom.get(this.boardName + "-ms" + e.index)), h && YAHOO.util.Dom.getElementsByClassName("ct-mainline-commentary", "div", h).length > 0 && (l = !0);
+			var c = this.movesDisplay.outputMove(this.moveIndex, t.ravLevel, t.moveNum, n, l, 0, t.moveNum, t, i, s),
+				d = document.createElement("span");
+			(d.innerHTML = c + "&nbsp;"),
+				(d.id = this.boardName + "-ms" + this.moveIndex),
+				o && YAHOO.util.Dom.setStyle(d, "visibility", "hidden"),
+				e
+					? (clog && console.log("prevMove.index:" + e.index + "prevMove:" + e.output()), h ? insertAfter(d, h) : r.appendChild(d))
+					: t.next
+					? insertBefore(d, YAHOO.util.Dom.get(this.boardName + "-ms" + t.next.index))
+					: r.appendChild(d),
+				YAHOO.util.Event.removeListener(this.boardName + "-m" + this.moveIndex),
+				YAHOO.util.Event.addListener(this.boardName + "-m" + this.moveIndex, "click", this.movesDisplay.gotoMove, this.movesDisplay, !0);
+		}
+	}),
+	(Board.prototype.replaceMove = function (e, t, o, i, s, r, a) {
+		var n = "null";
+		e && (n = e.output()),
+			clog &&
+				(console.log("replace newMove:" + t.output() + " after:" + n + " replace as var" + o + " rep move display:" + i + " hideScore:" + s + " replaceAsVariationEvenIfSame:" + a),
+				e && e.prev && console.log("replace oldMove.prev:" + e.prev.output()),
+				e && e.next && console.log("replace oldMove.next:" + e.next.output()));
+		var l = !1,
+			h = null,
+			c = 0;
+		if (e.endNode) return clog && console.log("asked to replace endNode,inserting before instead"), this.insertMoveAfter(e.prev, t, !1, !1, s, r), (t.fen = e.fen), void (t.nextFen = e.nextFen);
+		if (!a && t.equals(e)) clog && console.log("new move is same as old move so not replacing as variation"), (o = !1);
+		else if (!a && e && e.numVars > 0)
+			for (var d = 0; d < e.numVars; d++) {
+				var u = e.vars[d];
+				if (t.equals(u)) {
+					clog && (console.log("new move is same as an existing variation varNum:" + d), console.log("variation:" + u.output()), u.next && console.log("variation next:" + u.next.output())), (l = !0), (h = e), (e = u), (c = d);
+					break;
+				}
+			}
+		if (null == e)
+			clog && console.log("replaced new move with null oldmove"),
+				(this.currentMove = t),
+				(t.atEnd = 1),
+				(t.next = null),
+				(t.prev = null),
+				this.startPositionAfterOpponentMove && ((t.fen = this.startPositionAfterOpponentMove), (t.nextFen = null)),
+				this.toMove == ChessPiece.WHITE ? (this.currentMove.moveNum = 1) : (this.currentMove.moveNum = 2),
+				(this.firstMove = t);
+		else {
+			var v = !1;
+			if (
+				(e && e.prev && e.prev.next != e && (v = !0),
+				this.currentMove != e || o ? clog && console.log("not setting current move in replacemove") : (this.currentMove = t),
+				(t.atEnd = e.atEnd),
+				(t.prev = e.prev),
+				(t.next = e.next),
+				(t.fen = e.fen),
+				(t.nextFen = e.nextFen),
+				(t.bestMoves = e.bestMoves),
+				(t.correctMove = e.correctMove),
+				(t.wrongMove = e.wrongMove),
+				(t.moveNum = e.moveNum),
+				(t.ravLevel = e.ravLevel),
+				(t.index = e.index),
+				clog && console.log("replacingVariation with var not null:" + l),
+				l)
+			)
+				return (
+					(h.vars[c] = t),
+					(t.vars = e.vars),
+					(t.numVars = e.numVars),
+					this.reconnectNextNodeVariations(t, e.next),
+					e.next && (e.next.prev = t),
+					(this.moveArray[t.index] = t),
+					void (clog && (console.log("replacing existing sub variation of main line"), t.next && console.log("next of replacement variation:" + t.next.output())))
+				);
+			if (o) {
+				clog && console.log("replacing as variation"), 0 == e.numVars && (e.vars = new Array()), (e.vars[e.numVars++] = t), (e.atEnd = 0), (t.next = null);
+				var m = this.createMoveFromString("i1i2");
+				(t.next = m), (m.prev = t), (m.next = null), (m.atEnd = 1), (m.moveNum = t.moveNum + 1), (m.ravLevel = t.ravLevel), (m.endNode = !0);
+			} else
+				clog && console.log("not replacing as variation"),
+					!v && e.prev && (e.prev.next = t),
+					e.next && (e.next.prev = t),
+					(t.vars = e.vars),
+					(t.numVars = e.numVars),
+					this.reconnectNextNodeVariations(t, e.next),
+					this.firstMove == e && (this.firstMove = t),
+					(this.moveArray[t.index] = t);
+		}
+		i && this.replaceIntoMoveDisplay(e, t, o, s, r);
+	}),
+	(Board.prototype.setCurrentMove = function (e, t, o) {
+		if (
+			(this.cloned || null == this.currentMove || (null != this.currentMove.prev && YAHOO.util.Dom.removeClass(this.boardName + "-m" + this.currentMove.prev.index, "ct-board-move-current")),
+			(this.currentMove = e),
+			this.cloned || null == this.currentMove || null == this.currentMove.prev)
+		)
+			null == e && clog && console.log("attempted to set current move on null node");
+		else {
+			var i = this.boardName + "-m" + this.currentMove.prev.index;
+			clog && console.log("setCurrentMove attempted highlight of id:" + i + " for move:" + e.output());
+			var s = YAHOO.util.Dom.get(i);
+			if (s) {
+				var r = s.className;
+				if ((YAHOO.util.Dom.addClass(s, "ct-board-move-current"), this.autoScrollMoves && !o && (this.scrollVariations || -1 == r.indexOf("ct-board-move-variation")))) {
+					var a = this.movesDisplay.getMovesDisplay();
+					if (a) {
+						var n = 0;
+						a && a.offsetHeight && (n = a.offsetHeight / 2);
+						var l = YAHOO.util.Dom.getY(s) - (YAHOO.util.Dom.getY(a) + n);
+						new YAHOO.util.Scroll(a, { scroll: { by: [0, l - this.scrollOffsetCorrection] } }, this.moveAnimationLength, YAHOO.util.Easing.easeOut).animate();
+					}
+				}
+			}
+		}
+		t || this.setForwardBack();
+	}),
+	(Board.prototype.newBoardFromFen = function (e) {
+		var t = new Board();
+		return (t.boardPieces = Board.createBoardArray()), t.setupFromFen(e, !1, !1, !0), t;
+	}),
+	(Board.prototype.distanceFromInitial = function () {
+		var e = this.cloneBoard();
+		e.setupFromFen(Board.INITIAL_FEN, !1, !1, !0, !1, !1);
+		for (var t = 0, o = 0; o < 8; o++)
+			for (var i = 0; i < 8; i++) {
+				var s = this.boardPieces[o][i],
+					r = e.boardPieces[o][i];
+				s != r && r && (s ? (s.piece == r.piece && s.colour == r.colour) || t++ : t++);
+			}
+		return t;
+	}),
+	(Board.INITIAL_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"),
+	(Board.isFenLegal = function (e) {
+		if (!e) return !1;
+		var t = e.split(" ");
+		return (
+			6 == t.length &&
+			8 == t[0].split("/").length &&
+			("w" == t[1] || "b" == t[1]) &&
+			!isNaN(parseInt(t[4])) &&
+			!isNaN(parseInt(t[5])) &&
+			!!(function (e) {
+				if (!e) return !1;
+				e = e.toLowerCase();
+				for (var t = 0; t < e.length; t++) if ("q" != e.charAt(t) && "k" != e.charAt(t) && "-" != e.charAt(t)) return !1;
+				return !0;
+			})(t[2]) &&
+			!!(function (e) {
+				if (!e) return !1;
+				if ("-" == e) return !0;
+				if (2 != e.length) return !1;
+				if (e.charAt(0) < "a" || e.charAt(0) > "h") return !1;
+				var t = parseInt(e.charAt(1));
+				return !(isNaN(t) || t < 1 || t > 8);
+			})(t[3])
+		);
+	}),
+	(Board.prototype.boardToUniqueFen = function (e) {
+		var t = this.boardToFen().split(" "),
+			o = "w";
+		return e == ChessPiece.BLACK && (o = "b"), t[0] + " " + o + " " + t[2] + " " + t[3];
+	}),
+	(Board.prototype.toFen = function () {
+		return this.boardToFen();
+	}),
+	(Board.prototype.boardToFen = function (e) {
+		for (var t = "", o = 7; o >= 0; o--) {
+			var i = 0,
+				s = "";
+			o < 7 && (s = "/");
+			for (var r = 0; r < 8; r++) {
+				var a = this.boardPieces[r][o];
+				if (a) {
+					var n = "";
+					i > 0 && (n = i + ""), (s += n + a.getFenLetter()), (i = 0);
+				} else i++;
+			}
+			i > 0 && (s += i + ""), (t += s);
+		}
+		var l = t,
+			h = " w ";
+		e ? this.toMove == ChessPiece.WHITE && (h = " b ") : this.toMove == ChessPiece.BLACK && (h = " b "), (l += h);
+		var c = "";
+		(c += Board.getFenCastleChar(this.canCastleKingSide, "K", ChessPiece.WHITE)),
+			(c += Board.getFenCastleChar(this.canCastleQueenSide, "Q", ChessPiece.WHITE)),
+			(c += Board.getFenCastleChar(this.canCastleKingSide, "K", ChessPiece.BLACK)),
+			(l += "" == (c += Board.getFenCastleChar(this.canCastleQueenSide, "Q", ChessPiece.BLACK)) ? "- " : c + " ");
+		var d = null,
+			u = "- ";
+		if ((d = this.currentMove && this.currentMove.prev ? this.currentMove.prev : this.prev_move)) {
+			var v = this.boardPieces[d.toColumn][d.toRow];
+			v && v.piece == ChessPiece.PAWN && (v.colour == ChessPiece.WHITE ? 1 == d.fromRow && 3 == d.toRow && (u = Move.columnToChar(d.fromColumn) + "3 ") : 6 == d.fromRow && 4 == d.toRow && (u = Move.columnToChar(d.fromColumn) + "6 "));
+		}
+		return (l += u), (l += this.halfMoveNumber + " " + parseInt((this.moveNumber + 1) / 2)), clog && console.log("moveNumber:" + this.moveNumber + " fen:" + l), l;
+	}),
+	(Board.getFenCastleChar = function (e, t, o) {
+		return e[o] ? (o == ChessPiece.WHITE ? t.toUpperCase() : t.toLowerCase()) : "";
+	}),
+	(Board.prototype.getCastlingString = function (e) {
+		var t = _js("None");
+		return this.canCastleKingSide[e] && (t = "O-O"), this.canCastleQueenSide[e] && (t == _js("None") ? (t = "O-O-O") : (t += ",O-O-O")), t;
+	}),
+	(Board.prototype.updateToPlay = function () {
+		if (!this.disableUpdateToPlay) {
+			this.showToMoveIndicators &&
+				(this.isFlipped
+					? (YAHOO.util.Dom.setStyle(this.boardName + "-top-to-move-inner", "background-color", "white"),
+					  YAHOO.util.Dom.setStyle(this.boardName + "-top-to-move-inner", "border", "1px solid black"),
+					  YAHOO.util.Dom.setStyle(this.boardName + "-bottom-to-move-inner", "background-color", "black"),
+					  YAHOO.util.Dom.setStyle(this.boardName + "-bottom-to-move-inner", "border", "1px solid white"))
+					: (YAHOO.util.Dom.setStyle(this.boardName + "-bottom-to-move-inner", "background-color", "white"),
+					  YAHOO.util.Dom.setStyle(this.boardName + "-bottom-to-move-inner", "border", "1px solid black"),
+					  YAHOO.util.Dom.setStyle(this.boardName + "-top-to-move-inner", "background-color", "black"),
+					  YAHOO.util.Dom.setStyle(this.boardName + "-top-to-move-inner", "border", "1px solid white")),
+				this.toMove == ChessPiece.WHITE
+					? this.isFlipped
+						? (YAHOO.util.Dom.addClass(this.boardName + "-top-to-move-outer", "ct-to-move-active"), YAHOO.util.Dom.removeClass(this.boardName + "-bottom-to-move-outer", "ct-to-move-active"))
+						: (YAHOO.util.Dom.addClass(this.boardName + "-bottom-to-move-outer", "ct-to-move-active"), YAHOO.util.Dom.removeClass(this.boardName + "-top-to-move-outer", "ct-to-move-active"))
+					: this.isFlipped
+					? (YAHOO.util.Dom.addClass(this.boardName + "-bottom-to-move-outer", "ct-to-move-active"), YAHOO.util.Dom.removeClass(this.boardName + "-top-to-move-outer", "ct-to-move-active"))
+					: (YAHOO.util.Dom.addClass(this.boardName + "-top-to-move-outer", "ct-to-move-active"), YAHOO.util.Dom.removeClass(this.boardName + "-bottom-to-move-outer", "ct-to-move-active")));
+			var e = YAHOO.util.Dom.get("toPlay");
+			if (null != e) {
+				this.toMove == ChessPiece.WHITE
+					? ((e.src = "/images/whiteknight" + this.getVersString() + ".gif"), (e.alt = _js("White to play")))
+					: ((e.src = "/images/blackknight" + this.getVersString() + ".gif"), (e.alt = _js("Black to play")));
+				var t = YAHOO.util.Dom.get("fenStatus");
+				if (t) {
+					var o = this.getCastlingString(ChessPiece.BLACK),
+						i = this.getCastlingString(ChessPiece.WHITE),
+						s = "<div><span>" + _js("White Castling: ") + "</span><span>" + i + "</span></div><div><span>" + _js("Black Castling: ") + "</span><span>" + o + "</span></div>";
+					t.innerHTML = s;
+				}
+			}
+		}
+	}),
+	(Board.prototype.getBoardDivFromId = function (e) {
+		return this[e] || (this[e] = YAHOO.util.Dom.get(e)), this[e];
+	}),
+	(Board.prototype.getBoardDiv = function () {
+		return this.boardDiv || (this.boardDiv = YAHOO.util.Dom.get("ctb-" + this.boardName)), this.boardDiv;
+	}),
+	(Board.prototype.getDocBody = function () {
+		if (!this.docBody) {
+			var e = document.getElementsByTagName("body");
+			null == e || 0 == e.length ? alert("Could not find body tag") : (this.docBody = e[0]);
+		}
+		return this.docBody;
+	}),
+	(Board.prototype.getPieceDragDiv = function () {
+		return this.pieceDragDiv || (this.pieceDragDiv = YAHOO.util.Dom.get("pieceDragDiv")), this.pieceDragDiv;
+	}),
+	(Board.prototype.createBoardCoords = function () {
+		this.coordinatesShown = !1;
+		var e = YAHOO.util.Dom.get(this.boardName + "-fileLabels"),
+			t = YAHOO.util.Dom.get(this.boardName + "-rankLabels");
+		if (e && t) {
+			YAHOO.util.Event.purgeElement(e, !0), (t.innerHTML = ""), (e.innerHTML = "");
+			var o = YAHOO.util.Dom.get(this.boardName + "-boardBorder");
+			if (!this.showCoordinates) {
+				YAHOO.util.Dom.setStyle(e, "display", "none"), YAHOO.util.Dom.setStyle(t, "display", "none");
+				i = 0;
+				return YAHOO.util.Dom.setStyle(o, "width", 8 * this.pieceSize + i + "px"), void YAHOO.util.Dom.setStyle(o, "height", 8 * this.pieceSize + i + "px");
+			}
+			YAHOO.util.Dom.setStyle(e, "display", "block"), YAHOO.util.Dom.setStyle(t, "display", "block");
+			var i = 15,
+				s = 0;
+			check_bad_msie() && (s = this.ie6FixCoordsOffsetSize),
+				YAHOO.util.Event.isIE && ((s += this.allIeFixCoordsOffsetSize), "CSS1Compat" != document.compatMode && (s = 8)),
+				YAHOO.util.Dom.setStyle(o, "width", 8 * this.pieceSize + i + s + "px"),
+				YAHOO.util.Dom.setStyle(o, "height", 8 * this.pieceSize + i + "px"),
+				(this.coordinatesShown = !0);
+			for (a = 0; a < 8; a++) {
+				var r = document.createElement("div");
+				YAHOO.util.Dom.setStyle(r, "height", this.pieceSize + "px"),
+					YAHOO.util.Dom.setStyle(r, "width", "15px"),
+					YAHOO.util.Dom.setStyle(r, "text-align", "center"),
+					YAHOO.util.Dom.setStyle(r, "line-height", this.pieceSize + "px"),
+					this.isFlipped ? (r.innerHTML = "" + (a + 1)) : (r.innerHTML = "9" - (a + 1)),
+					t.appendChild(r);
+			}
+			for (var a = 0; a < 9; a++) {
+				var n = document.createElement("span");
+				if ((YAHOO.util.Dom.setStyle(n, "float", "left"), YAHOO.util.Dom.setStyle(n, "height", "15px"), 0 == a)) {
+					YAHOO.util.Dom.setStyle(n, "width", "15px"),
+						YAHOO.util.Dom.setStyle(n, "clear", "both"),
+						YAHOO.util.Dom.setStyle(n, "margin-top", "-5px"),
+						s ? YAHOO.util.Dom.setStyle(n, "margin-left", "-3px") : YAHOO.util.Dom.setStyle(n, "margin-left", "-2px");
+					var l = "";
+					(l = this.isFlipped ? "whiteblack-flipper" + this.getVersString() + ".png" : "blackwhite-flipper" + this.getVersString() + ".png"),
+						(n.innerHTML = '<span><img id="' + this.boardName + '-flipper" title="' + _js("Flip Board") + '" src="' + this.boardImagePath + "/images/" + l + '"/></span>'),
+						this.disableFlipper || YAHOO.util.Event.addListener(this.boardName + "-flipper", "click", this.flipBoard, this, !0);
+				} else
+					YAHOO.util.Dom.setStyle(n, "width", this.pieceSize + "px"),
+						YAHOO.util.Dom.setStyle(n, "text-align", "center"),
+						this.isFlipped ? (n.innerHTML = _js(Move.columnToChar(8 - a))) : (n.innerHTML = _js(Move.columnToChar(a - 1)));
+				e.appendChild(n);
+			}
+			var h = YAHOO.util.Dom.get(this.boardName + "-flipper");
+			h && fix_ie_png(h);
+		}
+	}),
+	(Board.prototype.showNavigation = function () {
+		(this.disableNavigation = !1), YAHOO.util.Dom.setStyle(this.boardName + "-ct-nav-container", "display", "block");
+	}),
+	(Board.prototype.hideNavigation = function () {
+		(this.disableNavigation = !0), YAHOO.util.Dom.setStyle(this.boardName + "-ct-nav-container", "display", "none");
+	}),
+	(Board.prototype.createBoardUI = function () {
+		var e = this.boardName + "-container",
+			t = YAHOO.util.Dom.get(e);
+		if (null != t) {
+			YAHOO.util.Dom.addClass(t, "ct-board-container"), (this.boardDiv = null);
+			var o = document.createElement("div");
+			(o.id = this.boardName + "-boardBorder"), YAHOO.util.Dom.addClass(o, "ct-board-border" + this.squareColorClass);
+			var i = 0;
+			this.showCoordinates && (i = 15), YAHOO.util.Dom.setStyle(o, "width", 8 * this.pieceSize + i + "px"), YAHOO.util.Dom.setStyle(o, "height", 8 * this.pieceSize + i + "px");
+			var s = document.createElement("div");
+			YAHOO.util.Dom.setStyle(s, "float", "left"), (s.id = this.boardName + "-rankLabels"), o.appendChild(s);
+			var r = document.createElement("div");
+			YAHOO.util.Dom.addClass(r, "ct-board"), YAHOO.util.Dom.setStyle(r, "width", 8 * this.pieceSize + "px"), YAHOO.util.Dom.setStyle(r, "height", 8 * this.pieceSize + "px"), (r.id = "ctb-" + this.boardName);
+			for (var a = "ct-white-square" + this.squareColorClass, n = "", l = [], h = 7; h >= 0; h--) {
+				for (var c = "<div>", d = 0; d < 8; d++) {
+					document.createElement("div");
+					var u = this.boardName + "-s" + d + h,
+						v = ((((d + 1) * (h + 1)) % 19) / 19) * 100,
+						m = (((65 - (d + 1) * (h + 1)) % 19) / 19) * 100;
+					(c += '<div id="' + u + '" class="' + a + '" style="width:' + this.pieceSize + "px;height:" + this.pieceSize + "px;background-position:" + v + "% " + m + '%"></div>'),
+						l.push(u),
+						(a = a == "ct-black-square" + this.squareColorClass ? "ct-white-square" + this.squareColorClass : "ct-black-square" + this.squareColorClass);
+				}
+				(a = a == "ct-black-square" + this.squareColorClass ? "ct-white-square" + this.squareColorClass : "ct-black-square" + this.squareColorClass), (n += c += "</div>");
+			}
+			r.innerHTML = n;
+			var p = document.createElement("div");
+			if (((p.id = this.boardName + "-fileLabels"), o.appendChild(r), o.appendChild(p), t.appendChild(o), this.showToMoveIndicators)) {
+				var g = document.createElement("div");
+				(g.id = this.boardName + "-moveIndicators"),
+					YAHOO.util.Dom.addClass(g, "ct-move-indicators"),
+					(g.innerHTML =
+						'<div class="ct-top-to-move-outer" id="' +
+						this.boardName +
+						'-top-to-move-outer"><div  class="ct-top-to-move-inner" id="' +
+						this.boardName +
+						'-top-to-move-inner"></div></div><div class="ct-bottom-to-move-outer"  id="' +
+						this.boardName +
+						'-bottom-to-move-outer"><div class="ct-bottom-to-move-inner" id="' +
+						this.boardName +
+						'-bottom-to-move-inner" ></div>'),
+					t.appendChild(g),
+					YAHOO.util.Dom.setStyle(o, "float", "left"),
+					YAHOO.util.Dom.setStyle(g, "float", "left"),
+					YAHOO.util.Dom.setStyle(g, "margin-left", "2px"),
+					YAHOO.util.Dom.setStyle(g, "height", 8 * this.pieceSize + 2 + "px"),
+					YAHOO.util.Dom.setStyle(g, "position", "relative");
+				var f = document.createElement("div");
+				YAHOO.util.Dom.setStyle(f, "clear", "both"), t.appendChild(f);
+			}
+			this.createBoardCoords();
+			var b = !1,
+				C = YAHOO.util.Dom.get(this.boardName + "-ct-nav-container");
+			if ((C ? ((b = !0), (C.innerHTML = "")) : (C = document.createElement("div")), (C.id = this.boardName + "-ct-nav-container"), !this.dontOutputNavButtons || this.r)) {
+				var M = "";
+				this.dontOutputNavButtons ||
+					(this.problem && this.problem.isEndgame) ||
+					(M =
+						'<span id="playStopSpan"><img class="ct-end" id="' +
+						this.boardName +
+						'-end" src="' +
+						this.boardImagePath +
+						"/images/resultset_last" +
+						this.getVersString() +
+						'.gif" alt="' +
+						_js("End position") +
+						'" title="' +
+						_js("Go to final position") +
+						'"/><img class="ct-play" id="' +
+						this.boardName +
+						'-play" src="' +
+						this.boardImagePath +
+						"/images/play/control_play_blue" +
+						this.getVersString() +
+						'.svg" alt="' +
+						_js("Play moves") +
+						'" title="' +
+						_js("Play sequence of moves") +
+						'"/><img class="ct-stop" id="' +
+						this.boardName +
+						'-stop" src="' +
+						this.boardImagePath +
+						"/images/play/control_stop_blue" +
+						this.getVersString() +
+						'.svg" alt="' +
+						_js("Stop playing") +
+						'" title="' +
+						_js("Stop playing move sequence") +
+						'"/></span>');
+				var y = '<div class="ct-nav-buttons" id="' + this.boardName + '-navButtons"><span id="' + this.boardName + '-nav-buttons-only">';
+				if (!this.dontOutputNavButtons) {
+					var O = "";
+					(isIphone || isIpad) && ((O = ' width="50px" height="34px" '), (M = "")),
+						isIphone ||
+							isIpad ||
+							(y +=
+								'<img class="ct-start" id="' +
+								this.boardName +
+								'-start" src="' +
+								this.boardImagePath +
+								"/images/resultset_first" +
+								this.getVersString() +
+								'.gif" alt="' +
+								_js("Start position") +
+								'" title="' +
+								_js("Go to starting position") +
+								'"/>'),
+						(y +=
+							'<img class="ct-back" id="' +
+							this.boardName +
+							'-back" ' +
+							O +
+							' src="' +
+							this.boardImagePath +
+							"/images/resultset_previous" +
+							this.getVersString() +
+							'.gif" alt="' +
+							_js("Previous Move") +
+							'" title="' +
+							_js("Go back a move") +
+							'"/><img class="ct-forward" id="' +
+							this.boardName +
+							'-forward" ' +
+							O +
+							' src="' +
+							this.boardImagePath +
+							"/images/resultset_next" +
+							this.getVersString() +
+							'.gif" alt="' +
+							_js("Next Move") +
+							'" title="' +
+							_js("Go forward a move") +
+							'"/>' +
+							M);
+				}
+				if (
+					(this.r &&
+						((y +=
+							'<img class="ct-forward" id="' +
+							this.boardName +
+							'-analyse" src="' +
+							this.boardImagePath +
+							"/images/anboard" +
+							this.getVersString() +
+							'.gif" alt="' +
+							_js("Analyse") +
+							'" title="' +
+							_js("Launch analysis board to explore different lines in this position") +
+							'"/>'),
+						this.g ||
+							(y +=
+								'<img class="ct-forward" id="' +
+								this.boardName +
+								'-showfen" src="' +
+								this.boardImagePath +
+								"/images/copy_fen" +
+								this.getVersString() +
+								'.gif" alt="' +
+								_js("Copy FEN") +
+								'" title="' +
+								_js("Show FEN for current position") +
+								'"/>')),
+					this.canPasteFen &&
+						(y +=
+							'<img class="ct-forward" id="' +
+							this.boardName +
+							'-pastefen" src="' +
+							this.boardImagePath +
+							"/images/paste_fen" +
+							this.getVersString() +
+							'.gif" alt="' +
+							_js("Input FEN") +
+							'" title="' +
+							_js("Setup position from user supplied FEN or move list") +
+							'"/>'),
+					this.g2 &&
+						(y +=
+							'<img class="ct-forward" id="' +
+							this.boardName +
+							'-playcomp" src="' +
+							this.boardImagePath +
+							"/images/computer" +
+							this.getVersString() +
+							'.gif" alt="' +
+							_js("Play Current Position vs Computer") +
+							'" title="' +
+							_js("Play current position against computer") +
+							'"/>'),
+					(y += "</span>"),
+					(y += "</div>"),
+					this.puzzle)
+				) {
+					var P = "",
+						A = "",
+						S = "",
+						w = "";
+					this.pieceSize >= 29 ? ((P = _js("Easy")), (A = _js("Medium")), (S = _js("Hard")), (w = _js("Help"))) : ((P = _js("D1")), (A = _js("D2")), (S = _js("D3")), (w = _js("?"))),
+						(y +=
+							'<div><form action=""><button type="button" id="' +
+							this.boardName +
+							'-puzzleSolution" class="asolution-button">' +
+							_js("Show") +
+							'</button><button id="' +
+							this.boardName +
+							'-easyPuzzle" type="button" class="puzzle-difficulty">' +
+							P +
+							'</button><button id="' +
+							this.boardName +
+							'-mediumPuzzle" type="button" class="puzzle-difficulty">' +
+							A +
+							'</button><button id="' +
+							this.boardName +
+							'-hardPuzzle" type="button" class="puzzle-difficulty">' +
+							S +
+							'</button><button id="' +
+							this.boardName +
+							'-puzzleHelp" type="button" class="puzzle-difficulty">' +
+							w +
+							'</button><img alt="" class="ct-forward" id="' +
+							this.boardName +
+							'-problemState"></img><span id="' +
+							this.boardName +
+							'-puzzleResult"></span></form></div>'),
+						(y += '<div class="initially_hidden initially_invisible" id="' + this.boardName + '-moves"></div>'),
+						(y += '<div class="initially_hidden initially_invisible" id="' + this.boardName + '-moves"></div>');
+				}
+				C.innerHTML = y;
+			}
+			if ((b || t.appendChild(C), this.problem)) {
+				var N = YAHOO.util.Dom.get("body");
+				N && YAHOO.util.Dom.setStyle(N, "min-width", 8 * this.pieceSize + i + 300 + 200 + 120 + "px");
+			}
+		} else alert("Could not find board container:" + e);
+	}),
+	(Board.prototype.getPieceDiv = function () {
+		var e = this.getBoardDiv(),
+			t = document.createElement("div");
+		return (
+			(this.availPieceDivs[this.uptoId] = t),
+			(this.availIds[this.uptoId] = YAHOO.util.Dom.generateId(t)),
+			YAHOO.util.Dom.setStyle(t, "visibility", "hidden"),
+			YAHOO.util.Dom.addClass(t, "board-piece-start-style"),
+			e.appendChild(t),
+			this.uptoId++,
+			t
+		);
+	}),
+	(Board.prototype.flipToMove = function (e) {
+		return "w" == e ? "b" : "w";
+	}),
+	(Board.prototype.pieceCharToPieceNum = function (e) {
+		var t;
+		switch (e) {
+			case "K":
+				t = ChessPiece.KING;
+				break;
+			case "Q":
+				t = ChessPiece.QUEEN;
+				break;
+			case "R":
+				t = ChessPiece.ROOK;
+				break;
+			case "B":
+				t = ChessPiece.BISHOP;
+				break;
+			case "N":
+				t = ChessPiece.KNIGHT;
+				break;
+			case "P":
+				t = ChessPiece.PAWN;
+		}
+		return t;
+	}),
+	(Board.prototype.pieceTypeToChar = function (e) {
+		switch (e) {
+			case ChessPiece.KING:
+				return "K";
+			case ChessPiece.QUEEN:
+				return "Q";
+			case ChessPiece.ROOK:
+				return "R";
+			case ChessPiece.BISHOP:
+				return "B";
+			case ChessPiece.KNIGHT:
+				return "N";
+			case ChessPiece.PAWN:
+				return "P";
+		}
+		return "?";
+	}),
+	(Board.prototype.canMoveKnight = function (e, t, o, i) {
+		return (
+			(e + 2 == o && t + 1 == i) ||
+			(e + 2 == o && t - 1 == i) ||
+			(e - 2 == o && t + 1 == i) ||
+			(e - 2 == o && t - 1 == i) ||
+			(e + 1 == o && t + 2 == i) ||
+			(e - 1 == o && t + 2 == i) ||
+			(e + 1 == o && t - 2 == i) ||
+			(e - 1 == o && t - 2 == i)
+		);
+	}),
+	(Board.prototype.canMovePawn = function (e, t, o, i, s) {
+		var r = this.boardPieces[o][i],
+			a = this.boardPieces[e][t];
+		if (s) {
+			var n = this.boardPieces[s.toColumn][s.toRow];
+			if (n && n.piece == ChessPiece.PAWN)
+				if (n.colour == ChessPiece.WHITE) {
+					if (1 == s.fromRow && 3 == s.toRow && o == s.fromColumn && 3 == t && 2 == i && (e == o + 1 || e == o - 1)) return !0;
+				} else if (6 == s.fromRow && 4 == s.toRow && o == s.fromColumn && 4 == t && 5 == i && (e == o + 1 || e == o - 1)) return !0;
+		}
+		if (r) {
+			if (a.colour == ChessPiece.WHITE) {
+				if ((e == o + 1 || e == o - 1) && t == i - 1) return !0;
+			} else if ((e == o + 1 || e == o - 1) && t == i + 1) return !0;
+		} else if (e == o)
+			if (a.colour == ChessPiece.WHITE) {
+				if (1 == t) {
+					if (2 == i) return !0;
+					if (3 == i && null == this.boardPieces[o][2]) return !0;
+				} else if (t + 1 == i) return !0;
+			} else if (6 == t) {
+				if (5 == i) return !0;
+				if (4 == i && null == this.boardPieces[o][5]) return !0;
+			} else if (t - 1 == i) return !0;
+		return !1;
+	}),
+	(Board.prototype.canMoveStraight = function (e, t, o, i, s, r) {
+		var a = e,
+			n = t,
+			l = 0,
+			h = 0;
+		if (
+			(o > e ? (l = 1) : o < e && (l = -1),
+			i > t ? (h = 1) : i < t && (h = -1),
+			clog && console.log("deltaRow:" + h + " deltaCol:" + l + " fromCol:" + e + " fromRow:" + t + " toCol:" + o + " toRow:" + i),
+			s == ChessPiece.ROOK && 0 != l && 0 != h)
+		)
+			return !1;
+		if (s == ChessPiece.BISHOP && (0 == l || 0 == h)) return !1;
+		for (var c = 0; ; ) {
+			if ((c++, (e += l), (t += h), s == ChessPiece.KING && c > 1)) {
+				if ((clog && console.log("king count:" + c + " toCol:" + o + " toRow:" + i), 2 != c)) return !1;
+				if (0 != h) return !1;
+				if (6 != o && 2 != o) return !1;
+				if (2 == o) {
+					if (this.boardPieces[1][t] || this.boardPieces[2][t] || this.boardPieces[3][t]) return !1;
+					if (!this.canCastleQueenSide[r.colour]) return !1;
+				} else {
+					if (6 != o) return clog && console.log("king not in col 2 or 6"), !1;
+					if (this.boardPieces[5][t] || this.boardPieces[6][t]) return clog && console.log("king can't castle intervening piece"), !1;
+					if (!this.canCastleKingSide[r.colour]) return clog && console.log("king can't castle king side (made previously invalid) colour:" + r.colour), !1;
+				}
+				v = "";
+				(v += Move.columnToChar(a)), (v += String.fromCharCode("1".charCodeAt(0) + n)), (v += Move.columnToChar(a + l)), (v += String.fromCharCode("1".charCodeAt(0) + (n + h)));
+				var d = this.createMoveFromString(v),
+					u = this.cloneBoard();
+				if ((u.makeMove(d, u.boardPieces[a][n], !1, this.moveAnimationLength, !1, !1), (kingSafe = u.isKingSafe(r.colour, d)), clog && console.log("kingSafe1:" + kingSafe), !kingSafe)) return !1;
+				var v = "";
+				(v += Move.columnToChar(a)), (v += String.fromCharCode("1".charCodeAt(0) + n)), (v += Move.columnToChar(a)), (v += String.fromCharCode("1".charCodeAt(0) + n));
+				d = this.createMoveFromString(v);
+				if (
+					((u = this.cloneBoard()).makeMove(d, u.boardPieces[a][n], !1, this.moveAnimationLength, !1, !1),
+					(kingSafe = u.isKingSafe(r.colour, d)),
+					(u = this.cloneBoard()).makeMove(d, u.boardPieces[a][n], !1, this.moveAnimationLength, !1, !1),
+					(kingSafe = this.isKingSafe(r.colour, d)),
+					clog && console.log("kingSafe2:" + kingSafe),
+					!kingSafe)
+				)
+					return !1;
+			}
+			if (e == o && t == i) return !0;
+			if (e < 0 || e > 7 || t < 0 || t > 7) return !1;
+			if (null != this.boardPieces[e][t]) return !1;
+		}
+	}),
+	(Board.prototype.canMove = function (e, t, o, i, s) {
+		var r = e.column,
+			a = e.row;
+		if (t > 7 || t < 0 || o > 7 || o < 0) return clog && console.log("can't move coz out of bounds"), !1;
+		var n = this.boardPieces[t][o],
+			l = this.boardPieces[r][a];
+		if (null == l) return !1;
+		if (n && n.colour == l.colour) return !1;
+		var h = !1;
+		(h = e.piece == ChessPiece.PAWN ? this.canMovePawn(r, a, t, o, i) : e.piece == ChessPiece.KNIGHT ? this.canMoveKnight(r, a, t, o) : this.canMoveStraight(r, a, t, o, e.piece, e)), clog && console.log("moveOk:" + h);
+		var c = !0;
+		if (h && s) {
+			var d = "";
+			(d += Move.columnToChar(r)), (d += String.fromCharCode("1".charCodeAt(0) + a)), (d += Move.columnToChar(t)), (d += String.fromCharCode("1".charCodeAt(0) + o));
+			var u = this.createMoveFromString(d),
+				v = this.cloneBoard();
+			v.makeMove(u, v.boardPieces[r][a], !1, this.moveAnimationLength, !1, !1), (c = v.isKingSafe(e.colour, u));
+		}
+		return h && c;
+	}),
+	(Board.prototype.is50MoveRule = function () {
+		return this.halfMoveNumber >= 100;
+	}),
+	(Board.prototype.isCheckmate = function (e) {
+		return !this.isKingSafe(this.toMove, e) && this.isKingMated(this.toMove, e);
+	}),
+	(Board.prototype.isStalemate = function (e) {
+		return this.isKingSafe(this.toMove, e) && 0 == this.getCandidateMoves(this.toMove, e, !0).length;
+	}),
+	(Board.prototype.isKingMated = function (e, t) {
+		for (var o = null, i = 0; i < 8; i++)
+			for (var s = 0; s < 8; s++)
+				if (null != (a = this.boardPieces[i][s]) && a.piece == ChessPiece.KING && a.colour == e) {
+					o = a;
+					break;
+				}
+		for (
+			var r = [
+					[1, 0],
+					[1, 1],
+					[1, -1],
+					[-1, 0],
+					[-1, 1],
+					[-1, -1],
+					[0, 1],
+					[0, -1],
+					[2, 0],
+					[-2, 0],
+				],
+				a = o,
+				n = 0;
+			n < r.length;
+			n++
+		)
+			if (this.canMove(a, a.column + r[n][0], a.row + r[n][1], t, !0)) return !1;
+		return !(this.getCandidateMoves(e, t, !0, !0).length > 0);
+	}),
+	(Board.prototype.getCandidateMoves = function (e, t, o, i) {
+		for (var s = new Array(), r = 0; r < 8; r++)
+			for (var a = 0; a < 8; a++) {
+				var n = this.boardPieces[r][a],
+					l = [];
+				if (n && n.colour == e) {
+					switch (n.piece) {
+						case ChessPiece.KING:
+							if (i) continue;
+							l = [
+								[1, 0],
+								[1, 1],
+								[1, -1],
+								[-1, 0],
+								[-1, 1],
+								[-1, -1],
+								[0, 1],
+								[0, -1],
+								[2, 0],
+								[-2, 0],
+							];
+							break;
+						case ChessPiece.KNIGHT:
+							l = [
+								[2, 1],
+								[2, -1],
+								[-2, 1],
+								[-2, -1],
+								[1, 2],
+								[1, -2],
+								[-1, 2],
+								[-1, -2],
+							];
+							break;
+						case ChessPiece.BISHOP:
+							for (h = 0; h < 8; h++) l.push([1 + h, 1 + h]), l.push([1 + h, -1 - h]), l.push([-1 - h, 1 + h]), l.push([-1 - h, -1 - h]);
+							break;
+						case ChessPiece.QUEEN:
+							for (h = 0; h < 8; h++) l.push([1 + h, 0]), l.push([1 + h, 1 + h]), l.push([1 + h, -1 - h]), l.push([-1 - h, 0]), l.push([-1 - h, 1 + h]), l.push([-1 - h, -1 - h]), l.push([0, -1 - h]), l.push([0, 1 + h]);
+							break;
+						case ChessPiece.ROOK:
+							for (h = 0; h < 8; h++) l.push([1 + h, 0]), l.push([-1 - h, 0]), l.push([0, -1 - h]), l.push([0, 1 + h]);
+							break;
+						case ChessPiece.PAWN:
+							e == ChessPiece.BLACK
+								? ((l = [
+									  [0, -1],
+									  [1, -1],
+									  [-1, -1],
+								  ]),
+								  6 == a && l.push([0, -2]))
+								: ((l = [
+									  [0, 1],
+									  [1, 1],
+									  [-1, 1],
+								  ]),
+								  1 == a && l.push([0, 2]));
+					}
+					for (var h = 0; h < l.length; h++) if (this.canMove(n, n.column + l[h][0], n.row + l[h][1], t, !0) && (s.push(new Move(n.column, n.row, n.column + l[h][0], n.row + l[h][1])), o)) return s;
+				}
+			}
+		return s;
+	}),
+	(Board.prototype.isKingSafe = function (e, t) {
+		for (var o = null, i = 0; i < 8; i++)
+			for (s = 0; s < 8; s++)
+				if (null != (r = this.boardPieces[i][s]) && r.piece == ChessPiece.KING && r.colour == e) {
+					o = r;
+					break;
+				}
+		for (i = 0; i < 8; i++)
+			for (var s = 0; s < 8; s++) {
+				var r = this.boardPieces[i][s];
+				if (null != r && r.colour != e && this.canMove(r, o.column, o.row, t, !1)) return !1;
+			}
+		return !0;
+	}),
+	(Board.prototype.freeBoardPieces = function (e) {
+		if (this.boardPieces)
+			for (var t = 0; t < 8; t++) {
+				for (var o = 0; o < 8; o++) null != this.boardPieces[t][o] && (this.boardPieces[t][o].free(), (this.boardPieces[t][o] = null));
+				e && (this.boardPieces[t] = null);
+			}
+		e && (this.boardPieces = null);
+	}),
+	(Board.prototype.freeBoard = function () {
+		this.freeBoardPieces(!0), this.freeMoveArray();
+	}),
+	(Board.prototype.freeMoveArray = function () {
+		if (this.moveArray)
+			for (var e = 0; e < this.moveArray.length; e++) {
+				var t = this.moveArray[e];
+				t && (t.freeMove(), (this.moveArray[e] = null));
+			}
+	}),
+	(Board.prototype.cloneBoard = function () {
+		var e = new Board();
+		return (
+			(e.boardName = this.boardName),
+			(e.cloned = !0),
+			(e.boardPieces = this.copyBoardPieces(!0)),
+			(e.moveArray = this.copyMoveArray(!1)),
+			(e.canCastleQueenSide = this.copyCastleQueenSide()),
+			(e.canCastleKingSide = this.copyCastleKingSide()),
+			(e.toMove = this.toMove),
+			(e.restrictedColourMovement = -1),
+			(e.opponentColour = this.opponentColour),
+			(e.outputWithoutDisplay = this.outputWithoutDisplay),
+			(e.isFlipped = this.isFlipped),
+			(e.isUserFlipped = this.isUserFlipped),
+			(e.ignoreFlipping = this.ignoreFlipping),
+			(e.reverseFlip = this.reverseFlip),
+			(e.moveAnimationLength = this.moveAnimationLength),
+			(e.moveNumber = this.moveNumber),
+			(e.halfMoveNumber = this.halfMoveNumber),
+			(e.startFen = this.startFen),
+			(e.boardImagePath = this.boardImagePath),
+			(e.dontUpdatePositionReachedTable = this.dontUpdatePositionReachedTable),
+			this.prev_move ? (e.prev_move = this.prev_move.clone()) : (e.prev_move = null),
+			e
+		);
+	}),
+	(Board.prototype.copyCastleQueenSide = function () {
+		return [this.canCastleQueenSide[0], this.canCastleQueenSide[1]];
+	}),
+	(Board.prototype.copyCastleKingSide = function () {
+		return [this.canCastleKingSide[0], this.canCastleKingSide[1]];
+	}),
+	(Board.copyMoves = function (e, t, o) {
+		var i = new Array();
+		if (t) {
+			if (e)
+				for (a = 0; a < e.length; a++) {
+					var s = e[a],
+						r = null;
+					s && (r = s.clone(!0)), (i[a] = r);
+				}
+		} else e && e.length > 0 && (i = e.slice(0));
+		if (o) for (var a = 0; a < e.length; a++) e[a].prev && void 0 !== e[a].prev.index && (i[a].prev = i[e[a].prev.index]), e[a].next && void 0 !== e[a].next.index && (i[a].next = i[e[a].next.index]);
+		return i;
+	}),
+	(Board.prototype.copyMoveArray = function (e) {
+		return Board.copyMoves(this.moveArray, e);
+	}),
+	(Board.prototype.copyBoardPieces = function (e) {
+		for (var t = Board.createBoardArray(), o = 0; o < 8; o++) for (var i = 0; i < 8; i++) null != this.boardPieces[o][i] ? (t[o][i] = e ? this.boardPieces[o][i].makeLightWeight() : this.boardPieces[o][i].copyPiece()) : (t[o][i] = null);
+		return t;
+	}),
+	(Board.prototype.createPiece = function (e, t, o) {
+		return o ? new LightweightChessPiece(null, e, t, this) : new ChessPiece(this.getPieceDiv(), e, t, this);
+	}),
+	(Board.prototype.restoreCastling = function (e) {
+		(this.canCastleKingSide = e.kingSide), (this.canCastleQueenSide = e.queenSide);
+	}),
+	(Board.prototype.saveCastling = function () {
+		return { queenSide: [this.canCastleQueenSide[0], this.canCastleQueenSide[1]], kingSide: [this.canCastleKingSide[0], this.canCastleKingSide[1]] };
+	});
+var firstLightProf = !0,
+	firstHeavyProf = !0;
+(Board.prototype.setupFromFenLightweight = function (e, t, o, i, s) {
+	this.setupFromFenGeneric(e, t, o, !0, i, s);
+}),
+	(Board.prototype.setupFromFenHeavyWeight = function (e, t, o, i, s) {
+		this.lastFromSquare && YAHOO.util.Dom.removeClass(this.lastFromSquare, "ct-from-square"), this.lastToSquare && YAHOO.util.Dom.removeClass(this.lastToSquare, "ct-to-square"), this.setupFromFenGeneric(e, t, o, !1, i, s);
+	}),
+	(Board.prototype.setupFromFen = function (e, t, o, i, s, r) {
+		(this.positionsSeen = []), i ? this.setupFromFenLightweight(e, t, o, s, r) : this.setupFromFenHeavyWeight(e, t, o, s, r);
+	}),
+	(Board.prototype.setupFromFenGeneric = function (e, t, o, i, s, r) {
+		ctime && console.time("setupFromFen" + i),
+			this.oldSelectedSquare && YAHOO.util.Dom.removeClass(this.oldSelectedSquare, "ct-source-square"),
+			(this.oldSelectedSquare = null),
+			(this.oldSelectedPiece = null),
+			(this.settingUpPosition = !0);
+		var a = e.split(" "),
+			n = a[0].split("/");
+		(this.halfMoveNumber = parseInt(a[4])), (this.moveNumber = 2 * parseInt(a[5]));
+		var l = 0,
+			h = 8;
+		(this.uptoId = 0), (this.board_xy = null);
+		var c = a[2],
+			d = null;
+		if (
+			((this.canCastleQueenSide = [!1, !1]),
+			(this.canCastleKingSide = [!1, !1]),
+			"-" != c &&
+				(c.indexOf("K") >= 0 && (this.canCastleKingSide[ChessPiece.WHITE] = !0),
+				c.indexOf("Q") >= 0 && (this.canCastleQueenSide[ChessPiece.WHITE] = !0),
+				c.indexOf("k") >= 0 && (this.canCastleKingSide[ChessPiece.BLACK] = !0),
+				c.indexOf("q") >= 0 && (this.canCastleQueenSide[ChessPiece.BLACK] = !0)),
+			r && (this.startMoveNum = this.moveNumber),
+			"w" == a[1]
+				? (r && this.startMoveNum--, (this.toMove = ChessPiece.WHITE), (this.opponentColour = ChessPiece.WHITE), (this.isFlipped = !1), this.moveNumber--)
+				: ((this.toMove = ChessPiece.BLACK), (this.opponentColour = ChessPiece.BLACK), (this.isFlipped = !0)),
+			s)
+		) {
+			var u = a[3];
+			if ("-" != u && 2 == u.length) {
+				var v = u[0];
+				((d = 3 == parseInt(u[1]) ? this.createMoveFromString(v + "2" + v + "4") : this.createMoveFromString(v + "7" + v + "5")).prevMoveEnpassant = !0), (this.prev_move = d);
+			}
+		}
+		t && ((this.toMove = ChessPiece.BLACK == this.toMove ? ChessPiece.WHITE : ChessPiece.BLACK), (this.isFlipped = !this.isFlipped)),
+			o && (this.isFlipped = !0),
+			this.reverseFlip && (this.isFlipped = !this.isFlipped),
+			this.ignoreFlipping && (this.isFlipped = !1),
+			this.isUserFlipped && (this.isFlipped = !this.isFlipped),
+			this.updateToPlay(),
+			this.setupPieceDivs();
+		for (y = 0; y < 8; y++) for (p = 0; p < 8; p++) this.boardPieces[y][p] = null;
+		for (y = 0; y < 8; y++) {
+			var m = n[y];
+			h--, (l = 0);
+			for (var p = 0; p < m.length; p++) {
+				var g = m.charAt(p),
+					f = m.charCodeAt(p) - "0".charCodeAt(0);
+				if (f > 0 && f < 9)
+					for (; f--; ) {
+						this.boardPieces[l][h];
+						(this.boardPieces[l][h] = null), l++;
+					}
+				else {
+					var b = (g + "").toLowerCase().charAt(0),
+						C = ChessPiece.WHITE;
+					b == g && (C = ChessPiece.BLACK);
+					var M;
+					switch (b) {
+						case "k":
+							M = this.createPiece(C, ChessPiece.KING, i);
+							break;
+						case "q":
+							M = this.createPiece(C, ChessPiece.QUEEN, i);
+							break;
+						case "r":
+							M = this.createPiece(C, ChessPiece.ROOK, i);
+							break;
+						case "b":
+							M = this.createPiece(C, ChessPiece.BISHOP, i);
+							break;
+						case "n":
+							M = this.createPiece(C, ChessPiece.KNIGHT, i);
+							break;
+						case "p":
+							M = this.createPiece(C, ChessPiece.PAWN, i);
+							break;
+						default:
+							alert("unknown piece letter:" + b + " for fen:" + e);
+					}
+					(isGecko || isOpera) && (M.setPosition(l, h, !1, null, this.moveAnimationLength), M.setVisible(!0)),
+						(this.boardPieces[l][h] = M),
+						(this.pieces[this.uptoPiece] = M),
+						(this.pieces[this.uptoPiece].column = l),
+						(this.pieces[this.uptoPiece].row = h),
+						this.uptoPiece++,
+						l++;
+				}
+			}
+		}
+		if (!isGecko) for (y = 0; y < this.uptoPiece; y++) this.pieces[y].setPosition(this.pieces[y].column, this.pieces[y].row, !1, null, 0);
+		if (!i) for (var y = 0; y < this.uptoPiece; y++) this.pieces[y].setVisible(!0);
+		i || this.createBoardCoords(), (this.settingUpPosition = !1), ctime && console.timeEnd("setupFromFen" + i);
+	}),
+	(Board.prototype.resetMoveListScrollPosition = function () {
+		var e = this.movesDisplay.getMovesDisplay();
+		e && new YAHOO.util.Scroll(e, { scroll: { to: [0, 0] } }, 0).animate();
+	}),
+	(Board.prototype.changePieceSet = function (e, t) {
+		if (!this.showedIE6Warning) o = _js("Depending on your browser you may need to reload the<br/> page for piece size changes to properly take effect.");
+		if (((this.showedIE6Warning = !0), check_bad_msie())) {
+			if (!this.showedIE6Warning) {
+				var o = _js("Internet Explorer version 6 does not support dynamic piece size changes.<br/> Please reload page to view new settings.");
+				alert(o.replace("<br/>", "\n"));
+			}
+			this.showedIE6Warning = !0;
+		} else {
+			this.pieceSize;
+			(this.pieceSet = e), (this.pieceSize = t);
+			var i = YAHOO.util.Dom.get(this.boardName + "-boardBorder"),
+				s = 0;
+			this.showCoordinates && (s = 15),
+				(i.className = ""),
+				YAHOO.util.Dom.addClass(i, "ct-board-border" + this.squareColorClass),
+				YAHOO.util.Dom.setStyle(i, "width", 8 * this.pieceSize + s + "px"),
+				YAHOO.util.Dom.setStyle(i, "height", 8 * this.pieceSize + s + "px");
+			var r = YAHOO.util.Dom.get("ctb-" + this.boardName);
+			YAHOO.util.Dom.setStyle(r, "width", 8 * this.pieceSize + "px"), YAHOO.util.Dom.setStyle(r, "height", 8 * this.pieceSize + "px");
+			for (var a = "ct-white-square" + this.squareColorClass, n = 7; n >= 0; n--) {
+				for (d = 0; d < 8; d++) {
+					var l = this.getBoardDivFromId(this.boardName + "-s" + d + n);
+					(l.className = ""), YAHOO.util.Dom.addClass(l, a), YAHOO.util.Dom.setStyle(l, "width", this.pieceSize + "px"), YAHOO.util.Dom.setStyle(l, "height", this.pieceSize + "px");
+					var h = ((((d + 1) * (n + 1)) % 19) / 19) * 100,
+						c = (((65 - (d + 1) * (n + 1)) % 19) / 19) * 100;
+					YAHOO.util.Dom.setStyle(l, "background-position", h + "% " + c + "%"), (a = a == "ct-black-square" + this.squareColorClass ? "ct-white-square" + this.squareColorClass : "ct-black-square" + this.squareColorClass);
+				}
+				a = a == "ct-black-square" + this.squareColorClass ? "ct-white-square" + this.squareColorClass : "ct-black-square" + this.squareColorClass;
+			}
+			for (n = 0; n < 8; n++)
+				for (var d = 0; d < 8; d++)
+					if ((v = this.boardPieces[n][d])) {
+						if (((v.icon = get_image_str(ChessPiece.pieceIconNames[v.colour][v.piece], v.board.boardImagePath, v.board.pieceSet, v.board.pieceSize, v.board.addVersion)), YAHOO.util.Event.isIE || isOpera)) {
+							(m = v.div).innerHTML = '<img src="' + v.icon + '"/>';
+							p = m.firstChild;
+							isOpera || fix_ie_png(p);
+						} else YAHOO.util.Dom.setStyle([v.div], "backgroundImage", "url(" + v.icon + ")"), YAHOO.util.Dom.setStyle([v.div], "background-repeat", "no-repeat");
+						YAHOO.util.Dom.setStyle([v.div], "height", this.pieceSize + "px"),
+							YAHOO.util.Dom.setStyle([v.div], "width", this.pieceSize + "px"),
+							YAHOO.util.Dom.setStyle([v.div], "left", ""),
+							YAHOO.util.Dom.setStyle([v.div], "top", "");
+						g = v.getNewXYPosition(v.column, v.row);
+						YAHOO.util.Dom.setXY(v.div, g, !1);
+					}
+			if (this.moveArray)
+				for (var u = this.moveArray[0]; null != u; ) {
+					if (u.taken) {
+						var v = u.taken;
+						if (v.getNewXYPosition) {
+							if (((v.icon = get_image_str(ChessPiece.pieceIconNames[v.colour][v.piece], v.board.boardImagePath, v.board.pieceSet, v.board.pieceSize, v.board.addVersion)), YAHOO.util.Event.isIE || isOpera)) {
+								var m = v.div;
+								(m.innerHTML = '<img src="' + v.icon + '"/>'), YAHOO.util.Dom.setStyle([v.div], "position", "relative");
+								var p = m.firstChild;
+								isOpera || fix_ie_png(p);
+							} else YAHOO.util.Dom.setStyle([v.div], "backgroundImage", "url(" + v.icon + ")"), YAHOO.util.Dom.setStyle([v.div], "background-repeat", "no-repeat");
+							YAHOO.util.Dom.setStyle([v.div], "height", this.pieceSize + "px"),
+								YAHOO.util.Dom.setStyle([v.div], "width", this.pieceSize + "px"),
+								YAHOO.util.Dom.setStyle([v.div], "left", ""),
+								YAHOO.util.Dom.setStyle([v.div], "top", "");
+							var g = v.getNewXYPosition(v.column, v.row);
+							YAHOO.util.Dom.setXY(v.div, g, !1);
+						}
+					}
+					u = u.next;
+				}
+			if (this.problem) {
+				var f = YAHOO.util.Dom.get("body");
+				f && YAHOO.util.Dom.setStyle(f, "min-width", 8 * this.pieceSize + s + 300 + 200 + 120 + "px");
+			}
+			this.createBoardCoords();
+		}
+	}),
+	(Board.prototype.forwardMove = function (e) {
+		if (!this.disableNavigation)
+			if (this.blockFowardBack || this.deferredBlockForwardBack) clog && console.log("returning early from forward due to block forward on");
+			else {
+				if (this.tactics && this.tactics.problemActive) clog && console.log("not forwarding, tactic is active");
+				else {
+					if (((this.blockForwardBack = !0), this.currentMove && !this.currentMove.atEnd))
+						if (((move = this.currentMove), move ? clog && console.log("forward move:" + move.output()) : clog && console.log("forward move with currentmove null"), move.endNode))
+							clog && console.log("calling processendgame from forward move"), this.problem.processEndgame("", !0), this.toggleToMove(), this.updateToPlay();
+						else {
+							clog && console.log("forwarding move:" + move.output());
+							var t = null;
+							(piece = this.boardPieces[move.fromColumn][move.fromRow]),
+								move.promotion && ((t = move.promotion), (piece.prePromotionColumn = null), (piece.prePromotionRow = null)),
+								this.updatePiece(piece, move.toColumn, move.toRow, !0, !0, !1, t, !0),
+								this.toggleToMove(),
+								this.updateToPlay();
+							var o = this.currentMove;
+							clog && (o ? console.log("after forward curmove:" + o.output()) : console.log("after forward cur move null"));
+							for (i = 0; i < this.registeredForwardMovePostUpdateListeners.length; i++) this.registeredForwardMovePostUpdateListeners[i].forwardMovePostUpdateCallback(move);
+						}
+					else {
+						clog && console.log("already at end");
+						for (var i = 0; i < this.registeredForwardAtEndListeners.length; i++) this.registeredForwardAtEndListeners[i].forwardAtEndCallback();
+					}
+					this.blockForwardBack = !1;
+				}
+			}
+	}),
+	(Board.prototype.setupEventHandlers = function () {
+		(this.tlf = 0),
+			YAHOO.util.Event.addListener(document, "blur", this.lostFocus, this, !0),
+			this.avoidMouseoverActive ||
+				YAHOO.util.Event.addListener(
+					this.boardName + "-container",
+					"mouseover",
+					function (e) {
+						activeBoard = this;
+					},
+					this,
+					!0
+				),
+			YAHOO.util.Event.addListener(this.boardName + "-container", "click", this.selectDestSquare, this, !0);
+		var e = "keydown";
+		YAHOO.util.Event.addListener(
+			document,
+			e,
+			function (e) {
+				var t = e.target ? e.target : e.srcElement;
+				if (t.form) return !0;
+				switch (t.tagName.toLowerCase()) {
+					case "input":
+					case "textarea":
+					case "select":
+						return !0;
+				}
+				if (activeBoard != this) return !0;
+				switch (YAHOO.util.Event.getCharCode(e)) {
+					case 37:
+						this.backMove();
+						break;
+					case 39:
+						this.forwardMove();
+						break;
+					case 32:
+						var o = this.spaceBar();
+						return o || YAHOO.util.Event.preventDefault(e), o;
+				}
+				return !0;
+			},
+			this,
+			!0
+		),
+			YAHOO.util.Event.addListener(this.boardName + "-forward", "click", this.forwardMove, this, !0),
+			YAHOO.util.Event.addListener(this.boardName + "-back", "click", this.backMove, this, !0),
+			YAHOO.util.Event.addListener(this.boardName + "-start", "click", this.gotoStart, this, !0),
+			YAHOO.util.Event.addListener(this.boardName + "-end", "click", this.gotoEnd, this, !0),
+			YAHOO.util.Event.addListener(this.boardName + "-play", "click", this.playMoves, this, !0),
+			YAHOO.util.Event.addListener(this.boardName + "-stop", "click", this.stopPlayingMoves, this, !0),
+			this.r && (YAHOO.util.Event.addListener(this.boardName + "-analyse", "click", this.analysePosition, this, !0), YAHOO.util.Event.addListener(this.boardName + "-showfen", "click", this.showBoardFen, this, !0)),
+			this.canPasteFen && YAHOO.util.Event.addListener(this.boardName + "-pastefen", "click", this.pasteFen, this, !0),
+			this.g2 && YAHOO.util.Event.addListener(this.boardName + "-playcomp", "click", this.playComp, this, !0);
+	}),
+	(Board.prototype.addFlipListener = function (e) {
+		this.registeredFlipListeners.push(e);
+	}),
+	(Board.prototype.addSpaceListener = function (e) {
+		this.registeredSpaceListeners.push(e);
+	}),
+	(Board.prototype.flipBoard = function () {
+		(this.isUserFlipped = !this.isUserFlipped), (this.isFlipped = !this.isFlipped), this.redrawBoard(), this.updateToPlay();
+		for (var e = 0; e < this.registeredFlipListeners.length; e++) this.registeredFlipListeners[e].boardFlipped(this);
+	}),
+	(Board.prototype.spaceBar = function () {
+		for (var e = !0, t = 0; t < this.registeredSpaceListeners.length; t++) e = this.registeredSpaceListeners[t].spacePressed(this);
+		return e;
+	}),
+	(Board.prototype.lostFocus = function () {
+		this.tlf++;
+	}),
+	(Board.prototype.redrawBoard = function () {
+		for (var e = 0; e < 8; e++)
+			for (var t = 0; t < 8; t++)
+				if ((i = this.boardPieces[e][t])) {
+					s = i.getNewXYPosition(i.column, i.row);
+					YAHOO.util.Dom.setXY(i.div, s, !1);
+				}
+		if (this.moveArray)
+			for (var o = this.moveArray[0]; null != o; ) {
+				if (o.taken) {
+					var i = o.taken;
+					if (i.getNewXYPosition) {
+						var s = i.getNewXYPosition(i.column, i.row);
+						YAHOO.util.Dom.setXY(i.div, s, !1);
+					}
+				}
+				o = o.next;
+			}
+		if ((this.createBoardCoords(), this.oldSelectedSquare && YAHOO.util.Dom.removeClass(this.oldSelectedSquare, "ct-source-square"), (this.oldSelectedSquare = null), (this.oldSelectedPiece = null), this.highlightFromTo)) {
+			if (this.isFlipped)
+				var r = YAHOO.util.Dom.get(this.boardName + "-s" + (7 - this.lastFromColumn) + (7 - this.lastFromRow)),
+					a = YAHOO.util.Dom.get(this.boardName + "-s" + (7 - this.lastToColumn) + (7 - this.lastToRow));
+			else
+				var r = YAHOO.util.Dom.get(this.boardName + "-s" + this.lastFromColumn + this.lastFromRow),
+					a = YAHOO.util.Dom.get(this.boardName + "-s" + this.lastToColumn + this.lastToRow);
+			this.updateFromTo(r, a, this.lastFromRow, this.lastFromColumn, this.lastToRow, this.lastToColumn);
+		}
+	}),
+	(Board.prototype.getMaxMoveNumber = function (e) {
+		var t = this.getMaxPly(e);
+		return t > 0 ? parseInt((t + 1) / 2) : 0;
+	}),
+	(Board.prototype.getMaxPly = function (e) {
+		var t = null;
+		if (e) {
+			if (!this.currentMove) return 0;
+			if ((t = this.currentMove).atEnd) return t.prev ? t.prev.moveNum : 0;
+		} else this.moveArray && (t = this.moveArray[0]);
+		if (!t) return 0;
+		for (; null != t; ) {
+			if (t.atEnd) return t.prev ? t.prev.moveNum : 0;
+			t = t.next;
+		}
+		return 0;
+	}),
+	(Board.fenPositionOnly = function (e) {
+		var t = e.split(" ");
+		return t[0] + " " + t[1];
+	}),
+	(Board.fenStripMoveClock = function (e) {
+		var t = e.split(" ");
+		return t[0] + " " + t[1] + " " + t[2] + " " + t[3];
+	}),
+	(Board.fenSamePosition = function (e, t, o) {
+		if (!e || !t) return !1;
+		var i = null,
+			s = null;
+		return o ? ((i = Board.fenPositionOnly(e)), (s = Board.fenPositionOnly(t))) : ((i = Board.fenStripMoveClock(e)), (s = Board.fenStripMoveClock(t))), i == s;
+	}),
+	(Board.prototype.findFen = function (e, t, o, i) {
+		var s = this.findFen2(e, t, o, !0);
+		if (s.move) return s.move;
+		if (i) {
+			if (s.clockStrip) return s.clockStrip;
+			if (s.fullStrip) return s.fullStrip;
+		}
+		return null;
+	}),
+	(Board.prototype.findFen2 = function (e, t, o, i) {
+		var s = t.cloneBoard(),
+			r = Object(),
+			a = null,
+			n = null;
+		(r.move = null), i && s.gotoMoveIndex(-1, !0, !0, !0, !0);
+		for (var l = null; e; ) {
+			var h = s.boardToFen();
+			if (h == o) return (r.move = l), (r.clockStrip = null), (r.fullStrip = null), r;
+			if ((Board.fenSamePosition(o, h) ? (a = l) : Board.fenSamePosition(o, h, !0) && (n = l), e.atEnd)) break;
+			if (e.vars && e.vars.length > 0)
+				for (var c = 0; c < e.vars.length; c++) {
+					var d = this.findFen2(e.vars[c], s, o, !1);
+					if (d) {
+						if (d.move) return d;
+						d.clockStrip ? (a = d.clockStrip) : d.fullStrip && (n = d.fullStrip);
+					}
+				}
+			clog && console.log("about to make mv:" + e.output() + " fen:" + s.boardToFen()),
+				s.makeMove(e, s.boardPieces[e.fromColumn][e.fromRow], !1, this.moveAnimationLength, !1, !1),
+				clog && console.log("finished making mv"),
+				(l = e),
+				(e = e.next),
+				clog && console.log("toMove:" + s.toMove),
+				s.setCurrentMove(e),
+				s.toggleToMove();
+		}
+		return a && (r.clockStrip = a), n && (r.fullStrip = n), r;
+	}),
+	(Board.prototype.gotoFen = function (e, t) {
+		clog && console.log("about to find fen for:" + e);
+		var o = this.findFen(this.moveArray[0], this, e, t);
+		o ? (clog && console.log("found move:" + o.output() + " for fen:" + e), this.gotoMoveIndex(o.index)) : clog && console.log("didn't find move for fen:" + e);
+	}),
+	(Board.prototype.getMaxMoveIndex = function () {
+		return this.moveArray.length - 1;
+	}),
+	(Board.prototype.gotoMoveIndex = function (e, t, o, i, s) {
+		clog && console.log("going to move index:" + e);
+		var r = !o;
+		if (!(!this.moveArray || this.moveArray.length <= e || (-1 == e && 0 == this.moveArray.length))) {
+			var a = this.boardName + "-piecestaken",
+				n = YAHOO.util.Dom.get(a);
+			if ((n && (n.innerHTML = ""), -1 != e)) {
+				var l = new Array(),
+					h = this.moveArray[e];
+				clog && h && (console.log("gotomoveindex move:" + h.output()), h.next && console.log("gotomoveindex move.next:" + h.next.output()), h.prev && console.log("gotomoveindex move.prev:" + h.prev.output()));
+				var c = 0;
+				for (null != h.next ? this.setCurrentMove(h.next, t) : clog && console.log("move next null with move:" + h.output()); null != h && !h.dummy; ) (l[c++] = h), (h = h.prev);
+				d = !1;
+				this.prev_move && !this.prev_move.prevMoveEnpassant && (d = !0),
+					this.setupFromFen(this.startFen, d, !1, !0),
+					this.prev_move &&
+						!this.prev_move.prevMoveEnpassant &&
+						(clog && console.log("gotomoveindex prev_move:" + this.prev_move.output()),
+						this.makeMove(this.prev_move, this.boardPieces[this.prev_move.fromColumn][this.prev_move.fromRow], !1, this.moveAnimationLength, !0, !0),
+						this.updateToPlay());
+				for (u = c - 1; u >= 1; u--) {
+					h = l[u];
+					this.makeMove(h, this.boardPieces[h.fromColumn][h.fromRow], !1, this.moveAnimationLength, !0, !1), this.toggleToMove();
+				}
+				t || this.convertPiecesFromLightWeight(e);
+				h = l[0];
+				if ((this.makeMove(h, this.boardPieces[h.fromColumn][h.fromRow], r, this.moveAnimationLength, !0, !0), this.toggleToMove(), this.updateToPlay(), t || this.setForwardBack(), !i))
+					for (u = 0; u < this.registeredGotoMoveIndexListeners.length; u++) this.registeredGotoMoveIndexListeners[u].gotoMoveIndexCallback(e);
+			} else {
+				var d = !1;
+				if (
+					(this.prev_move && !this.prev_move.prevMoveEnpassant && (d = !0),
+					this.setupFromFen(this.startFen, d, !1, s),
+					this.prev_move && !this.prev_move.prevMoveEnpassant && (this.makeMove(this.prev_move, this.boardPieces[this.prev_move.fromColumn][this.prev_move.fromRow], !o, this.moveAnimationLength, !0, !0), this.updateToPlay()),
+					this.moveArray && this.moveArray.length > 0 ? this.setCurrentMove(this.moveArray[0], t) : this.setCurrentMove(this.firstMove, t),
+					t || this.setForwardBack(),
+					!i)
+				)
+					for (var u = 0; u < this.registeredGotoMoveIndexListeners.length; u++) this.registeredGotoMoveIndexListeners[u].gotoMoveIndexCallback(e);
+			}
+		}
+	}),
+	(Board.prototype.gotoStart = function (e) {
+		this.disableNavigation ||
+			(this.lastFromSquare && YAHOO.util.Dom.removeClass(this.lastFromSquare, "ct-from-square"),
+			this.lastToSquare && YAHOO.util.Dom.removeClass(this.lastToSquare, "ct-to-square"),
+			this.gotoMoveIndex(-1),
+			this.problem &&
+				(this.currentMove && this.currentMove.bestMoves ? this.problem.showBestMoves(this.currentMove, this.currentMove.bestMoves, this.currentMove.correctMove, this.currentMove.wrongMove) : this.problem.clearBestMoves()));
+	}),
+	(Board.prototype.gotoEnd = function (e) {
+		if (!this.disableNavigation) {
+			clog && console.log("goto end called"),
+				this.tactics && this.tactics.problemActive && ((this.tactics.autoForward = !1), this.tactics.markProblem(!1, !1, "NULL", "NULL")),
+				clog && console.log("jumping to start"),
+				this.gotoMoveIndex(-1, !0, !0, !0);
+			for (var t = 0; this.currentMove && null != this.currentMove.next; ) {
+				var o = this.currentMove;
+				clog && console.log("going to end move:" + o.output()), this.makeMove(o, this.boardPieces[o.fromColumn][o.fromRow], !1, this.moveAnimationLength, !0, !0), (t = o.index), this.toggleToMove(), this.setCurrentMove(o.next);
+			}
+			for (var i = 0; i < this.registeredGotoMoveIndexListeners.length; i++) this.registeredGotoMoveIndexListeners[i].gotoMoveIndexCallback(t);
+		}
+	}),
+	(Board.prototype.gotoPly = function (e, t) {
+		clog && console.log("goto ply called"), this.gotoMoveIndex(-1, !0, !0, !0);
+		for (var o = 1, i = 0; o <= e && this.currentMove && null != this.currentMove.next; ) {
+			var s = this.currentMove;
+			clog && console.log("going to end move:" + s.output()), this.makeMove(s, this.boardPieces[s.fromColumn][s.fromRow], !1, this.moveAnimationLength, !0, !0), (i = s.index), this.toggleToMove(), this.setCurrentMove(s.next), o++;
+		}
+		if (t) for (var r = 0; r < this.registeredGotoMoveIndexListeners.length; r++) this.registeredGotoMoveIndexListeners[r].gotoMoveIndexCallback(i);
+	}),
+	(Board.prototype.playMove = function (e) {
+		if (!e.keepPlayingMoves || !e.currentMove || !e.currentMove.next)
+			return (YAHOO.util.Dom.get(this.boardName + "-play").src = this.boardImagePath + "/images/play/control_play_blue" + this.getVersString() + ".svg"), void (e.keepPlayingMoves = !1);
+		e.forwardMove(),
+			setTimeout(function () {
+				e.playMove(e);
+			}, e.pauseBetweenMoves);
+	}),
+	(Board.prototype.insertLineToMoveIndexPosition = function (e, t, o, i, s) {
+		var i = Board.copyMoves(i, !0, !0),
+			r = null;
+		if (!this.moveArray || 0 == this.moveArray.length || null == this.moveArray[0] || this.moveArray[0].atEnd || t == this.startFen) (r = null), clog && console.log("no moves or initial position, using first move");
+		else if ((clog && console.log("calling find fen...."), e >= 0 && (r = this.moveArray[e]), r || (r = this.findFen(this.moveArray[0], this, t, !1)), clog && console.log("finished calling find fen"), !r)) return;
+		var a = -1;
+		this.currentMove && this.currentMove.prev && (a = this.currentMove.prev.index),
+			o && (i[0].beforeComment = o),
+			clog && (r ? console.log("mv:" + r.output() + " mv next:" + r.next + " oldCurrentMoveIndex:" + a) : console.log("mv: null oldCurrentMoveIndex:" + a));
+		var n = null,
+			l = null;
+		r && r.next && !r.next.atEnd ? (l = r.next) : (n = r),
+			r
+				? this.gotoMoveIndex(r.index)
+				: this.moveArray && this.moveArray.length > 0
+				? (l = this.moveArray[0]) && (clog && console.log("variation parent from first move:" + l.output()), this.gotoMoveIndex(-1))
+				: (this.currentMove = null),
+			clog && (this.currentMove ? console.log("current move before insertline:" + this.currentMove.output()) : console.log("no current move before insertline")),
+			clog && (l ? console.log("var parent:" + l.output()) : console.log("var null"), n ? console.log("move ins after:" + n.output()) : console.log("moveinsafter null")),
+			this.insertMovesFromMoveList(i[0], !0, l, n, s),
+			clog && (this.currentMove ? console.log("current move after insertline:" + this.currentMove.output()) : console.log("no current move after insertline")),
+			this.gotoMoveIndex(a);
+	}),
+	(Board.prototype.getVersString = function () {
+		var e = ".vers" + SITE_VERSION;
+		return this.addVersion || (e = ""), e;
+	}),
+	(Board.prototype.playMoves = function (e) {
+		this.disableNavigation || ((this.keepPlayingMoves = !0), (YAHOO.util.Dom.get(this.boardName + "-play").src = this.boardImagePath + "/images/play/disabled_control_play_blue" + this.getVersString() + ".svg"), this.playMove(this));
+	}),
+	(Board.prototype.stopPlayingMoves = function (e) {
+		this.keepPlayingMoves = !1;
+	}),
+	(Board.prototype.pasteFen = function (e) {
+		for (var t = 0; t < this.registeredPasteFenClickedListeners.length; t++) this.registeredPasteFenClickedListeners[t].pasteFenClickedCallback();
+	}),
+	(Board.prototype.playComp = function (e) {
+		this.newAnalysis ? this.analysePosition(null, null, !0) : window.open("/play-computer/" + this.boardToFen());
+	}),
+	(Board.prototype.showBoardFen = function (e) {
+		var t = this.boardToFen(),
+			o = new YAHOO.widget.SimpleDialog("fenDialog", {
+				fixedcenter: !1,
+				visible: !0,
+				draggable: !0,
+				constraintoviewport: !1,
+				buttons: [
+					{ id: "linkbutton4", text: "Test" },
+					{
+						text: _js("Ok"),
+						handler: function () {
+							o.hide();
+						},
+						isDefault: !0,
+					},
+				],
+			});
+		o.setHeader(_js("Position FEN")),
+			o.setBody('<textarea class="showPgn" id="fenText" rows="1" readonly="true" cols="' + (t.length + 9) + '">' + t + "</textarea>"),
+			o.render(document.body),
+			o.setFooter('<span id="copyToComment"></span><span id="fenok"></span>'),
+			o.center();
+		var i = this;
+		if (this.problem && this.problem.comments)
+			new YAHOO.widget.Button({
+				type: "button",
+				label: _js("Copy To Comment"),
+				container: "fenok",
+				onclick: {
+					fn: function () {
+						i.copyFenToComment(t, Board.COPY_COMMENT_PROBLEM), o.hide();
+					},
+				},
+			});
+		if (this.gameComments)
+			new YAHOO.widget.Button({
+				type: "button",
+				label: _js("Copy To Game Comment"),
+				container: "fenok",
+				onclick: {
+					fn: function () {
+						i.copyFenToComment(t, Board.COPY_COMMENT_GAME), o.hide();
+					},
+				},
+			});
+		if (this.playerComments)
+			new YAHOO.widget.Button({
+				type: "button",
+				label: _js("Copy To Player Comment"),
+				container: "fenok",
+				onclick: {
+					fn: function () {
+						i.copyFenToComment(t, Board.COPY_COMMENT_PLAYER), o.hide();
+					},
+				},
+			});
+		if (this.openingComments)
+			new YAHOO.widget.Button({
+				type: "button",
+				label: _js("Copy To Opening Comment"),
+				container: "fenok",
+				onclick: {
+					fn: function () {
+						i.copyFenToComment(t, Board.COPY_COMMENT_OPENING), o.hide();
+					},
+				},
+			});
+		new YAHOO.widget.Button({
+			type: "button",
+			label: _js("Ok"),
+			container: "fenok",
+			onclick: {
+				fn: function () {
+					o.hide();
+				},
+			},
+		});
+	}),
+	(Board.prototype.copyFenToComment = function (e, t) {
+		switch (t) {
+			case Board.COPY_COMMENT_PROBLEM:
+				if (this.problem) {
+					var o = !1;
+					e.split(" ")[1] == this.startFen.split(" ")[1] && (o = !0), this.problem.comments.copyFenToComment(e, o);
+				}
+				break;
+			case Board.COPY_COMMENT_GAME:
+				this.gameComments.copyFenToComment(e);
+				break;
+			case Board.COPY_COMMENT_PLAYER:
+				this.playerComments.copyFenToComment(e);
+				break;
+			case Board.COPY_COMMENT_OPENING:
+				this.openingComments.copyFenToComment(e);
+		}
+	}),
+	(Board.COPY_COMMENT_PROBLEM = 0),
+	(Board.COPY_COMMENT_PLAYER = 1),
+	(Board.COPY_COMMENT_GAME = 2),
+	(Board.COPY_COMMENT_OPENING = 3),
+	(Board.prototype.copyAnalysisToComment = function (e, t, o, i) {
+		switch (i) {
+			case Board.COPY_COMMENT_PROBLEM:
+				this.problem && this.problem.comments.copyAnalysisToComment(e, t, o);
+				break;
+			case Board.COPY_COMMENT_GAME:
+				this.gameComments.copyAnalysisToComment(e, t, o);
+				break;
+			case Board.COPY_COMMENT_PLAYER:
+				this.playerComments.copyAnalysisToComment(e, t, o);
+				break;
+			case Board.COPY_COMMENT_OPENING:
+				this.openingComments.copyAnalysisToComment(e, t, o);
+		}
+	}),
+	(Board.squareColours = new Array(8));
+for (var pCol = ChessPiece.BLACK, i = 0; i < 8; i++) {
+	Board.squareColours[i] = new Array(8);
+	for (var j = 0; j < 8; j++) (Board.squareColours[i][j] = pCol), (pCol = Board.invertToMove(pCol));
+	pCol = Board.invertToMove(pCol);
+}
+(Board.getSquareColour = function (e, t) {
+	return Board.squareColours[e][t];
+}),
+	(Board.prototype.isInsufficientMaterial = function (e) {
+		function t() {
+			return !(o > 0 || i > 0) && ((s == r) == 0 || (s == a && 0 == r) || (r == n && 0 == s) || (s == l && r == c) || (s == h && r == d) || (r == c && s == l) || (s == d && s == h));
+		}
+		for (var o = 0, i = 0, s = 0, r = 0, a = 0, n = 0, l = 0, h = 0, c = 0, d = 0, u = 0; u < 8; u++)
+			for (var v = 0; v < 8; v++) {
+				var m = this.boardPieces[u][v];
+				m &&
+					(m.piece == ChessPiece.PAWN
+						? m.colour == ChessPiece.WHITE
+							? o++
+							: i++
+						: m.piece != ChessPiece.KING &&
+						  (m.colour == ChessPiece.WHITE
+							  ? (s++, m.piece == ChessPiece.KNIGHT ? a++ : m.piece == ChessPiece.BISHOP && (Board.getSquareColour(u, v) == ChessPiece.WHITE ? l++ : h++))
+							  : (r++, m.piece == ChessPiece.KNIGHT ? n++ : m.piece == ChessPiece.BISHOP && (Board.getSquareColour(u, v) == ChessPiece.WHITE ? c++ : d++))));
+			}
+		return -1 == e
+			? t()
+			: e == ChessPiece.WHITE
+			? !!t() || (!(o > 0) && ((0 == o && 0 == s) || (s == l && r == c) || (s == h && r == d) || (s == a && 0 == r && 0 == i)))
+			: !!t() || (!(i > 0) && ((0 == i && 0 == r) || (r == c && s == l) || (r == d && s == h) || (r == n && 0 == s && 0 == o)));
+	}),
+	(Board.prototype.analysePosition = function (e, t, o) {
+		(window.parentBoard = this), o && window.opener && (window.opener.parentPlayBoard = this);
+		var i = 8 * this.pieceSize + 450 + 50,
+			s = 8 * this.pieceSize + 250,
+			r = o ? "?pc=1" : "";
+		window.open("/windows/analyse.html" + r, o ? "_blank" : "_analysewin", "width=" + i + ",height=" + s + ",resizable=1,scrollbars=1,location=0,copyhistory=0,status=0,toolbar=0,menubar=0").focus();
+	}),
+	(Board.prototype.backMove = function (e) {
+		if (!this.disableNavigation && !this.blockFowardBack && !this.deferredBlockForwardBack) {
+			var t = this.currentMove;
+			if (!this.tactics || !this.tactics.problemActive) {
+				if (((this.blockForwardBack = !0), this.currentMove && null != this.currentMove.prev)) {
+					YAHOO.util.Dom.removeClass(this.lastFromSquare, "ct-from-square"),
+						YAHOO.util.Dom.removeClass(this.lastToSquare, "ct-to-square"),
+						(this.lastFromRow = null),
+						this.oldSelectedSquare && YAHOO.util.Dom.removeClass(this.oldSelectedSquare, "ct-source-square"),
+						(this.oldSelectedSquare = null),
+						(this.oldSelectedPiece = null);
+					var o = this.toMove;
+					if (((o = o == ChessPiece.WHITE ? ChessPiece.BLACK : ChessPiece.WHITE), !this.dontUpdatePositionReachedTable)) {
+						var i = this.boardToUniqueFen(o);
+						this.positionsSeen[i] && this.positionsSeen[i]--;
+					}
+					this.toggleToMove(),
+						this.updateToPlay(),
+						(move = this.currentMove.prev),
+						move && clog && console.log("backwards moving to prev move:" + move.output() + " from current move:" + this.currentMove.output()),
+						this.setCurrentMove(move),
+						(piece = this.boardPieces[move.toColumn][move.toRow]),
+						piece || (clog && console.log("got empty piece in backMove")),
+						(takenPiece = move.taken),
+						(this.board_xy = null),
+						piece.setPosition(move.fromColumn, move.fromRow, !0, null, this.moveAnimationLength),
+						(this.boardPieces[move.fromColumn][move.fromRow] = piece),
+						move.promotion && piece.changePiece("p"),
+						piece.setVisible(!0),
+						(this.canCastleQueenSide[0] = move.preCastleQueenSide[0]),
+						(this.canCastleQueenSide[1] = move.preCastleQueenSide[1]),
+						(this.canCastleKingSide[0] = move.preCastleKingSide[0]),
+						(this.canCastleKingSide[1] = move.preCastleKingSide[1]),
+						(this.halfMoveNumber = move.preHalfMoveNumber);
+					var s = !1;
+					if ((piece.piece == ChessPiece.KING && Math.abs(move.fromColumn - move.toColumn) > 1 && (s = !0), --this.moveNumber <= 0 && (this.moveNumber = 1), takenPiece && !s)) {
+						this.board_xy = null;
+						var r = move.toColumn,
+							a = move.toRow;
+						piece.piece == ChessPiece.PAWN && move.fromColumn != move.toColumn && takenPiece.enPassant && ((a = move.fromRow), (this.boardPieces[move.toColumn][move.toRow] = null)),
+							takenPiece.setPosition(r, a, !1, null, this.moveAnimationLength),
+							(this.boardPieces[r][a] = takenPiece),
+							(move.taken = null),
+							this.processTaken(takenPiece, !1);
+					} else this.boardPieces[move.toColumn][move.toRow] = null;
+					if (s) {
+						var n,
+							l,
+							h = move.toRow;
+						move.fromColumn > move.toColumn ? ((n = 0), (l = 3)) : ((n = 7), (l = 5));
+						var c = this.boardPieces[l][h];
+						c.setPosition(n, h, !0, null, this.moveAnimationLength), (this.boardPieces[n][h] = c), (this.boardPieces[l][h] = null);
+					}
+					null != move &&
+						null != move.prev &&
+						move.prev.next != move &&
+						((move = move.prev.next), clog && (move ? console.log("moving backwards out of variation moving to:" + move.output()) : console.log("jumping out of variation to null move")));
+					for (var d = 0; d < this.registeredBackMovePreCurrentListeners.length; d++) this.registeredBackMovePreCurrentListeners[d].backMovePreCurrentCallback(move, t);
+					this.setCurrentMove(move), this.setForwardBack();
+				}
+				this.blockForwardBack = !1;
+			}
+		}
+	}),
+	(Board.prototype.getMovesToCurrent = function () {
+		var e = [],
+			t = [],
+			o = this.currentMove;
+		if (!o || !o.prev) return t;
+		for (o = o.prev; o; ) e.push(o), (o = o.prev);
+		for (var i = e.length - 1; i >= 0; i--) t.push(e[i].toMoveString());
+		return t;
+	}),
+	(Board.prototype.getAllMoves = function () {
+		var e = null;
+		if (!(e = this.moveArray && this.moveArray.length > 0 ? this.moveArray[0] : this.firstMove)) return [];
+		for (var t = []; e && !e.atEnd; ) t.push(e.toMoveString()), (e = e.next);
+		return t;
+	}),
+	(Board.prototype.countPly = function () {
+		var e = null;
+		e = this.moveArray && this.moveArray.length > 0 ? this.moveArray[0] : this.firstMove;
+		for (var t = 0; e && !e.atEnd; ) t++, (e = e.next);
+		return t;
+	}),
+	(Board.prototype.processTaken = function (e, t) {
+		var o = this.boardName + "-piecestaken",
+			i = YAHOO.util.Dom.get(o);
+		if (i)
+			if (t) {
+				var s = get_image_str(ChessPiece.pieceIconNames[e.colour][e.piece], this.boardImagePath, this.pieceSet, this.pieceTakenSize, this.addVersion);
+				i.innerHTML = i.innerHTML + '<img src="' + s + '"/>';
+			} else {
+				var r = i.innerHTML.split("<");
+				i.innerHTML = "";
+				for (var a = 1; a < r.length - 1; a++) i.innerHTML = i.innerHTML + "<" + r[a];
+			}
+	}),
+	(Pool = function () {
+		(this.pool = new Array()), (this.count = -1), (this.numGot = 0), (this.numPut = 0);
+	}),
+	(Pool.prototype.getObject = function () {
+		var e = null;
+		return this.count >= 0 && (this.numGot++, (e = this.pool[this.count--])), e;
+	}),
+	(Pool.prototype.putObject = function (e) {
+		null != e && (this.numPut++, (this.pool[++this.count] = e));
+	});
+var boardPool = new Pool();
+FenBoard = function (e, t) {
+	void 0 === t.pieceSize && (t.pieceSize = 24),
+		(t.fenBoard = !0),
+		(t.dontOutputNavButtons = !0),
+		(t.avoidMouseoverActive = !0),
+		(this.chessapp = new ChessApp(t)),
+		this.chessapp.init(),
+		(this.chessapp.board.disableUpdateToPlay = !0),
+		this.chessapp.board.setupFromFen(e, !1, !1, !1),
+		(this.board = this.chessapp.board),
+		(this.board.startFen = e);
 };
-

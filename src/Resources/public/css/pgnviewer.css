@@ -1,7 +1,28 @@
-.pgn_white, .pgn_black, .pgn_result, .pgn_eco{font-weight:bold;}
-.pgn_gametags{text-align:center;}
-.pgn_gametags span{padding:0 0.2em;}
-.pgn_elowhite:before, .pgn_eloblack:before, .pgn_round:before{content:"(";}
-.pgn_elowhite:after, .pgn_eloblack:after, .pgn_round:after{content:")";}
-.pgn_annotator{font-style:italic;}
-
+.pgn_white,
+.pgn_black,
+.pgn_result,
+.pgn_eco {
+	font-weight: bold;
+}
+.pgn_gametags {
+	text-align: center;
+}
+.pgn_gametags span {
+	padding: 0 0.2em;
+}
+.pgn_elowhite:before,
+.pgn_eloblack:before,
+.pgn_round:before {
+	content: "(";
+}
+.pgn_elowhite:after,
+.pgn_eloblack:after,
+.pgn_round:after {
+	content: ")";
+}
+.pgn_annotator {
+	font-style: italic;
+}
+.ct-nav-buttons img {
+	width: 32px;
+}
