@@ -182,5 +182,3 @@ $GLOBALS['TL_DCA']['tl_content']['fields']['pgn_linkTitle'] = array(
     'eval'      => array('tl_class' => 'w50'),
     'sql'       => "varchar(255) NOT NULL default ''"
 );
-
-?>

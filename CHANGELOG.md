@@ -1,5 +1,9 @@
 # PGN-Betrachter Changelog
 
+## Version 1.0.1 (2025-02-07)
+
+* Fix: Warning: Undefined array key "disableAlias" in ContentElements/PGNViewer.php (line 227) -> Config-Variable in config.php ergänzt
+
 ## Version 1.0.0 (2024-05-29)
 
 * Fix: Warning: Undefined global variable $TL_CSS in config/config.php (line 43) 

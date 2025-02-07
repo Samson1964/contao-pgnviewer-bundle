@@ -1,4 +1,4 @@
-<?php if (!defined('TL_ROOT')) die('You cannot access this file directly!');
+<?php
 
 /**
  * Contao Open Source CMS
@@ -35,4 +35,3 @@ $GLOBALS['TL_DCA']['tl_settings']['fields']['pgnviewer_sound'] = array
     'default'   => false,
     'inputType' => 'checkbox'
 );
-?>
