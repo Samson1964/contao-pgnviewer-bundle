@@ -1,5 +1,9 @@
 # PGN-Betrachter Changelog
 
+## Version 1.0.2 (2026-07-29)
+
+* Change: Beschreibung, Keywords und Homepage in der composer.json ergänzt, damit Packagist das Paket verständlich darstellt und über die Suche auffindbar macht
+
 ## Version 1.0.1 (2025-02-07)
 
 * Fix: Warning: Undefined array key "disableAlias" in ContentElements/PGNViewer.php (line 227) -> Config-Variable in config.php ergänzt

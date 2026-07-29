@@ -1,7 +1,15 @@
 {
     "name": "schachbulle/contao-pgnviewer-bundle",
     "type": "contao-bundle",
-    "description": "PGN-Betrachter für Contao 4",
+    "description": "Inhaltselement, mit dem sich Schachpartien im PGN-Format auf der Website abspielen lassen. Als Engine dient der PGN-Viewer von Chesstempo.",
+    "keywords": [
+        "contao",
+        "schach",
+        "pgn",
+        "partien",
+        "schachbrett"
+    ],
+    "homepage": "https://github.com/Samson1964/contao-pgnviewer-bundle",
     "license": "LGPL-3.0-or-later",
     "authors": [
         {
