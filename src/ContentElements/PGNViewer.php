@@ -1,321 +1,273 @@
 <?php
 
-namespace Schachbulle\ContaoPgnviewerBundle\ContentElements;
+declare(strict_types=1);
 
-/**
- * Class PGNViewer
+/*
+ * This file is part of schachbulle/contao-pgnviewer-bundle.
  *
- * @copyright  Wilfried Krebbers, Frank Hoppe
- * @author     Wilfried Krebbers, Frank Hoppe
- * @package    contao-pgnviewer-bundle
+ * (c) Wilfried Krebbers, Frank Hoppe
+ *
+ * @license LGPL-3.0-or-later
  */
 
-class PGNViewer extends \ContentElement
-{
+namespace Schachbulle\ContaoPgnviewerBundle\ContentElements;
 
+use Contao\BackendTemplate;
+use Contao\Config;
+use Contao\ContentElement;
+use Contao\Controller;
+use Contao\Environment;
+use Contao\File;
+use Contao\FilesModel;
+use Contao\Input;
+use Contao\StringUtil;
+use Contao\System;
+
+/**
+ * Inhaltselement „PGNViewer“.
+ *
+ * Das Element bindet eine PGN-Datei aus der Dateiverwaltung ein und übergibt
+ * sie an den PGN-Viewer von Chesstempo. Der Viewer ist ein eigenes
+ * HTML-Element (<ct-pgn-viewer>), das Brett, Zugliste, Bedienknöpfe, Kopfzeile
+ * und – bei mehreren Partien in einer Datei – die Auswahlliste selbst aufbaut.
+ * Auf PHP-Seite bleibt deshalb nur, die Einstellungen als Attribute zu
+ * übergeben und die passenden Dateien einzubinden.
+ *
+ * Alle Dateien des Viewers liegen im Bundle; zur Laufzeit wird kein fremder
+ * Server angesprochen (siehe Resources/public/js/ct-setup.js).
+ */
+class PGNViewer extends ContentElement
+{
 	/**
-	 * Template
+	 * Template.
+	 *
 	 * @var string
 	 */
 	protected $strTemplate = 'ce_pgnviewer';
 
 	/**
-	 * Return if the file does not exist
-	 * @return string
+	 * Notationssprachen und die zugehörige Datei unter public/js/locale.
+	 *
+	 * Englisch fehlt bewusst: es ist die eingebaute Sprache des Viewers und
+	 * braucht keine zusätzliche Datei.
+	 *
+	 * @var array<string, string>
+	 */
+	private const NOTATION_FILES = array
+	(
+		'de' => 'de',
+		'fr' => 'fr',
+		'nl' => 'nl',
+		'pl' => 'pl',
+		'es' => 'es',
+		'cz' => 'cz',
+		'fig_l' => 'fig_light',
+		'fig_d' => 'fig_dark',
+	);
+
+	/**
+	 * Bereitet das Element vor und liefert das fertige HTML.
+	 *
+	 * Vor dem Aufbau wird geprüft, ob überhaupt eine gültige Datei hinterlegt
+	 * ist; ohne Datei gibt es nichts anzuzeigen. Ist der Download eingeschaltet,
+	 * wird hier außerdem die Anforderung der Datei abgefangen und die Datei
+	 * direkt an den Browser geschickt. Das muss vor dem Rendern passieren, weil
+	 * dabei Header gesendet werden.
+	 *
+	 * Nebenwirkung: Die Eigenschaft pgn_file wird von der binären UUID auf den
+	 * Dateipfad umgestellt, weil das Template den Pfad an den Viewer
+	 * weiterreicht.
+	 *
+	 * @return string Das gerenderte Element, im Backend ein Platzhalter und eine
+	 *                leere Zeichenkette, wenn keine (gültige) Datei hinterlegt
+	 *                ist
 	 */
 	public function generate()
 	{
-		// Return if there is no file
-		if($this->pgn_file == '')
+		// Im Backend ergibt der Viewer keinen Sinn, dort genügt ein Platzhalter
+		if ($this->isBackendRequest())
+		{
+			$objTemplate = new BackendTemplate('be_wildcard');
+			$objTemplate->wildcard = '### ' . ($GLOBALS['TL_LANG']['CTE']['pgnviewer'][0] ?? 'PGNVIEWER') . ' ###';
+			$objTemplate->title = $this->headline;
+			$objTemplate->id = $this->id;
+
+			return $objTemplate->parse();
+		}
+
+		if (!$this->pgn_file)
 		{
 			return '';
 		}
 
-		$objFile = \FilesModel::findByUuid($this->pgn_file);
+		$objModel = FilesModel::findByUuid($this->pgn_file);
 
-		if($objFile === null)
+		if (null === $objModel)
 		{
-			if(!\Validator::isUuid($this->pgn_file))
-			{
-				return '<p class="error">' . $GLOBALS['TL_LANG']['ERR']['version2format'] . '</p>';
-			}
-
 			return '';
 		}
 
-		if($this->pgn_download)
+		if ($this->pgn_download)
 		{
-			$allowedDownload = trimsplit(',', strtolower($GLOBALS['TL_CONFIG']['allowedDownload']));
+			$arrAllowed = StringUtil::trimsplit(',', strtolower((string) Config::get('allowedDownload')));
 
-			// if the file type is not allowed, don't show download
-			if(!in_array($objFile->extension, $allowedDownload))
+			if (!\in_array($objModel->extension, $arrAllowed, true))
 			{
-				//return '';
-				$this->pgn_download = false;
+				// Der Dateityp ist in den Einstellungen nicht freigegeben, dann
+				// wird der Downloadlink gar nicht erst angeboten
+				$this->pgn_download = '';
 			}
 			else
 			{
+				$strFile = Input::get('file', true);
 
-				$file = \Input::get('file', true);
-
-				// Send the file to the browser and do not send a 404 header (see #4632)
-				if($file != '' && $file == $objFile->path)
+				// Die Datei ausliefern, ohne einen 404-Header zu senden (siehe #4632)
+				if ($strFile && $strFile === $objModel->path)
 				{
-					\Controller::sendFileToBrowser($file);
+					Controller::sendFileToBrowser($strFile);
 				}
 			}
 		}
-		$this->pgn_file = $objFile->path;
+
+		$this->pgn_file = $objModel->path;
+
 		return parent::generate();
 	}
 
 	/**
-	 * Generate module
+	 * Stellt die Attribute für den Viewer zusammen und bindet die Dateien ein.
+	 *
+	 * Nebenwirkung: Die benötigten JavaScript- und CSS-Dateien werden über
+	 * $GLOBALS['TL_JAVASCRIPT'] und $GLOBALS['TL_CSS'] in das Seitenlayout
+	 * eingehängt.
 	 */
 	protected function compile()
 	{
+		$objFile = new File($this->pgn_file);
 
-		/* Partiedaten auslesen */
-		$pgn_file = $this->pgn_file;
-		if(!file_exists($pgn_file))
+		// Der Datenbankeintrag kann auf eine inzwischen gelöschte Datei zeigen
+		if (!$objFile->exists())
 		{
 			return;
 		}
 
-		$fp = new \File($pgn_file);
-		$inhalt = $fp->getContent();
-		if(!$inhalt)
+		$strPieceSet = $this->pgn_pieceset ?: 'merida';
+
+		// Der Viewer holt die Partie über einen eigenen Aufruf. Die Adresse muss
+		// deshalb vom Wurzelverzeichnis aus gelten und nicht von der Seite, auf
+		// der das Element steht.
+		$this->Template->pgnUrl = Environment::get('path') . '/' . System::urlEncode($objFile->path);
+
+		$this->Template->pieceSet = $strPieceSet;
+		$this->Template->boardStyle = $this->pgn_boardstyle;
+
+		// Der Viewer bekommt die Kantenlänge des Brettes; ein Feld ist ein
+		// Achtel davon, damit die eingestellte Figurengröße erhalten bleibt
+		$this->Template->boardSize = (8 * (int) ($this->pgn_piecesize ?: 46)) . 'px';
+
+		$this->Template->coordsStyle = $this->pgn_coordinates ? 'left-bottom' : 'none';
+		$this->Template->gameHeader = $this->pgn_gamestat ? 'true' : 'false';
+		$this->Template->movePosition = $this->pgn_boardfirst ? 'under' : 'right';
+		$this->Template->moveListStyle = $this->pgn_moveformat ? 'twocolumn' : 'indented';
+		$this->Template->autoplaySpeed = (int) ($this->pgn_pause ?: 800);
+		$this->Template->notationSize = (int) $this->pgn_notationsize;
+
+		// Der Ton lässt sich zusätzlich in den Einstellungen ganz abschalten
+		$blnSound = (bool) $this->pgn_sound && (bool) Config::get('pgnviewer_sound');
+		$this->Template->disableSound = $blnSound ? 'false' : 'true';
+
+		if ($this->pgn_download)
 		{
-			return;
+			$this->addDownloadLink($objFile);
 		}
 
-		/* Anzahl der Partien ermitteln und Tags für jede Partie speichern */
-		$tags = $testtags = array();
-		$partien_anz = 0;
-		$leerzeile = $this->LeerzeileSuchen($inhalt, 0);
-		/* PGN-Datei nach Tags durchsuchen */
-		for($i = 0; $i < strlen($inhalt); $i++)
-		{
-			if($inhalt[$i] == '[') /* Tag beginnt */
-			{
-				$tag_start = $i;
-				$tag_ende = strpos($inhalt, ']', $i + 1);  /* Tag endet */
-				if($tag_ende !== false)
-				{
-					$tag_wert_start = strpos($inhalt, "\"", $tag_start);
-					$tag_wert_ende = strpos($inhalt, "\"", $tag_wert_start + 1);
-					$tag_wert = substr($inhalt, $tag_wert_start + 1, $tag_wert_ende - ($tag_wert_start + 1));
-					$tag = trim(substr($inhalt, $tag_start + 1, $tag_wert_start - ($tag_start + 1)));
-					if(strpos($tag_wert, '?') === 0)
-					{
-						$tag_wert = '';
-					}
-					if($tag == 'Date')
-					{
-						/* Datum umstellen und '??' löschen */
-						$tag_date = $tag_wert;
-						if($tag_date && strpos($tag_date, '.') > 2)
-						{
-							$day = substr($tag_date, 8, 2);
-							if(strpos($day, '?') !== 0)
-							{
-								$newdate = $day . '.';
-							}
-							$month = substr($tag_date, 5, 2);
-							if(strpos($month, '?') !== 0)
-							{
-								$newdate = $newdate . $month . '.';
-							}
-							$year = substr($tag_date, 0, 4);
-							if(strpos($year, '?') !== 0)
-							{
-								$newdate = $newdate . $year;
-							}
-							$tag_date = $newdate;
-							unset($newdate);
-							$tag_wert = $tag_date;
-						}
-					}
-					$onegametags[strtolower($tag)] = $tag_wert;
-					$i = $tag_ende;
-				}
-			}
-			elseif($i >= $leerzeile) /* Notation beginnt mit einer Leerzeile nach dem Tag-Header. Diese wird übersprungen und die nächste Partie (Tag) gesucht */
-			{
-				$tags[] = $onegametags;
-				unset($onegametags);
-				$partien_anz++;
-				/* nächste Partie suchen */
-				$pos_a = strpos($inhalt, '[', $i);
-				if($pos_a !== false)
-				{
-					$i = $pos_a - 1;
-					$leerzeile = $this->LeerzeileSuchen($inhalt, $i + 1);
-				}
-				else
-				{
-					break;
-				}
-			}
-		}
-		$this->Template->partiedaten = array_values($tags);
-
-		/* Zuglistenformat einstellen */
-		if($this->pgn_moveformat)
-		{
-			$this->Template->moveformat = 'main_on_own_line';
-		}
-		else
-		{
-			$this->Template->moveformat = '';
-		}
-
-		/* Festlegen was von den Partiedaten angezeigt werden soll */
-		$arrHeader = $this->pgn_gamestat;
-		$this->Template->showevent = $this->ShowHeader($arrHeader, 'event');
-		$this->Template->showsite = $this->ShowHeader($arrHeader, 'site');
-		$this->Template->showdate = $this->ShowHeader($arrHeader, 'date');
-		$this->Template->showround = $this->ShowHeader($arrHeader, 'round');
-		$this->Template->showwhite = $this->ShowHeader($arrHeader, 'white');
-		$this->Template->showblack = $this->ShowHeader($arrHeader, 'black');
-		$this->Template->showresult = $this->ShowHeader($arrHeader, 'result');
-		$this->Template->showeco = $this->ShowHeader($arrHeader, 'eco');
-		$this->Template->showeloWhite = $this->ShowHeader($arrHeader, 'elo_w');
-		$this->Template->showeloBlack = $this->ShowHeader($arrHeader, 'elo_b');
-		$this->Template->showannotator = $this->ShowHeader($arrHeader, 'annotator');
-		$this->Template->showplycount = $this->ShowHeader($arrHeader, 'plycount');
-
-		/* Brettkoordinaten anzeigen? */
-		$this->Template->show_coordinates = false;
-		if($this->pgn_coordinates)
-		{
-			$this->Template->show_coordinates = true;
-		}
-
-		/* Autoscroll? */
-		$this->Template->autoscroll = false;
-		if($this->pgn_autoscroll)
-		{
-			$this->Template->autoscroll = true;
-		}
-
-		/* Sound? */
-		$this->Template->sound = false;
-		if($this->pgn_sound && $GLOBALS['TL_CONFIG']['pgnviewer_sound'] == true)
-		{
-			$this->Template->sound = true;
-		}
-
-		/* Download der PGN-Datei */
-		if($this->pgn_download)
-		{
-			$objFile = new \File($this->pgn_file, true);
-
-			if($this->pgn_linkTitle == '')
-			{
-				$this->pgn_linkTitle = $objFile->basename;
-			}
-
-			$strHref = \Environment::get('request');
-
-			// Remove an existing file parameter (see #5683)
-			if(preg_match('/(&(amp;)?|\?)file=/', $strHref))
-			{
-				$strHref = preg_replace('/(&(amp;)?|\?)file=[^&]+/', '', $strHref);
-			}
-
-			$strHref .= (($GLOBALS['TL_CONFIG']['disableAlias'] || strpos($strHref, '?') !== false) ? '&amp;' : '?') . 'file=' . \System::urlEncode($objFile->value);
-
-			$this->Template->link = $this->pgn_linkTitle;
-			$this->Template->title = specialchars($this->pgn_titleText ? : $this->pgn_linkTitle);
-			$this->Template->href = $strHref;
-			$this->Template->filesize = $this->getReadableSize($objFile->filesize, 1);
-			$this->Template->icon = 'bundles/contaopgnviewer/images/iconPGN.gif';
-			$this->Template->mime = $objFile->mime;
-			$this->Template->extension = $objFile->extension;
-			$this->Template->path = $objFile->dirname;
-		}
-		/* ---------------------- */
-
-		/**
-		 * JavaScript files
-		 */
-		if(isset($GLOBALS['TL_CONFIG']['pgnviewer_notationlang']))
-		{
-			switch($GLOBALS['TL_CONFIG']['pgnviewer_notationlang'])
-			{
-				case 'de':
-					$GLOBALS['TL_JAVASCRIPT'][] = 'bundles/contaopgnviewer/js/notation-de.json';
-					break;
-				case 'pl':
-					$GLOBALS['TL_JAVASCRIPT'][] = 'bundles/contaopgnviewer/js/notation-pl.json';
-					break;
-				case 'fig_d':
-					$GLOBALS['TL_JAVASCRIPT'][] = 'bundles/contaopgnviewer/js/notation-fig_dark.json';
-					break;
-				case 'fig_l':
-					$GLOBALS['TL_JAVASCRIPT'][] = 'bundles/contaopgnviewer/js/notation-fig_light.json';
-					break;
-				case 'cz':
-					$GLOBALS['TL_JAVASCRIPT'][] = 'bundles/contaopgnviewer/js/notation-cz.json';
-					break;
-				case 'nl':
-					$GLOBALS['TL_JAVASCRIPT'][] = 'bundles/contaopgnviewer/js/notation-nl.json';
-					break;
-				case 'fr':
-					$GLOBALS['TL_JAVASCRIPT'][] = 'bundles/contaopgnviewer/js/notation-fr.json';
-					break;
-				case 'es':
-					$GLOBALS['TL_JAVASCRIPT'][] = 'bundles/contaopgnviewer/js/notation-es.json';
-					break;
-			}
-		}
-
-		// JS einbinden
-		$GLOBALS['TL_JAVASCRIPT'][] = 'bundles/contaopgnviewer/js/pgnyui.js';
-		$GLOBALS['TL_JAVASCRIPT'][] = 'bundles/contaopgnviewer/js/pgnviewer.js';
-		// CSS einbinden
-		$GLOBALS['TL_CSS'][] = 'bundles/contaopgnviewer/css/board-min.css';
-		$GLOBALS['TL_CSS'][] = 'bundles/contaopgnviewer/css/pgnviewer.css';
-
-		return;
+		$this->addAssets();
 	}
 
-	protected function ShowHeader($arrHeader, $tag)
+	/**
+	 * Ergänzt das Template um die Angaben für den Downloadlink.
+	 *
+	 * Der Link zeigt auf die aktuelle Seite und hängt die gewünschte Datei als
+	 * Parameter an; ausgeliefert wird sie dann in generate(). Ein bereits
+	 * vorhandener Parameter wird vorher entfernt, damit sich die Parameter bei
+	 * mehreren Aufrufen nicht aneinanderreihen (siehe #5683).
+	 *
+	 * @param File $objFile Die eingebundene PGN-Datei
+	 */
+	private function addDownloadLink(File $objFile): void
 	{
-		if(strpos($arrHeader, $tag) != FALSE)
+		$strLinkTitle = $this->pgn_linkTitle ?: $objFile->basename;
+		$strHref = Environment::get('requestUri');
+
+		if (null !== Input::get('file'))
 		{
-			return True;
+			$strHref = preg_replace('/(&(amp;)?|\?)file=[^&]+/', '', $strHref);
 		}
-		else
-		{
-			return False;
-		}
+
+		$strHref .= (strpos($strHref, '?') !== false ? '&amp;' : '?') . 'file=' . System::urlEncode($objFile->value);
+
+		$this->Template->link = $strLinkTitle;
+		$this->Template->title = StringUtil::specialchars($this->pgn_titleText ?: $strLinkTitle);
+		$this->Template->href = $strHref;
+		$this->Template->filesize = System::getReadableSize($objFile->filesize, 1);
+		$this->Template->icon = 'bundles/contaopgnviewer/images/iconPGN.gif';
+		$this->Template->mime = $objFile->mime;
+		$this->Template->extension = $objFile->extension;
+		$this->Template->path = $objFile->dirname;
 	}
 
-	protected function LeerzeileSuchen($zeichenkette, $pos)
+	/**
+	 * Bindet die Dateien des Viewers in das Layout ein.
+	 *
+	 * Die Reihenfolge ist wichtig: ct-setup.js und die Sprachdatei müssen vor
+	 * dem Viewer selbst geladen werden, weil sie Werte setzen, die der Viewer
+	 * beim Start ausliest. Alle Einträge bekommen einen Schlüssel, damit die
+	 * Dateien bei mehreren Brettern auf einer Seite nur einmal im Quelltext
+	 * stehen.
+	 *
+	 * Die Datei zum gewählten Figurensatz holt sich der Viewer selbst aus dem
+	 * Bundle, sobald er sie braucht; dafür sorgt der in ct-setup.js gesetzte
+	 * Pfad.
+	 */
+	private function addAssets(): void
 	{
-		$lz_1 = strpos($zeichenkette, "\n\r\n", $pos);
-		$lz_2 = strpos($zeichenkette, "\n\n", $pos);
-		if($lz_1 === false)
+		$strBase = 'bundles/contaopgnviewer/';
+
+		$GLOBALS['TL_JAVASCRIPT']['contaopgnviewer_setup'] = $strBase . 'js/ct-setup.js';
+
+		$strLanguage = (string) Config::get('pgnviewer_notationlang');
+
+		if (isset(self::NOTATION_FILES[$strLanguage]))
 		{
-			if($lz_2 === false)
-			{
-				return strlen($zeichenkette) - 1;
-			}
-			else
-			{
-				return $lz_2;
-			}
+			$GLOBALS['TL_JAVASCRIPT']['contaopgnviewer_locale'] = $strBase . 'js/locale/' . self::NOTATION_FILES[$strLanguage] . '.js';
 		}
-		else
-		{
-			if($lz_2 === false)
-			{
-				return $lz_1;
-			}
-		}
-		return min($lz_1, $lz_2);
+
+		$GLOBALS['TL_JAVASCRIPT']['contaopgnviewer'] = $strBase . 'pgnviewer/pgnviewerext.bundle.vers1.js';
+
+		$GLOBALS['TL_CSS']['contaopgnviewer_vendor'] = $strBase . 'pgnviewer/pgnviewerext.vers1.css';
+		$GLOBALS['TL_CSS']['contaopgnviewer'] = $strBase . 'css/pgnviewer.css';
 	}
 
+	/**
+	 * Prüft, ob die aktuelle Anfrage aus dem Backend kommt.
+	 *
+	 * Die frühere Konstante TL_MODE gibt es in Contao 5 nicht mehr, deshalb wird
+	 * der Scope-Matcher des Kerns befragt. Läuft der Aufruf ohne Request, etwa
+	 * auf der Kommandozeile, gilt er nicht als Backend-Anfrage.
+	 *
+	 * @return bool true, wenn die Anfrage im Backend läuft
+	 */
+	private function isBackendRequest(): bool
+	{
+		$container = System::getContainer();
+
+		if (null === $container || !$container->has('request_stack'))
+		{
+			return false;
+		}
+
+		$request = $container->get('request_stack')->getCurrentRequest();
+
+		return null !== $request && $container->get('contao.routing.scope_matcher')->isBackendRequest($request);
+	}
 }

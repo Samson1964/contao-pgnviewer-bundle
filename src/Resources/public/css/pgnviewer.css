@@ -1,28 +1,38 @@
-.pgn_white,
-.pgn_black,
-.pgn_result,
-.pgn_eco {
-	font-weight: bold;
+/*
+ * Ergänzungen des Bundles zum mitgelieferten Chesstempo-Stylesheet.
+ *
+ * Diese Datei wird nach pgnviewerext.vers1.css geladen. Schriften und
+ * Brett-Hintergründe kommen aus dem Bundle; die Adressen dafür stehen direkt im
+ * Chesstempo-Stylesheet (siehe README, Abschnitt „Änderungen an den Dateien von
+ * Chesstempo“).
+ */
+
+/* Höhe der Zugliste. Das Inhaltselement setzt --pgn-notation-height nur, wenn
+   im Backend eine Höhe eingetragen ist; ohne den Wert bleibt die Zugliste so
+   hoch, wie der Viewer sie selbst berechnet. */
+.ce_pgnviewer ct-pgn-viewer move-list {
+	max-height: var(--pgn-notation-height, none);
+	overflow-y: auto;
 }
-.pgn_gametags {
-	text-align: center;
+
+/* Hinweis auf Chesstempo unter dem Brett */
+.pgn_backlink {
+	margin: 0.3em 0 0;
+	font-size: 0.8em;
 }
-.pgn_gametags span {
-	padding: 0 0.2em;
+
+/* Downloadlink der PGN-Datei */
+.pgn_download {
+	margin-top: 0.5em;
 }
-.pgn_elowhite:before,
-.pgn_eloblack:before,
-.pgn_round:before {
-	content: "(";
+
+.pgn_download .mime_icon {
+	vertical-align: middle;
+	margin-right: 0.3em;
 }
-.pgn_elowhite:after,
-.pgn_eloblack:after,
-.pgn_round:after {
-	content: ")";
-}
-.pgn_annotator {
-	font-style: italic;
-}
-.ct-nav-buttons img {
-	width: 32px;
+
+/* Der Viewer bringt eigene Abstände mit; nach unten etwas Luft zum nächsten
+   Inhaltselement */
+.ce_pgnviewer ct-pgn-viewer {
+	margin-bottom: 0.5em;
 }

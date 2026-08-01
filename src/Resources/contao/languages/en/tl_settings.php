@@ -1,19 +1,13 @@
 <?php
-/**
- * TL_ROOT/system/modules/pgnviewer/languages/en/tl_settings.php 
- * 
- * Contao extension: pgnviewer 
- * Deutsch translation file 
- * 
- * Copyright :  
- * License   : LGPL 
- * Author    : Wilfried Krebbers (wik) 
- * Translator: Wilfried Krebbers (wik) 
+
+/*
+ * This file is part of schachbulle/contao-pgnviewer-bundle.
+ *
+ * (c) Wilfried Krebbers, Frank Hoppe
+ *
+ * @license LGPL-3.0-or-later
  */
- 
-/**
- * Name
- */
+
 $GLOBALS['TL_LANG']['tl_settings']['pgnviewer']              = "PGNViewer";
 
 /**
@@ -38,5 +32,3 @@ $GLOBALS['TL_LANG']['tl_settings']['pgnviewer_notationlang_option']['es'] = "Spa
 
 $GLOBALS['TL_LANG']['tl_settings']['pgnviewer_sound']['1'] = "If this is disabled in PGNViewer the sound option can not be selected.";
 $GLOBALS['TL_LANG']['tl_settings']['pgnviewer_sound']['0'] = "Unlock 'Sound activate'";
-
-?>

@@ -1,37 +1,35 @@
 <?php
 
-/**
- * Contao Open Source CMS
+/*
+ * This file is part of schachbulle/contao-pgnviewer-bundle.
  *
- * Copyright (C) 2005-2013 Leo Feyer
+ * (c) Wilfried Krebbers, Frank Hoppe
  *
- * PHP version 5
- * @copyright  Wilfried Krebbers 2012 
- * @author     Wilfried Krebbers 
- * @package    pgn_viewer 
- * @license    LGPL 
- * @filesource
+ * @license LGPL-3.0-or-later
  */
 
 /**
- * palettes
+ * Paletten
  */
-$GLOBALS['TL_DCA']['tl_settings']['palettes']['default'] .= ';{pgnviewer:hide},pgnviewer_notationlang,pgnviewer_sound';
+$GLOBALS['TL_DCA']['tl_settings']['palettes']['default'] = ($GLOBALS['TL_DCA']['tl_settings']['palettes']['default'] ?? '') . ';{pgnviewer:hide},pgnviewer_notationlang,pgnviewer_sound';
 
 /**
- * fields
+ * Felder
  */
-
-$GLOBALS['TL_DCA']['tl_settings']['fields']['pgnviewer_notationlang'] = array(
-    'label'     => &$GLOBALS['TL_LANG']['tl_settings']['pgnviewer_notationlang'],
-    'default'   => 'en', 'inputType' => 'select',
-    'options'   => array('en', 'de', 'fr', 'nl','pl', 'es', 'cz', 'fig_l', 'fig_d'),
-    'reference' => &$GLOBALS['TL_LANG']['tl_settings']['pgnviewer_notationlang_option']
+$GLOBALS['TL_DCA']['tl_settings']['fields']['pgnviewer_notationlang'] = array
+(
+	'label'     => &$GLOBALS['TL_LANG']['tl_settings']['pgnviewer_notationlang'],
+	'default'   => 'en',
+	'inputType' => 'select',
+	'options'   => array('en', 'de', 'fr', 'nl', 'pl', 'es', 'cz', 'fig_l', 'fig_d'),
+	'reference' => &$GLOBALS['TL_LANG']['tl_settings']['pgnviewer_notationlang_option'],
+	'eval'      => array('tl_class' => 'w50')
 );
 
 $GLOBALS['TL_DCA']['tl_settings']['fields']['pgnviewer_sound'] = array
 (
-    'label'     => &$GLOBALS['TL_LANG']['tl_settings']['pgnviewer_sound'],
-    'default'   => false,
-    'inputType' => 'checkbox'
+	'label'     => &$GLOBALS['TL_LANG']['tl_settings']['pgnviewer_sound'],
+	'default'   => '',
+	'inputType' => 'checkbox',
+	'eval'      => array('tl_class' => 'w50')
 );

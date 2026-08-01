@@ -7,7 +7,9 @@ de:
     description: >
         Stellt ein Inhaltselement bereit, mit dem du Schachpartien im PGN-Format auf deiner Website abspielen lassen kannst.
 
-        Als Anzeige-Engine dient der PGN-Viewer von Chesstempo, der für den Einsatz in Contao angepasst wurde.
+        Als Anzeige-Engine dient der PGN-Viewer von Chesstempo, der für den Einsatz in Contao angepasst wurde. Enthält eine Datei mehrere Partien, lässt sich über eine Auswahlliste zwischen ihnen umschalten.
+
+        Für Contao 4.13 und Contao 5.
 
         Diese Erweiterung wurde ursprünglich von Wilfried Krebbers entwickelt. Frank Binding übernahm die Weiterentwicklung.
     keywords:
@@ -24,7 +26,9 @@ en:
     description: >
         Provides a content element that lets you replay chess games in PGN format on your website.
 
-        The display engine is the PGN viewer by Chesstempo, adapted for use in Contao.
+        The display engine is the PGN viewer by Chesstempo, adapted for use in Contao. If a file contains several games, a drop-down list lets you switch between them.
+
+        For Contao 4.13 and Contao 5.
 
         This extension was originally developed by Wilfried Krebbers. Frank Binding has taken over its further development.
     keywords:

@@ -1,0 +1,9 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+
+    # Das Inhaltselement wird über $GLOBALS['TL_CTE'] registriert und vom
+    # Contao-Kern selbst erzeugt, der Auswerter der PGN-Kopfdaten hat keine
+    # Abhängigkeiten. Deshalb braucht das Bundle keine eigenen Dienste.

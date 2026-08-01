@@ -1,16 +1,18 @@
 <?php
 
-/**
- * -------------------------------------------------------------------------
- * Globale Konfiguration abfragen und ggfs. anlegen
- * -------------------------------------------------------------------------
+/*
+ * This file is part of schachbulle/contao-pgnviewer-bundle.
+ *
+ * (c) Wilfried Krebbers, Frank Hoppe
+ *
+ * @license LGPL-3.0-or-later
  */
 
-if(!isset($GLOBALS['TL_CONFIG']['disableAlias'])) $GLOBALS['TL_CONFIG']['disableAlias'] = false;
+use Schachbulle\ContaoPgnviewerBundle\ContentElements\PGNViewer;
 
 /**
  * -------------------------------------------------------------------------
  * Inhaltselemente
  * -------------------------------------------------------------------------
  */
-$GLOBALS['TL_CTE']['chess']['pgnviewer'] = 'Schachbulle\ContaoPgnviewerBundle\ContentElements\PGNViewer';
+$GLOBALS['TL_CTE']['schach']['pgnviewer'] = PGNViewer::class;
