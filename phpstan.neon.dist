@@ -1,0 +1,14 @@
+parameters:
+    level: 8
+    paths:
+        - src
+
+    # Contao legt seine Konfiguration in $GLOBALS ab. Für PHPStan ist das ein
+    # mixed-Wert, weshalb ab Stufe 9 jede DCA-Zeile als Befund erscheint. Das
+    # betrifft jedes Contao-Bundle und sagt nichts über die Qualität aus.
+    treatPhpDocTypesAsCertain: false
+
+# Aufruf mit dem Autoloader einer Contao-Installation, damit die Klassen des
+# Kerns bekannt sind, zum Beispiel:
+#
+#   phpstan analyse --autoload-file=../../contao-test/vendor/autoload.php

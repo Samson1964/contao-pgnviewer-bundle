@@ -16,12 +16,15 @@ use Contao\BackendTemplate;
 use Contao\Config;
 use Contao\ContentElement;
 use Contao\Controller;
+use Contao\CoreBundle\Routing\ScopeMatcher;
 use Contao\Environment;
 use Contao\File;
 use Contao\FilesModel;
+use Contao\FrontendTemplate;
 use Contao\Input;
 use Contao\StringUtil;
 use Contao\System;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Inhaltselement „PGNViewer“.
@@ -35,6 +38,29 @@ use Contao\System;
  *
  * Alle Dateien des Viewers liegen im Bundle; zur Laufzeit wird kein fremder
  * Server angesprochen (siehe Resources/public/js/ct-setup.js).
+ *
+ * Die Felder aus der DCA sind keine echten Eigenschaften: Contao reicht sie
+ * über __get und __set der Elternklasse durch. Die folgenden Angaben sagen
+ * Entwicklungsumgebung und statischer Analyse, welche es gibt und welchen Typ
+ * sie haben.
+ *
+ * @property string|null    $pgn_file        Binäre UUID der PGN-Datei; in generate() durch den Pfad ersetzt
+ * @property string         $pgn_pieceset    Figurensatz, etwa „merida“
+ * @property string|integer $pgn_piecesize   Kantenlänge einer Figur in Pixel
+ * @property string         $pgn_boardstyle  Brettstil, etwa „wood-dark“; leer heißt Voreinstellung des Viewers
+ * @property string|boolean $pgn_coordinates Koordinaten am Brettrand anzeigen
+ * @property string|boolean $pgn_gamestat    Kopfzeile mit den Partiedaten anzeigen
+ * @property string|boolean $pgn_boardfirst  Zugliste unter statt neben dem Brett
+ * @property string|boolean $pgn_moveformat  Zugliste zweispaltig statt eingerückt
+ * @property string|integer $pgn_notationsize Höhe der Zugliste in Pixel, 0 für unbeschränkt
+ * @property string|integer $pgn_pause       Pause zwischen den Zügen in Millisekunden
+ * @property string|boolean $pgn_sound       Züge akustisch begleiten
+ * @property string|boolean $pgn_backlink    Lizenzhinweis auf Chesstempo anzeigen
+ * @property string|boolean $pgn_download    Downloadlink der PGN-Datei anbieten
+ * @property string         $pgn_linkTitle   Beschriftung des Downloadlinks
+ * @property string         $pgn_titleText   title-Attribut des Downloadlinks
+ *
+ * @property FrontendTemplate $Template Wird von der Elternklasse in generate() angelegt
  */
 class PGNViewer extends ContentElement
 {
@@ -88,9 +114,15 @@ class PGNViewer extends ContentElement
 		if ($this->isBackendRequest())
 		{
 			$objTemplate = new BackendTemplate('be_wildcard');
-			$objTemplate->wildcard = '### ' . ($GLOBALS['TL_LANG']['CTE']['pgnviewer'][0] ?? 'PGNVIEWER') . ' ###';
-			$objTemplate->title = $this->headline;
-			$objTemplate->id = $this->id;
+
+			// setData statt einzelner Zuweisungen: Die Felder eines Templates
+			// sind magische Eigenschaften, die kein Werkzeug prüfen kann
+			$objTemplate->setData(array
+			(
+				'wildcard' => '### ' . ($GLOBALS['TL_LANG']['CTE']['pgnviewer'][0] ?? 'PGNVIEWER') . ' ###',
+				'title' => $this->headline,
+				'id' => $this->id,
+			));
 
 			return $objTemplate->parse();
 		}
@@ -141,9 +173,11 @@ class PGNViewer extends ContentElement
 	 * $GLOBALS['TL_JAVASCRIPT'] und $GLOBALS['TL_CSS'] in das Seitenlayout
 	 * eingehängt.
 	 */
-	protected function compile()
+	protected function compile(): void
 	{
-		$objFile = new File($this->pgn_file);
+		// generate() hat den Wert an dieser Stelle bereits von der UUID auf den
+		// Dateipfad umgestellt
+		$objFile = new File((string) $this->pgn_file);
 
 		// Der Datenbankeintrag kann auf eine inzwischen gelöschte Datei zeigen
 		if (!$objFile->exists())
@@ -151,41 +185,47 @@ class PGNViewer extends ContentElement
 			return;
 		}
 
-		$strPieceSet = $this->pgn_pieceset ?: 'merida';
-
-		// Der Viewer holt die Partie über einen eigenen Aufruf. Die Adresse muss
-		// deshalb vom Wurzelverzeichnis aus gelten und nicht von der Seite, auf
-		// der das Element steht.
-		$this->Template->pgnUrl = Environment::get('path') . '/' . System::urlEncode($objFile->path);
-
-		$this->Template->pieceSet = $strPieceSet;
-		$this->Template->boardStyle = $this->pgn_boardstyle;
-
-		// Der Viewer bekommt die Kantenlänge des Brettes; ein Feld ist ein
-		// Achtel davon, damit die eingestellte Figurengröße erhalten bleibt
-		$this->Template->boardSize = (8 * (int) ($this->pgn_piecesize ?: 46)) . 'px';
-
-		$this->Template->coordsStyle = $this->pgn_coordinates ? 'left-bottom' : 'none';
-		$this->Template->gameHeader = $this->pgn_gamestat ? 'true' : 'false';
-		$this->Template->movePosition = $this->pgn_boardfirst ? 'under' : 'right';
-		$this->Template->moveListStyle = $this->pgn_moveformat ? 'twocolumn' : 'indented';
-		$this->Template->autoplaySpeed = (int) ($this->pgn_pause ?: 800);
-		$this->Template->notationSize = (int) $this->pgn_notationsize;
-
 		// Der Ton lässt sich zusätzlich in den Einstellungen ganz abschalten
 		$blnSound = (bool) $this->pgn_sound && (bool) Config::get('pgnviewer_sound');
-		$this->Template->disableSound = $blnSound ? 'false' : 'true';
+
+		$arrData = array
+		(
+			// Der Viewer holt die Partie über einen eigenen Aufruf. Die Adresse
+			// muss deshalb vom Wurzelverzeichnis aus gelten und nicht von der
+			// Seite, auf der das Element steht.
+			'pgnUrl' => Environment::get('path') . '/' . System::urlEncode($objFile->path),
+			'pieceSet' => $this->pgn_pieceset ?: 'merida',
+			'boardStyle' => $this->pgn_boardstyle,
+
+			// Der Viewer bekommt die Kantenlänge des Brettes; ein Feld ist ein
+			// Achtel davon, damit die eingestellte Figurengröße erhalten bleibt
+			'boardSize' => (8 * (int) ($this->pgn_piecesize ?: 46)) . 'px',
+
+			'coordsStyle' => $this->pgn_coordinates ? 'left-bottom' : 'none',
+			'gameHeader' => $this->pgn_gamestat ? 'true' : 'false',
+			'movePosition' => $this->pgn_boardfirst ? 'under' : 'right',
+			'moveListStyle' => $this->pgn_moveformat ? 'twocolumn' : 'indented',
+			'autoplaySpeed' => (int) ($this->pgn_pause ?: 800),
+			'notationSize' => (int) $this->pgn_notationsize,
+			'disableSound' => $blnSound ? 'false' : 'true',
+		);
 
 		if ($this->pgn_download)
 		{
-			$this->addDownloadLink($objFile);
+			$arrData = array_merge($arrData, $this->getDownloadData($objFile));
 		}
+
+		// Die Werte in einem Rutsch übergeben statt einzeln zuzuweisen: Die
+		// Variablen eines Templates sind magische Eigenschaften, die kein
+		// Werkzeug prüfen kann. Der vorhandene Bestand (Überschrift, CSS-ID,
+		// die Felder des Elements) bleibt dabei erhalten.
+		$this->Template->setData(array_merge($this->Template->getData(), $arrData));
 
 		$this->addAssets();
 	}
 
 	/**
-	 * Ergänzt das Template um die Angaben für den Downloadlink.
+	 * Stellt die Angaben für den Downloadlink zusammen.
 	 *
 	 * Der Link zeigt auf die aktuelle Seite und hängt die gewünschte Datei als
 	 * Parameter an; ausgeliefert wird sie dann in generate(). Ein bereits
@@ -193,27 +233,33 @@ class PGNViewer extends ContentElement
 	 * mehreren Aufrufen nicht aneinanderreihen (siehe #5683).
 	 *
 	 * @param File $objFile Die eingebundene PGN-Datei
+	 *
+	 * @return array<string, string> Die Variablen für den Downloadbereich des
+	 *                               Templates
 	 */
-	private function addDownloadLink(File $objFile): void
+	private function getDownloadData(File $objFile): array
 	{
 		$strLinkTitle = $this->pgn_linkTitle ?: $objFile->basename;
-		$strHref = Environment::get('requestUri');
+		$strHref = (string) Environment::get('requestUri');
 
 		if (null !== Input::get('file'))
 		{
-			$strHref = preg_replace('/(&(amp;)?|\?)file=[^&]+/', '', $strHref);
+			$strHref = (string) preg_replace('/(&(amp;)?|\?)file=[^&]+/', '', $strHref);
 		}
 
-		$strHref .= (strpos($strHref, '?') !== false ? '&amp;' : '?') . 'file=' . System::urlEncode($objFile->value);
+		$strHref .= (str_contains($strHref, '?') ? '&amp;' : '?') . 'file=' . System::urlEncode($objFile->value);
 
-		$this->Template->link = $strLinkTitle;
-		$this->Template->title = StringUtil::specialchars($this->pgn_titleText ?: $strLinkTitle);
-		$this->Template->href = $strHref;
-		$this->Template->filesize = System::getReadableSize($objFile->filesize, 1);
-		$this->Template->icon = 'bundles/contaopgnviewer/images/iconPGN.gif';
-		$this->Template->mime = $objFile->mime;
-		$this->Template->extension = $objFile->extension;
-		$this->Template->path = $objFile->dirname;
+		return array
+		(
+			'link' => $strLinkTitle,
+			'title' => StringUtil::specialchars($this->pgn_titleText ?: $strLinkTitle),
+			'href' => $strHref,
+			'filesize' => System::getReadableSize($objFile->filesize, 1),
+			'icon' => 'bundles/contaopgnviewer/images/iconPGN.gif',
+			'mime' => $objFile->mime,
+			'extension' => $objFile->extension,
+			'path' => $objFile->dirname,
+		);
 	}
 
 	/**
@@ -260,14 +306,19 @@ class PGNViewer extends ContentElement
 	private function isBackendRequest(): bool
 	{
 		$container = System::getContainer();
+		$objRequestStack = $container->has('request_stack') ? $container->get('request_stack') : null;
+		$objScopeMatcher = $container->has('contao.routing.scope_matcher') ? $container->get('contao.routing.scope_matcher') : null;
 
-		if (null === $container || !$container->has('request_stack'))
+		// Der Container gibt die Dienste nur als object zurück; die Prüfung sagt
+		// sowohl der statischen Analyse als auch dem Programmablauf, womit wir
+		// es zu tun haben
+		if (!$objRequestStack instanceof RequestStack || !$objScopeMatcher instanceof ScopeMatcher)
 		{
 			return false;
 		}
 
-		$request = $container->get('request_stack')->getCurrentRequest();
+		$objRequest = $objRequestStack->getCurrentRequest();
 
-		return null !== $request && $container->get('contao.routing.scope_matcher')->isBackendRequest($request);
+		return null !== $objRequest && $objScopeMatcher->isBackendRequest($objRequest);
 	}
 }

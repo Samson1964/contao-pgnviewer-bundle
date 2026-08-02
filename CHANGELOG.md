@@ -1,5 +1,15 @@
 # PGN-Betrachter Changelog
 
+## Version 2.0.2 (2026-08-02)
+
+* Add: Die Verträglichkeit mit **PHP 8.3** und **Contao 4.13.58 sowie 5.7.7** wurde nachgemessen. Dazu wurde in beiden Installationen im selben Durchlauf erst ein fremdes, dann das eigene Inhaltselement erzeugt und die Meldungen verglichen: Das Bundle steuert **keine einzige** Meldung bei, weder Warnungen noch Veraltetes. Die Meldungen, die dabei ohnehin anfallen (7 unter Contao 5, 13 unter Contao 4.13), stammen aus dem Kern und den Symfony-Komponenten.
+* Add: Konfiguration für PHPStan (`phpstan.neon.dist`). Der Code ist auf **Stufe 8 ohne Befund**; wie er zu prüfen ist, steht in der `README.md`.
+* Change: Die Felder aus der DCA sind jetzt als `@property` dokumentiert. Sie sehen wie Eigenschaften aus, laufen aber über `__get`/`__set` des Kerns — dadurch kannten weder Entwicklungsumgebung noch Analysewerkzeug ihre Namen und Typen.
+* Change: Die Variablen des Templates werden in einem Zug übergeben statt einzeln zugewiesen. Das ist die dokumentierte Schnittstelle (`setData`), und der Downloadbereich liefert seine Angaben jetzt als Rückgabewert, statt das Template von innen zu verändern.
+* Change: Die Erkennung der Backend-Anfrage prüft die beiden Dienste aus dem Container jetzt auf ihren Typ, statt sich auf die Benennung zu verlassen. Nebenbei entfiel eine Abfrage auf `null`, die nie zutreffen konnte.
+* Change: `compile()` hat eine Rückgabeangabe, der Dateipfad wird ausdrücklich als Zeichenkette übergeben, und `strpos(…) !== false` ist dem lesbareren `str_contains` gewichen.
+* Change: `symfony/http-foundation` steht jetzt in der `composer.json`, weil das Bundle die Klasse `RequestStack` unmittelbar verwendet.
+
 ## Version 2.0.1 (2026-08-02)
 
 * Fix: Auf Mobilgeräten schob sich die ganze Seite seitwärts, sobald „Zugliste unter dem Brett“ gesetzt war. Das Chesstempo-Stylesheet gibt dem Brettbereich und dem Block aus Zugliste und Bedienknöpfen je 400 Pixel feste Breite, die in dieser Anordnung nicht schrumpfen konnten; bei 375 Pixel Fensterbreite ragte die Seite 41 Pixel über den Rand hinaus. Die Beschränkung gilt jetzt nur noch, soweit der Platz reicht — und ausdrücklich nur für diese Anordnung, denn bei der Zugliste rechts sorgt genau diese Mindestbreite für den Umbruch auf schmalen Bildschirmen.

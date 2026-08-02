@@ -13,6 +13,8 @@ ein, über die sich zwischen den Partien umschalten lässt.
 * **Keine Aufrufe fremder Server:** Alle Dateien des Betrachters liegen im Bundle. Beim Aufruf
   einer Seite wird nichts von chesstempo.com nachgeladen.
 
+Geprüft wurde mit PHP 8.3 gegen Contao 4.13.58 und Contao 5.7.7.
+
 ## Inhalt
 
 * [Installation](#installation)
@@ -235,6 +237,19 @@ Die Dateien stammen von `https://c1a.chesstempo.com/pgnviewer/v2.5/` (Programm),
 `https://c2a.chesstempo.com/pgnviewer/v2.5/` (Stylesheet), `https://c1a.chesstempo.com/fonts/`
 (Schriften), `https://c1a.chesstempo.com/pgnviewer/v1/` (Figurensätze, jetzt unter
 `pgnviewer/chunks/`) und `https://c2a.chesstempo.com/images/board-backgrounds/` (Brett-Hintergründe).
+
+## Für Entwickler: statische Analyse
+
+Das Bundle bringt eine Konfiguration für [PHPStan](https://phpstan.org/) mit und ist auf Stufe 8
+ohne Befund. Da die Klassen des Contao-Kerns nicht zum Bundle gehören, braucht der Aufruf den
+Autoloader einer Contao-Installation:
+
+```bash
+phpstan analyse --autoload-file=/pfad/zur/contao-installation/vendor/autoload.php
+```
+
+Stufe 9 ist nicht sinnvoll: Contao legt seine Konfiguration in `$GLOBALS` ab, was für PHPStan ein
+`mixed`-Wert ist — dort meldet jede Zeile einer DCA-Datei einen Befund, in jedem Contao-Bundle.
 
 ## Entwickler
 
