@@ -7,13 +7,68 @@
  * Chesstempo“).
  */
 
-/* Höhe der Zugliste. Das Inhaltselement setzt --pgn-notation-height nur, wenn
-   im Backend eine Höhe eingetragen ist; ohne den Wert bleibt die Zugliste so
-   hoch, wie der Viewer sie selbst berechnet. */
-.ce_pgnviewer ct-pgn-viewer move-list {
-	max-height: var(--pgn-notation-height, none);
-	overflow-y: auto;
+/* -------------------------------------------------------------------------
+ * Verhalten auf schmalen Bildschirmen
+ * ------------------------------------------------------------------------- */
+
+/* Das Chesstempo-Stylesheet gibt dem Brettbereich und dem Block aus Zugliste
+   und Bedienknöpfen je eine feste Breite von 400 Pixeln. Steht die Zugliste
+   unter dem Brett, können beide nicht schrumpfen und schieben die ganze Seite
+   auf Mobilgeräten seitwärts.
+   Nur für diesen Fall gedacht: Steht die Zugliste rechts, sorgt genau diese
+   Mindestbreite dafür, dass die Flex-Zeile auf schmalen Bildschirmen umbricht —
+   dort würde min-width: 0 die Zugliste auf wenige Pixel zusammenquetschen. */
+.ce_pgnviewer .ct-pgn-viewer-move-position-under .ct-pgn-viewer-board-holder,
+.ce_pgnviewer .ct-pgn-viewer-move-position-under .ct-pgn-viewer-move-list-and-controls {
+	max-width: 100%;
+	min-width: 0;
 }
+
+/* Die im Backend eingestellte Figurengröße ergibt eine feste Brettbreite. Auf
+   schmalen Bildschirmen wird das Brett hier verkleinert; die Höhe steht am
+   Element selbst und muss deshalb ausdrücklich überschrieben werden, sonst
+   entsteht ein Rechteck statt eines Quadrats. */
+.ce_pgnviewer chess-board.ct-pgn-viewer-board {
+	max-width: 100%;
+	height: auto !important;
+	aspect-ratio: 1 / 1;
+}
+
+/* Der Rahmen des Brettes zählt zur Breite; ohne diese Zeile ragt die
+   Spielfläche vier Pixel über das Brett hinaus, sobald es verkleinert wird. */
+.ce_pgnviewer chess-board.ct-pgn-viewer-board .ct-board-holder {
+	box-sizing: border-box;
+}
+
+/* -------------------------------------------------------------------------
+ * Zugliste
+ * ------------------------------------------------------------------------- */
+
+/* Höhe der Zugliste. Der Wert gehört an den Behälter, in dem der Viewer
+   ohnehin schon scrollt (Voreinstellung 350 Pixel) — läge er am äußeren
+   Element, entstünde eine zweite Bildlaufleiste, und der innere Bereich würde
+   einfach abgeschnitten. Das Inhaltselement setzt --pgn-notation-height nur,
+   wenn im Backend eine Höhe eingetragen ist. */
+.ce_pgnviewer ct-pgn-viewer .ct-move-list-container {
+	height: var(--pgn-notation-height, 350px);
+}
+
+/* -------------------------------------------------------------------------
+ * Bedienung mit der Tastatur
+ * ------------------------------------------------------------------------- */
+
+/* Der Viewer schaltet den Fokusrahmen seiner Knöpfe ab. Wer mit der
+   Tabulatortaste bedient, sieht sonst nicht, wo er gerade steht. */
+.ce_pgnviewer ct-pgn-viewer button:focus-visible,
+.ce_pgnviewer ct-pgn-viewer select:focus-visible,
+.ce_pgnviewer ct-pgn-viewer input:focus-visible {
+	outline: 2px solid currentColor;
+	outline-offset: 2px;
+}
+
+/* -------------------------------------------------------------------------
+ * Zeilen des Bundles um den Viewer herum
+ * ------------------------------------------------------------------------- */
 
 /* Hinweis auf Chesstempo unter dem Brett */
 .pgn_backlink {

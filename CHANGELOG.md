@@ -1,5 +1,12 @@
 # PGN-Betrachter Changelog
 
+## Version 2.0.1 (2026-08-02)
+
+* Fix: Auf Mobilgeräten schob sich die ganze Seite seitwärts, sobald „Zugliste unter dem Brett“ gesetzt war. Das Chesstempo-Stylesheet gibt dem Brettbereich und dem Block aus Zugliste und Bedienknöpfen je 400 Pixel feste Breite, die in dieser Anordnung nicht schrumpfen konnten; bei 375 Pixel Fensterbreite ragte die Seite 41 Pixel über den Rand hinaus. Die Beschränkung gilt jetzt nur noch, soweit der Platz reicht — und ausdrücklich nur für diese Anordnung, denn bei der Zugliste rechts sorgt genau diese Mindestbreite für den Umbruch auf schmalen Bildschirmen.
+* Fix: Das Brett verkleinert sich jetzt, wenn der Platz nicht reicht. Die eingestellte Figurengröße ergibt eine feste Brettbreite — bei 80 Pixel Figuren sind das 640 Pixel Brett, das auf kein Telefon passte. Es bleibt dabei quadratisch und die Figuren sitzen weiterhin genau auf den Feldern; ist genug Platz, ändert sich nichts.
+* Fix: Die im Backend eingetragene Höhe der Zugliste erzeugte eine zweite Bildlaufleiste und schnitt die Liste ab, statt sie zu begrenzen. Der Wert wirkt jetzt auf den Bereich, in dem der Betrachter ohnehin schon scrollt.
+* Fix: Der Betrachter schaltet den Fokusrahmen seiner Bedienknöpfe ab — wer mit der Tabulatortaste bediente, sah nicht, wo er stand. Knöpfe, Auswahlfeld und Zugeingabe bekommen wieder einen sichtbaren Rahmen, der sich hell oder dunkel an seinen Untergrund anpasst.
+
 ## Version 2.0.0 (2026-08-01)
 
 Diese Fassung bringt zwei große Änderungen: den aktuellen PGN-Betrachter von Chesstempo und die Unterstützung von Contao 5. Bestehende Inhaltselemente laufen weiter; was sich für Redakteure ändert, steht im Abschnitt „Umstieg von Version 1“ der `README.md`.
