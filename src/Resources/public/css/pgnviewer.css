@@ -11,14 +11,19 @@
  * Verhalten auf schmalen Bildschirmen
  * ------------------------------------------------------------------------- */
 
-/* Das Chesstempo-Stylesheet gibt dem Brettbereich und dem Block aus Zugliste
-   und Bedienknöpfen je eine feste Breite von 400 Pixeln. Steht die Zugliste
-   unter dem Brett, können beide nicht schrumpfen und schieben die ganze Seite
-   auf Mobilgeräten seitwärts.
+/* Der Bereich um das Brett bekommt vom Chesstempo-Stylesheet die Breite des
+   Brettes fest zugewiesen. Ist das Brett breiter als der Bildschirm, ragt es
+   in jeder Anordnung hinaus. */
+.ce_pgnviewer .ct-pgn-viewer-board-holder {
+	max-width: 100%;
+}
+
+/* Der Block aus Zugliste und Bedienknöpfen hat ebenfalls eine feste Breite von
+   400 Pixeln. Steht die Zugliste unter dem Brett, kann er nicht schrumpfen und
+   schiebt die ganze Seite auf Mobilgeräten seitwärts.
    Nur für diesen Fall gedacht: Steht die Zugliste rechts, sorgt genau diese
    Mindestbreite dafür, dass die Flex-Zeile auf schmalen Bildschirmen umbricht —
    dort würde min-width: 0 die Zugliste auf wenige Pixel zusammenquetschen. */
-.ce_pgnviewer .ct-pgn-viewer-move-position-under .ct-pgn-viewer-board-holder,
 .ce_pgnviewer .ct-pgn-viewer-move-position-under .ct-pgn-viewer-move-list-and-controls {
 	max-width: 100%;
 	min-width: 0;
@@ -51,6 +56,63 @@
    wenn im Backend eine Höhe eingetragen ist. */
 .ce_pgnviewer ct-pgn-viewer .ct-move-list-container {
 	height: var(--pgn-notation-height, 350px);
+}
+
+/* -------------------------------------------------------------------------
+ * Anordnung „Zugliste umfließt das Brett“
+ * ------------------------------------------------------------------------- */
+
+/* Der Betrachter stellt Brett und Zugliste nebeneinander (Flexbox). Für das
+   Umfließen wird daraus ein gewöhnlicher Textfluss mit dem Brett als
+   umflossenem Element rechts oben. */
+.ce_pgnviewer.pgn_umfliessend .ct-pgn-viewer-board-and-move-list {
+	display: block;
+}
+
+.ce_pgnviewer.pgn_umfliessend .ct-pgn-viewer-board-holder {
+	float: right;
+	margin: 0 0 1em 1.5em;
+
+	/* Damit das Brett beim Durchklicken einer langen Partie im Bild bleibt,
+	   statt nach oben aus dem Fenster zu wandern. */
+	position: sticky;
+	top: 1rem;
+}
+
+.ce_pgnviewer.pgn_umfliessend .ct-pgn-viewer-move-list-and-controls {
+	display: block;
+	width: auto;
+	margin: 0;
+}
+
+/* Partieauswahl, Knopfleiste und Kopfzeile sind einzelne Blöcke. In voller
+   Breite passen sie nicht neben das Brett und würden mitsamt der Zugliste
+   darunter rutschen — dann bliebe die Fläche links vom Brett leer. Sie
+   bekommen deshalb genau die Breite, die neben dem Brett übrig bleibt; das
+   Inhaltselement gibt dessen Kantenlänge als Variable mit. */
+.ce_pgnviewer.pgn_umfliessend .ct-pgn-viewer-multi-game-selector-panel,
+.ce_pgnviewer.pgn_umfliessend board-controls,
+.ce_pgnviewer.pgn_umfliessend game-header {
+	max-width: calc(100% - var(--pgn-board-size, 400px) - 1.5em);
+}
+
+/* Ein Bereich mit eigenem Bildlauf umfließt nichts, sondern stellt sich als
+   schmaler Kasten neben das Brett. Die Zugliste läuft hier deshalb ohne eigene
+   Höhe; gescrollt wird die Seite. */
+.ce_pgnviewer.pgn_umfliessend .ct-move-list-container {
+	height: auto;
+	max-height: none;
+	overflow: visible;
+}
+
+/* Auf schmalen Bildschirmen ist für ein Umfließen kein Platz: Dort steht das
+   Brett wieder über der Zugliste. */
+@media (max-width: 600px) {
+	.ce_pgnviewer.pgn_umfliessend .ct-pgn-viewer-board-holder {
+		float: none;
+		position: static;
+		margin: 0 auto 1em;
+	}
 }
 
 /* -------------------------------------------------------------------------

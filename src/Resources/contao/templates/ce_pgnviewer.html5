@@ -1,5 +1,5 @@
 <!-- indexer::stop -->
-<div class="<?php echo $this->class; ?> block"<?php echo $this->cssID; ?><?php if ($this->style): ?> style="<?php echo $this->style; ?>"<?php endif; ?>>
+<div class="<?php echo trim($this->class . ' ' . $this->layoutClass); ?> block"<?php echo $this->cssID; ?><?php if ($this->style): ?> style="<?php echo $this->style; ?>"<?php endif; ?>>
 	<?php if ($this->headline): ?>
 		<<?php echo $this->hl; ?>><?php echo $this->headline; ?></<?php echo $this->hl; ?>>
 	<?php endif; ?>
@@ -10,7 +10,22 @@
 		 * Zugliste, Bedienknöpfe, Kopfzeile und die Auswahlliste der Partien
 		 * selbst auf. Der Inhalt des Elements ist wegen has-url die Adresse der
 		 * PGN-Datei, die der Viewer im Browser nachlädt.
+		 *
+		 * Zwei Werte gehen als CSS-Variablen mit: die eingestellte Höhe der
+		 * Zugliste und – beim Umfließen – die Breite des Brettes, damit das
+		 * Stylesheet weiß, wie viel Platz daneben bleibt.
 		 */
+		$pgnStile = array();
+
+		if ($this->notationSize)
+		{
+			$pgnStile[] = '--pgn-notation-height:' . $this->notationSize . 'px';
+		}
+
+		if ($this->layoutClass)
+		{
+			$pgnStile[] = '--pgn-board-size:' . $this->boardSize;
+		}
 	?>
 	<ct-pgn-viewer
 		has-url="true"
@@ -21,10 +36,11 @@
 		board-disable-sound="<?php echo $this->disableSound; ?>"
 		use-game-header="<?php echo $this->gameHeader; ?>"
 		move-list-position="<?php echo $this->movePosition; ?>"
+		buttons-above-moves="<?php echo $this->buttonsAboveMoves; ?>"
 		move-list-moveListStyle="<?php echo $this->moveListStyle; ?>"
 		move-list-autoplaySpeed="<?php echo $this->autoplaySpeed; ?>"
-		move-list-resizable="true"<?php if ($this->notationSize): ?>
-		style="--pgn-notation-height:<?php echo $this->notationSize; ?>px"<?php endif; ?>><?php echo $this->pgnUrl; ?></ct-pgn-viewer>
+		move-list-resizable="true"<?php if ($pgnStile): ?>
+		style="<?php echo implode(';', $pgnStile); ?>"<?php endif; ?>><?php echo $this->pgnUrl; ?></ct-pgn-viewer>
 
 	<?php if ($this->pgn_backlink): ?>
 		<!-- Der Viewer darf auf nicht-kommerziellen Seiten nur mit diesem Hinweis verwendet werden -->

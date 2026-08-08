@@ -104,13 +104,18 @@ $GLOBALS['TL_DCA']['tl_content']['fields']['pgn_gamestat'] = array
 	'sql'       => "varchar(255) NOT NULL default ''"
 );
 
+// Früher ein Kästchen „Zugliste unter dem Brett“. Damit die Einstellung
+// bestehender Elemente erhalten bleibt, ist der alte Wert „1“ weiterhin eine
+// gültige Auswahl und bedeutet unverändert dasselbe.
 $GLOBALS['TL_DCA']['tl_content']['fields']['pgn_boardfirst'] = array
 (
 	'label'     => &$GLOBALS['TL_LANG']['tl_content']['pgn_boardfirst'],
 	'default'   => '',
-	'inputType' => 'checkbox',
+	'inputType' => 'select',
+	'options'   => array('', '1', 'wrap'),
+	'reference' => &$GLOBALS['TL_LANG']['tl_content']['pgn_boardfirst_option'],
 	'eval'      => array('tl_class' => 'w50 clr'),
-	'sql'       => "char(1) NOT NULL default ''"
+	'sql'       => "varchar(8) NOT NULL default ''"
 );
 
 $GLOBALS['TL_DCA']['tl_content']['fields']['pgn_moveformat'] = array

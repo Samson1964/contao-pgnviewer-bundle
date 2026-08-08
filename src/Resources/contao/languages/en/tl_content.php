@@ -17,7 +17,7 @@ $GLOBALS['TL_LANG']['tl_content']['pgn_piecesize'] = array('Piece size', 'Edge l
 $GLOBALS['TL_LANG']['tl_content']['pgn_boardstyle'] = array('Board style', 'Appearance of the squares, from plain colours to wood, marble or leather. Without a selection the viewer keeps its default (blue with gradient).');
 $GLOBALS['TL_LANG']['tl_content']['pgn_coordinates'] = array('Show coordinates', 'Shows the file and rank labels along the left and bottom edge of the board.');
 $GLOBALS['TL_LANG']['tl_content']['pgn_gamestat'] = array('Show game details', 'Shows the header above the move list with names, ratings, result, event, site, round, ECO code and date.');
-$GLOBALS['TL_LANG']['tl_content']['pgn_boardfirst'] = array('Move list below the board', 'Without the checkmark the move list sits to the right of the board.');
+$GLOBALS['TL_LANG']['tl_content']['pgn_boardfirst'] = array('Arrangement', 'How the board and the move list are placed.');
 $GLOBALS['TL_LANG']['tl_content']['pgn_moveformat'] = array('Two-column move list', 'Shows the moves in two columns. Without the checkmark the main line is listed one move per line with variations and comments indented.');
 $GLOBALS['TL_LANG']['tl_content']['pgn_notationsize'] = array('Height of the move list', 'Limits the move list to the given height in pixels and scrolls beyond that. Enter 0 to remove the limit.');
 $GLOBALS['TL_LANG']['tl_content']['pgn_pause'] = array('Pause between moves', 'Waiting time in milliseconds while autoplaying the game.');
@@ -86,3 +86,7 @@ $GLOBALS['TL_LANG']['tl_content']['pgn_boardstyle_option']['fabric'] = 'Fabric';
 $GLOBALS['TL_LANG']['tl_content']['pgn_boardstyle_option']['grass'] = 'Grass';
 $GLOBALS['TL_LANG']['tl_content']['pgn_boardstyle_option']['camouflage'] = 'Camouflage';
 $GLOBALS['TL_LANG']['tl_content']['pgn_boardstyle_option']['green-plasma'] = 'Green plasma';
+
+$GLOBALS['TL_LANG']['tl_content']['pgn_boardfirst_option'][''] = 'Move list beside the board';
+$GLOBALS['TL_LANG']['tl_content']['pgn_boardfirst_option']['1'] = 'Move list below the board';
+$GLOBALS['TL_LANG']['tl_content']['pgn_boardfirst_option']['wrap'] = 'Move list wraps around the board';

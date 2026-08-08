@@ -1,5 +1,11 @@
 # PGN-Betrachter Changelog
 
+## Version 2.1.0 (2026-08-08)
+
+* Add: **Neue Anordnung „Zugliste umfließt das Brett“.** Das Brett steht rechts oben, die Zugliste beginnt links daneben und läuft unter dem Brett über die volle Breite weiter — wie Text um ein Bild. Für lange Partien braucht die Zugliste damit deutlich weniger Höhe. Vor allem aber **bleibt das Brett beim Scrollen stehen**: Bisher wanderte es beim Durchklicken einer langen Notation aus dem Bild, so dass man die Züge nicht mehr verfolgen konnte. Die Bedienknöpfe stehen in dieser Anordnung über der Zugliste, damit sie in der Nähe des Brettes bleiben. Auf Bildschirmen unter 600 Pixel Breite steht das Brett wieder über der Zugliste.
+* Change: Aus dem Kästchen „Zugliste unter dem Brett“ ist ein Auswahlfeld **„Anordnung“** mit drei Möglichkeiten geworden. Bestehende Elemente behalten ihre Einstellung: Der bisherige Wert bedeutet unverändert „Zugliste unter dem Brett“.
+* Fix: Ein Brett, das breiter ist als der Bildschirm, ragte in der Voreinstellung „Zugliste rechts“ über den Rand hinaus — bei Figurengröße 46 auf einem 375 Pixel breiten Telefon um neun Pixel. Die Verkleinerung aus Fassung 2.0.1 galt bisher nur für die Anordnung „Zugliste unter dem Brett“ und wirkt jetzt in allen dreien.
+
 ## Version 2.0.3 (2026-08-08)
 
 * Fix: **Der Betrachter blieb auf manchen Seiten leer** — Rahmen und Knopfleiste erschienen, aber ohne Brett, Figuren und Partieauswahl. Die drei Skripte wurden über `TL_JAVASCRIPT` angemeldet, und das gibt Contao im Seitenkopf aus. Der Betrachter sucht beim Start die `<ct-pgn-viewer>`-Elemente im Dokument; im Seitenkopf läuft er, bevor es den Body überhaupt gibt, bricht mit „document body not defined“ ab und lässt eine leere Hülle stehen. Die Skripte kommen jetzt über `TL_BODY` ans Ende des Body. Gemeldet aus der Sitzung zum BSV-Theme, Einzelheiten in der `BUGREPORT.md`.

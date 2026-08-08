@@ -51,7 +51,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
  * @property string         $pgn_boardstyle  Brettstil, etwa „wood-dark“; leer heißt Voreinstellung des Viewers
  * @property string|boolean $pgn_coordinates Koordinaten am Brettrand anzeigen
  * @property string|boolean $pgn_gamestat    Kopfzeile mit den Partiedaten anzeigen
- * @property string|boolean $pgn_boardfirst  Zugliste unter statt neben dem Brett
+ * @property string         $pgn_boardfirst  Anordnung: leer = Zugliste rechts, „1“ = darunter, „wrap“ = umfließend
  * @property string|boolean $pgn_moveformat  Zugliste zweispaltig statt eingerückt
  * @property string|integer $pgn_notationsize Höhe der Zugliste in Pixel, 0 für unbeschränkt
  * @property string|integer $pgn_pause       Pause zwischen den Zügen in Millisekunden
@@ -204,12 +204,12 @@ class PGNViewer extends ContentElement
 
 			'coordsStyle' => $this->pgn_coordinates ? 'left-bottom' : 'none',
 			'gameHeader' => $this->pgn_gamestat ? 'true' : 'false',
-			'movePosition' => $this->pgn_boardfirst ? 'under' : 'right',
 			'moveListStyle' => $this->pgn_moveformat ? 'twocolumn' : 'indented',
 			'autoplaySpeed' => (int) ($this->pgn_pause ?: 800),
-			'notationSize' => (int) $this->pgn_notationsize,
 			'disableSound' => $blnSound ? 'false' : 'true',
 		);
+
+		$arrData = array_merge($arrData, $this->getLayoutData());
 
 		if ($this->pgn_download)
 		{
@@ -223,6 +223,47 @@ class PGNViewer extends ContentElement
 		$this->Template->setData(array_merge($this->Template->getData(), $arrData));
 
 		$this->addAssets();
+	}
+
+	/**
+	 * Bestimmt die Anordnung von Brett und Zugliste.
+	 *
+	 * Drei Möglichkeiten, gesteuert über das Feld pgn_boardfirst:
+	 *
+	 * - leer:   Zugliste rechts neben dem Brett, beide nebeneinander
+	 * - „1“:    Zugliste unter dem Brett (der alte Wert des früheren Kästchens)
+	 * - „wrap“: Das Brett steht rechts oben und die Zugliste fließt darum herum.
+	 *           Dafür bekommt der Behälter eine eigene Klasse, denn der
+	 *           Betrachter kennt diese Anordnung nicht — sie entsteht in
+	 *           css/pgnviewer.css. Die Bedienknöpfe wandern über die Zugliste,
+	 *           damit sie beim Durchklicken einer langen Partie in der Nähe des
+	 *           Brettes bleiben, und die Höhe der Zugliste entfällt: Beim
+	 *           Umfließen darf die Liste keinen eigenen Bildlauf haben, sonst
+	 *           bliebe sie ein Kasten neben dem Brett, statt es zu umfließen.
+	 *
+	 * @return array<string, string|integer> Die Angaben zur Anordnung für das
+	 *                                       Template
+	 */
+	private function getLayoutData(): array
+	{
+		if ('wrap' === $this->pgn_boardfirst)
+		{
+			return array
+			(
+				'movePosition' => 'right',
+				'buttonsAboveMoves' => 'true',
+				'notationSize' => 0,
+				'layoutClass' => 'pgn_umfliessend',
+			);
+		}
+
+		return array
+		(
+			'movePosition' => $this->pgn_boardfirst ? 'under' : 'right',
+			'buttonsAboveMoves' => 'false',
+			'notationSize' => (int) $this->pgn_notationsize,
+			'layoutClass' => '',
+		);
 	}
 
 	/**

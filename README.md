@@ -97,12 +97,20 @@ Mehrere PGNViewer-Elemente auf derselben Seite sind möglich; jedes Brett arbeit
 | **Brettstil** | Aussehen der Felder: dreizehn einfarbige Varianten (Blau, Grün, Braun, mehrere Grautöne, teils mit Verlauf) und achtzehn mit Bild (Holz in fünf Tönen, Marmor, Granit, rissiger Stein, Putz, Sand und Schnee, Metall, Gold und Silber, Leder, Stoff, Gras, Tarnmuster, grünes Plasma). Ohne Auswahl bleibt es bei der Voreinstellung des Betrachters (Blau mit Verlauf). |
 | **Koordinaten anzeigen** | Blendet die Linien- und Reihenbezeichnungen am linken und unteren Brettrand ein. |
 | **Partiedaten anzeigen** | Zeigt über der Zugliste die Kopfzeile mit Namen, Wertungszahlen, Ergebnis, Turnier, Ort, Runde, ECO-Schlüssel und Datum. |
-| **Zugliste unter dem Brett** | Ohne Haken steht die Zugliste rechts neben dem Brett, mit Haken darunter. |
+| **Anordnung** | Wie Brett und Zugliste zueinander stehen — siehe die Erläuterung unter der Tabelle. |
 | **Zugliste zweispaltig** | Stellt die Züge in zwei Spalten dar. Ohne Haken erscheinen die Hauptzüge untereinander, Varianten und Kommentare eingerückt. |
 | **Höhe der Zugliste** | Größte Höhe der Zugliste in Pixel; darüber hinaus wird gescrollt. `0` hebt die Beschränkung auf. |
 | **Pause zwischen den Zügen** | Wartezeit in Millisekunden beim automatischen Abspielen. Voreinstellung 800. |
 | **Ton aktivieren** | Begleitet Züge und Schlagzüge mit einem Geräusch. Das Feld ist nur auswählbar, wenn der Ton in den Einstellungen freigegeben wurde (siehe unten). |
 | **Hinweis auf Chess Tempo anzeigen** | Blendet unter dem Brett den Hinweis „PGN Viewer powered by chesstempo.com“ ein. Der Betrachter steht unter einer Creative-Commons-Lizenz und darf auf nicht-kommerziellen Seiten nur mit diesem sichtbaren Link verwendet werden. |
+
+### Die drei Anordnungen
+
+| Auswahl | Darstellung |
+| --- | --- |
+| **Zugliste rechts neben dem Brett** | Die Voreinstellung. Brett und Zugliste stehen nebeneinander, die Zugliste scrollt in ihrem eigenen Bereich. Auf schmalen Bildschirmen rutscht sie unter das Brett. |
+| **Zugliste unter dem Brett** | Erst das Brett, darunter die Zugliste über die volle Breite. |
+| **Zugliste umfließt das Brett** | Das Brett steht rechts oben, die Zugliste beginnt links daneben und läuft unter dem Brett über die volle Breite weiter — wie Text um ein Bild. Geeignet für lange Partien: Die Züge brauchen weniger Höhe, und **das Brett bleibt beim Scrollen stehen**, so dass es beim Durchklicken im Bild bleibt. Die Bedienknöpfe stehen hier über der Zugliste, damit sie in der Nähe des Brettes bleiben. Die Angabe „Höhe der Zugliste“ hat in dieser Anordnung keine Wirkung, denn ein Bereich mit eigenem Bildlauf kann das Brett nicht umfließen. Auf Bildschirmen unter 600 Pixel Breite steht das Brett wieder über der Zugliste. |
 
 ### Download-Einstellungen
 
