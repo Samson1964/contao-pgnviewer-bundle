@@ -146,6 +146,11 @@ Für kleinere Anpassungen genügt eigenes CSS im Seitenlayout. Das Bundle bringt
 mit: `pgnviewer/pgnviewerext.vers1.css` von Chesstempo mit dem gesamten Aussehen des Betrachters
 und `css/pgnviewer.css` mit den Ergänzungen des Bundles.
 
+Die Stylesheets stehen im Seitenkopf, die drei Skripte dagegen **am Ende des Body**. Das muss so
+sein: Der Betrachter sucht beim Start die `<ct-pgn-viewer>`-Elemente im Dokument und bricht ab,
+wenn es sie noch nicht gibt. Wer ein eigenes Seitenlayout baut, sollte den Platzhalter für
+`TL_BODY` also nicht aus dem Template entfernen.
+
 Die wichtigsten Klassen: `.ct-pgn-viewer` (das ganze Element), `.ct-pgn-viewer-board` (Brett),
 `.ct-board-move-mainline` und `.ct-board-move-current` (Züge in der Liste), `.ct-nav-buttons`
 (Knopfleiste), `.pgn_backlink` und `.pgn_download` (die beiden Zeilen des Bundles).
@@ -168,6 +173,7 @@ Im Template steht das Element `<ct-pgn-viewer>`; alle Einstellungen werden ihm a
 | Brett und Zugliste bleiben leer | Der Betrachter konnte die PGN-Datei nicht laden oder nicht lesen. Häufigste Ursachen: die Datei liegt in einem geschützten Verzeichnis, oder es fehlt die Leerzeile zwischen Kopfbereich und Zugfolge. |
 | Die Auswahlliste der Partien fehlt | Sie erscheint erst, wenn die Datei mehr als eine Partie enthält. |
 | Die Figuren fehlen, das Brett ist leer | Die Dateien des Figurensatzes wurden nicht mit veröffentlicht. Im Contao Manager „Assets neu installieren“ ausführen bzw. `vendor/bin/contao-console contao:setup`. |
+| Nur der Rahmen erscheint: kein Brett, keine Figuren, keine Partieauswahl | Die Skripte des Betrachters laufen zu früh. Das eigene Seitenlayout gibt vermutlich den Platzhalter für `TL_BODY` nicht aus, so dass sie nicht am Ende des Body landen. In der Browserkonsole steht dann „document body not defined“. |
 | Der Ton bleibt stumm | Browser spielen Töne erst ab, nachdem der Besucher etwas auf der Seite angeklickt hat. |
 
 ## Umstieg von Version 1

@@ -1,5 +1,11 @@
 # PGN-Betrachter Changelog
 
+## Version 2.0.3 (2026-08-08)
+
+* Fix: **Der Betrachter blieb auf manchen Seiten leer** — Rahmen und Knopfleiste erschienen, aber ohne Brett, Figuren und Partieauswahl. Die drei Skripte wurden über `TL_JAVASCRIPT` angemeldet, und das gibt Contao im Seitenkopf aus. Der Betrachter sucht beim Start die `<ct-pgn-viewer>`-Elemente im Dokument; im Seitenkopf läuft er, bevor es den Body überhaupt gibt, bricht mit „document body not defined“ ab und lässt eine leere Hülle stehen. Die Skripte kommen jetzt über `TL_BODY` ans Ende des Body. Gemeldet aus der Sitzung zum BSV-Theme, Einzelheiten in der `BUGREPORT.md`.
+* Change: Die script-Tags baut jetzt der Kern (`Template::generateScriptTag`). Dadurch hängt an jeder Datei eine Fassungsnummer aus ihrem Änderungsdatum — nach einer Aktualisierung holen Browser die neue Fassung, statt die alte aus dem Zwischenspeicher zu nehmen.
+* Add: Hinweis in der `README.md`, dass die Skripte ans Ende des Body gehören, samt Eintrag in der Fehlersuche für den Fall, dass ein eigenes Seitenlayout den Platzhalter `TL_BODY` nicht ausgibt.
+
 ## Version 2.0.2 (2026-08-02)
 
 * Add: Die Verträglichkeit mit **PHP 8.3** und **Contao 4.13.58 sowie 5.7.7** wurde nachgemessen. Dazu wurde in beiden Installationen im selben Durchlauf erst ein fremdes, dann das eigene Inhaltselement erzeugt und die Meldungen verglichen: Das Bundle steuert **keine einzige** Meldung bei, weder Warnungen noch Veraltetes. Die Meldungen, die dabei ohnehin anfallen (7 unter Contao 5, 13 unter Contao 4.13), stammen aus dem Kern und den Symfony-Komponenten.

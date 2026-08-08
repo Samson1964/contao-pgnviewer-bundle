@@ -24,6 +24,7 @@ use Contao\FrontendTemplate;
 use Contao\Input;
 use Contao\StringUtil;
 use Contao\System;
+use Contao\Template;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
@@ -265,6 +266,17 @@ class PGNViewer extends ContentElement
 	/**
 	 * Bindet die Dateien des Viewers in das Layout ein.
 	 *
+	 * Die Stylesheets kommen über TL_CSS in den Seitenkopf, die Skripte dagegen
+	 * ans Ende des Body. Das ist keine Geschmacksfrage: Der Viewer sucht beim
+	 * Start die <ct-pgn-viewer>-Elemente im Dokument. Steht er im Seitenkopf,
+	 * läuft er, bevor es den Body überhaupt gibt, bricht mit „document body not
+	 * defined“ ab und lässt eine leere Hülle stehen (siehe BUGREPORT.md).
+	 *
+	 * Alles aus TL_JAVASCRIPT gibt Contao im Seitenkopf aus. Das Flag „|defer“
+	 * würde das Problem lösen, aber nur in Contao 5 — in Contao 4.13 kennt
+	 * StringUtil::resolveFlaggedUrl() es nicht und deutet es als Media-Angabe.
+	 * TL_BODY gibt es in beiden Fassungen, deshalb dieser Weg.
+	 *
 	 * Die Reihenfolge ist wichtig: ct-setup.js und die Sprachdatei müssen vor
 	 * dem Viewer selbst geladen werden, weil sie Werte setzen, die der Viewer
 	 * beim Start ausliest. Alle Einträge bekommen einen Schlüssel, damit die
@@ -279,19 +291,37 @@ class PGNViewer extends ContentElement
 	{
 		$strBase = 'bundles/contaopgnviewer/';
 
-		$GLOBALS['TL_JAVASCRIPT']['contaopgnviewer_setup'] = $strBase . 'js/ct-setup.js';
+		$this->addBodyScript('contaopgnviewer_setup', $strBase . 'js/ct-setup.js');
 
 		$strLanguage = (string) Config::get('pgnviewer_notationlang');
 
 		if (isset(self::NOTATION_FILES[$strLanguage]))
 		{
-			$GLOBALS['TL_JAVASCRIPT']['contaopgnviewer_locale'] = $strBase . 'js/locale/' . self::NOTATION_FILES[$strLanguage] . '.js';
+			$this->addBodyScript('contaopgnviewer_locale', $strBase . 'js/locale/' . self::NOTATION_FILES[$strLanguage] . '.js');
 		}
 
-		$GLOBALS['TL_JAVASCRIPT']['contaopgnviewer'] = $strBase . 'pgnviewer/pgnviewerext.bundle.vers1.js';
+		$this->addBodyScript('contaopgnviewer', $strBase . 'pgnviewer/pgnviewerext.bundle.vers1.js');
 
 		$GLOBALS['TL_CSS']['contaopgnviewer_vendor'] = $strBase . 'pgnviewer/pgnviewerext.vers1.css';
 		$GLOBALS['TL_CSS']['contaopgnviewer'] = $strBase . 'css/pgnviewer.css';
+	}
+
+	/**
+	 * Trägt ein Skript ans Ende des Body ein.
+	 *
+	 * Der fertige script-Tag wird vom Kern erzeugt, damit die Datei dieselbe
+	 * Behandlung erfährt wie jede andere: Der Aufruf hängt bei Bedarf die
+	 * Adresse des Asset-Servers davor und ergänzt aus dem Änderungsdatum eine
+	 * Fassungsnummer, damit Browser eine neue Fassung auch wirklich holen.
+	 *
+	 * @param string $strKey  Schlüssel im Array TL_BODY; verhindert, dass die
+	 *                        Datei bei mehreren Brettern auf einer Seite
+	 *                        mehrfach im Quelltext steht
+	 * @param string $strPath Pfad zur Datei, vom Wurzelverzeichnis aus
+	 */
+	private function addBodyScript(string $strKey, string $strPath): void
+	{
+		$GLOBALS['TL_BODY'][$strKey] = Template::generateScriptTag(self::addAssetsUrlTo($strPath), false, null);
 	}
 
 	/**
