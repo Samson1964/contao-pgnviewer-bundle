@@ -23,6 +23,7 @@ Geprüft wurde mit PHP 8.3 gegen Contao 4.13.58 und Contao 5.7.7.
 * [Die Felder im Einzelnen](#die-felder-im-einzelnen)
 * [Globale Einstellungen](#globale-einstellungen)
 * [Bedienung im Frontend](#bedienung-im-frontend)
+* [Farben](#farben)
 * [Eigenes Aussehen](#eigenes-aussehen)
 * [Wenn etwas nicht funktioniert](#wenn-etwas-nicht-funktioniert)
 * [Umstieg von Version 1](#umstieg-von-version-1)
@@ -148,6 +149,24 @@ können mit der Maus verschoben werden, um eigene Varianten auszuprobieren.
 Der Menüpunkt **In der Datenbank ansehen** öffnet die Stellung bei chesstempo.com. Das geschieht
 erst beim Klick und in einem neuen Fenster.
 
+## Farben
+
+Der Betrachter übernimmt Schrift- und Hintergrundfarbe der Website. Sein mitgeliefertes Design ist
+dunkel — fast schwarze Flächen, helle Schrift —, was auf einer hellen Seite wie ein Fremdkörper
+wirkt. Das Bundle setzt deshalb die Flächen auf durchsichtig und die Schrift auf die geerbte Farbe;
+das passt zu einem hellen wie zu einem dunklen Theme, ohne dass etwas einzustellen wäre.
+
+Das Brett behält seine eigenen Farben: Sie sind über das Feld **Brettstil** gewollt gewählt.
+
+Kommentare und Varianten sind im Original farbig abgesetzt. Da sich keine Farbe finden lässt, die auf
+hellem und dunklem Grund gleichermaßen trägt, setzen sie sich stattdessen über eine etwas geringere
+Deckkraft ab. Wer einen eigenen Akzent möchte — er färbt unter anderem die Zugnummern —, setzt ihn im
+Stylesheet der Website:
+
+```css
+.ce_pgnviewer { --pgn-akzent: #004b87; }
+```
+
 ## Eigenes Aussehen
 
 Für kleinere Anpassungen genügt eigenes CSS im Seitenlayout. Das Bundle bringt zwei Stylesheets
@@ -181,6 +200,7 @@ Im Template steht das Element `<ct-pgn-viewer>`; alle Einstellungen werden ihm a
 | Brett und Zugliste bleiben leer | Der Betrachter konnte die PGN-Datei nicht laden oder nicht lesen. Häufigste Ursachen: die Datei liegt in einem geschützten Verzeichnis, oder es fehlt die Leerzeile zwischen Kopfbereich und Zugfolge. |
 | Die Auswahlliste der Partien fehlt | Sie erscheint erst, wenn die Datei mehr als eine Partie enthält. |
 | Die Figuren fehlen, das Brett ist leer | Die Dateien des Figurensatzes wurden nicht mit veröffentlicht. Im Contao Manager „Assets neu installieren“ ausführen bzw. `vendor/bin/contao-console contao:setup`. |
+| Das Brett fehlt, an seiner Stelle ist nur Fläche | Bis Fassung 2.1.0 legte sich in der Anordnung „Zugliste umfließt das Brett“ der Block mit der Zugliste über das Brett. Behoben in 2.2.0. |
 | Nur der Rahmen erscheint: kein Brett, keine Figuren, keine Partieauswahl | Die Skripte des Betrachters laufen zu früh. Das eigene Seitenlayout gibt vermutlich den Platzhalter für `TL_BODY` nicht aus, so dass sie nicht am Ende des Body landen. In der Browserkonsole steht dann „document body not defined“. |
 | Der Ton bleibt stumm | Browser spielen Töne erst ab, nachdem der Besucher etwas auf der Seite angeklickt hat. |
 

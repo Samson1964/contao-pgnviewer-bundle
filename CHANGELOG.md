@@ -1,5 +1,11 @@
 # PGN-Betrachter Changelog
 
+## Version 2.2.0 (2026-08-09)
+
+* Fix: **In der Anordnung „Zugliste umfließt das Brett“ war das Brett unsichtbar.** Der Block mit der Zugliste ist positioniert und hat eine eigene Fläche; dadurch legte er sich über das umflossene Brett und verdeckte es vollständig. Sichtbar blieb es nur die ersten Augenblicke nach dem Laden, solange die Zugliste noch leer war — daher der Eindruck, es erscheine beim Neuladen kurz. Das Brett liegt jetzt oben auf.
+* Change: **Der Betrachter übernimmt Schrift- und Hintergrundfarbe der Website.** Sein mitgeliefertes Design ist dunkel — fast schwarze Flächen, helle Schrift —, was auf einer hellen Seite wie ein Fremdkörper wirkte und die Zugliste als schwarzen Kasten stehen ließ. Sein Stylesheet ist durchgehend über Variablen des Material-Designs aufgebaut; das Bundle setzt diese jetzt auf „durchsichtig“ und „geerbte Schriftfarbe“. Das wirkt in einem hellen wie in einem dunklen Theme, ohne dass etwas einzustellen wäre. Das Brett behält seine über den Brettstil gewählten Farben.
+* Change: Kommentare, Varianten und das Ergebnis waren im Original farbig abgesetzt und erreichten auf hellem Grund nur ein Kontrastverhältnis von 2,5:1. Da keine Farbe auf hellem und dunklem Grund gleichermaßen trägt, setzen sie sich jetzt über eine geringere Deckkraft ab: gemessen 8,3:1 auf hellem und 9,6:1 auf dunklem Grund. Wer einen eigenen Akzent möchte, setzt `--pgn-akzent` im Stylesheet der Website.
+
 ## Version 2.1.0 (2026-08-08)
 
 * Add: **Neue Anordnung „Zugliste umfließt das Brett“.** Das Brett steht rechts oben, die Zugliste beginnt links daneben und läuft unter dem Brett über die volle Breite weiter — wie Text um ein Bild. Für lange Partien braucht die Zugliste damit deutlich weniger Höhe. Vor allem aber **bleibt das Brett beim Scrollen stehen**: Bisher wanderte es beim Durchklicken einer langen Notation aus dem Bild, so dass man die Züge nicht mehr verfolgen konnte. Die Bedienknöpfe stehen in dieser Anordnung über der Zugliste, damit sie in der Nähe des Brettes bleiben. Auf Bildschirmen unter 600 Pixel Breite steht das Brett wieder über der Zugliste.

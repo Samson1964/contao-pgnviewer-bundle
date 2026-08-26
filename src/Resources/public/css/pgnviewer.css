@@ -77,6 +77,12 @@
 	   statt nach oben aus dem Fenster zu wandern. */
 	position: sticky;
 	top: 1rem;
+
+	/* Der Block mit der Zugliste ist positioniert und hat eine eigene Fläche.
+	   Ohne diese Zeile legt er sich über das umflossene Brett und verdeckt es
+	   vollständig — sichtbar blieb es nur die ersten Augenblicke nach dem
+	   Laden, solange die Zugliste noch leer war. */
+	z-index: 1;
 }
 
 .ce_pgnviewer.pgn_umfliessend .ct-pgn-viewer-move-list-and-controls {
@@ -152,4 +158,84 @@
    Inhaltselement */
 .ce_pgnviewer ct-pgn-viewer {
 	margin-bottom: 0.5em;
+}
+
+/* -------------------------------------------------------------------------
+ * Farben aus dem Theme der Website
+ * ------------------------------------------------------------------------- */
+
+/*
+ * Der Betrachter bringt ein dunkles Design mit: fast schwarze Flächen, helle
+ * Schrift. Auf einer Website mit hellem Layout wirkt er dadurch wie ein
+ * Fremdkörper, und die Zugliste steht schwarz im weißen Text.
+ *
+ * Sein Stylesheet ist aber durchgehend über Variablen des Material-Designs
+ * aufgebaut, jeweils mit dem dunklen Wert als Rückfall. Es genügt daher, diese
+ * Variablen zu setzen: „transparent“ für die Flächen und „currentColor“ für die
+ * Schrift. Beides nimmt, was die Seite vorgibt — das wirkt in einem hellen wie
+ * in einem dunklen Theme.
+ *
+ * Wer einen eigenen Akzent möchte (Zugnummern, hervorgehobene Angaben), setzt
+ * im Stylesheet der Website --pgn-akzent auf eine Farbe.
+ */
+.ce_pgnviewer {
+	--mdc-theme-surface: transparent;
+	--ct-theme-surface-lighter: transparent;
+	--mdc-theme-background: transparent;
+	--mdc-theme-on-surface: currentColor;
+	--mdc-theme-text-primary-on-background: currentColor;
+	--mdc-theme-text-secondary-on-background: currentColor;
+	--mdc-theme-text-hint-on-background: currentColor;
+	--mdc-theme-text-icon-on-background: currentColor;
+	--mdc-theme-primary: var(--pgn-akzent, currentColor);
+	--mdc-theme-secondary: var(--pgn-akzent, currentColor);
+}
+
+/* Ein paar Stellen im Chesstempo-Stylesheet setzen ihre Farbe unmittelbar,
+   ohne den Umweg über eine Variable. */
+.ce_pgnviewer board-controls,
+.ce_pgnviewer game-header,
+.ce_pgnviewer move-list,
+.ce_pgnviewer .ct-move-list-container,
+.ce_pgnviewer .ct-move-number {
+	background-color: transparent;
+}
+
+/* Ohne eigene Fläche wirkt der Schatten der Karte verloren */
+.ce_pgnviewer .ct-pgn-viewer-move-list-and-controls {
+	box-shadow: none;
+}
+
+/* In der zweispaltigen Zugliste steht jeder Zug in einem Kästchen, dessen
+   Rahmen sonst mit der Fläche verschwände. color-mix mischt die Schriftfarbe
+   der Seite mit Transparenz und passt sich so jedem Theme an; Browser ohne
+   color-mix zeigen einfach keinen Rahmen. */
+.ce_pgnviewer .ct-move-list-style-twocolumn .ct-move-move {
+	border-color: color-mix(in srgb, currentColor 25%, transparent);
+}
+
+/* Kommentare, Varianten und das Ergebnis sind im mitgelieferten Design farbig
+   abgesetzt — in Blau, Grün und Rot, abgestimmt auf den fast schwarzen Grund.
+   Auf hellem Grund erreicht das Blau der Kommentare nur 2,5:1.
+   Eine Farbe zu finden, die auf hellem UND dunklem Grund trägt, geht nicht;
+   und color-mix hilft hier nicht weiter, weil currentColor innerhalb der
+   Eigenschaft color gegen Schwarz rechnet statt gegen die geerbte Farbe.
+   Deshalb übernehmen auch diese Stellen die Schrift der Seite und setzen sich
+   über die Deckkraft ab: gut lesbar, aber ruhiger als die Züge. */
+.ce_pgnviewer .ct-move-comment,
+.ce_pgnviewer .ct-move-list-result-comment,
+.ce_pgnviewer .ct-move-pre-comments,
+.ce_pgnviewer .ct-variation-first-move,
+.ce_pgnviewer .ct-varhandle-expand,
+.ce_pgnviewer .ct-varhandle-expand-marker,
+.ce_pgnviewer .ct-varhandle-collapse,
+.ce_pgnviewer .ct-move-list-result-resultstring {
+	color: inherit;
+	opacity: 0.8;
+}
+
+/* Das Ergebnis der Partie steht für sich und bleibt voll deckend */
+.ce_pgnviewer .ct-move-list-result-resultstring {
+	opacity: 1;
+	font-weight: 700;
 }
