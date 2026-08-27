@@ -11,6 +11,11 @@
 		 * selbst auf. Der Inhalt des Elements ist wegen has-url die Adresse der
 		 * PGN-Datei, die der Viewer im Browser nachlädt.
 		 *
+		 * dont-jump-start sorgt dafür, dass eine Partie vor ihrem ersten Zug
+		 * beginnt statt danach — beim Laden wie beim Wechsel der Partie. Der
+		 * Name führt in die Irre: Der Viewer springt sehr wohl an den Anfang,
+		 * nur eben einen Halbzug weiter zurück.
+		 *
 		 * Zwei Werte gehen als CSS-Variablen mit: die eingestellte Höhe der
 		 * Zugliste und – beim Umfließen – die Breite des Brettes, damit das
 		 * Stylesheet weiß, wie viel Platz daneben bleibt.
@@ -29,6 +34,7 @@
 	?>
 	<ct-pgn-viewer
 		has-url="true"
+		dont-jump-start="true"
 		board-pieceStyle="<?php echo $this->pieceSet; ?>"<?php if ($this->boardStyle): ?>
 		board-boardStyle="<?php echo $this->boardStyle; ?>"<?php endif; ?>
 		board-size="<?php echo $this->boardSize; ?>"

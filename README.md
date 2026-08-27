@@ -178,7 +178,13 @@ Unter dem Brett liegt eine Knopfleiste: an den Anfang, ein Zug zurück, ein Zug 
 automatisch abspielen sowie ein Menü mit weiteren Befehlen (Brett drehen, Vollbild, Varianten
 ein- und ausklappen, PGN anzeigen, Bretteinstellungen). Jeder Knopf und jeder Menüeintrag trägt
 einen Hinweistext, der beim Verweilen mit der Maus erscheint. Enthält die PGN-Datei mehrere Partien, steht die
-Auswahlliste unmittelbar über dem Brett und ist genauso breit wie dieses. Ein Klick auf einen Zug in der Liste
+Auswahlliste unmittelbar über dem Brett und ist genauso breit wie dieses.
+
+Eine Partie beginnt vor ihrem ersten Zug — beim Laden der Seite wie beim Wechsel der Partie —,
+so dass sich auch der Eröffnungszug noch nachvollziehen lässt. Das Ergebnis steht am Ende der
+Zugliste unmittelbar hinter dem letzten Zug.
+
+Ein Klick auf einen Zug in der Liste
 springt zu dieser Stellung, mit den Pfeiltasten lässt sich die Partie durchblättern, und Figuren
 können mit der Maus verschoben werden, um eigene Varianten auszuprobieren.
 

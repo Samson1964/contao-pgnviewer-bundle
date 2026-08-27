@@ -17,6 +17,11 @@
  * Zweck auch als Kurzhinweis unter dem Mauszeiger. Das betrifft nicht nur die
  * vier Knöpfe unter dem Brett, sondern auch die Einträge des Klappmenüs — die
  * sind als span ausgeführt und tragen nichts als ein Symbol.
+ *
+ * Zwei Eigenheiten des Betrachters werden dabei geradegerückt: Er meldet seine
+ * Ereignisse beim Umhängen ein zweites Mal an (siehe ereignisseAbmelden), und
+ * sein Knopf „Zum Anfang“ bleibt auf dem ersten Zug stehen, statt davor
+ * (siehe anfangKorrigieren).
  */
 (function () {
 	'use strict';
@@ -46,12 +51,84 @@
 
 		/* Die Knopfleiste unter das Brett */
 		if (knopfleiste && knopfleiste.parentElement !== halter) {
+			ereignisseAbmelden(knopfleiste);
 			halter.appendChild(knopfleiste);
+		}
+
+		if (knopfleiste) {
+			anfangKorrigieren(knopfleiste);
 		}
 
 		titelErgaenzen(viewer);
 
 		return true;
+	}
+
+	/**
+	 * Meldet die Ereignisse der Knopfleiste ab, bevor sie verschoben wird.
+	 *
+	 * Die Knopfleiste ist ein eigenes HTML-Element. Wird sie im Dokument
+	 * umgehängt, ruft der Browser ihr connectedCallback erneut auf, und der
+	 * Betrachter meldet seine Ereignisse noch einmal an — sein
+	 * disconnectedCallback ist leer und räumt nichts weg. Jeder Klick liefe
+	 * dann zweimal: „Ein Zug vor“ spränge über den gegnerischen Zug hinweg.
+	 *
+	 * Die Anmeldungen laufen über einen Vermittler unter „_del“, dessen
+	 * detach() sie wieder entfernt. Sein destroy() ist in dieser Fassung des
+	 * Betrachters eine leere Funktion und hilft nicht.
+	 *
+	 * Kennt eine spätere Fassung des Betrachters diesen Weg nicht mehr, bleibt
+	 * es beim Verschieben ohne Abmelden — dann kehrt der doppelte Zug zurück,
+	 * aber nichts bricht ab.
+	 *
+	 * @param {Element} knopfleiste Das Element board-controls
+	 */
+	function ereignisseAbmelden(knopfleiste) {
+		var vermittler = knopfleiste._del;
+
+		if (vermittler && typeof vermittler.detach === 'function') {
+			vermittler.detach(knopfleiste);
+		}
+	}
+
+	/**
+	 * Lässt den Knopf „Zum Anfang“ vor den ersten Zug springen.
+	 *
+	 * Der Betrachter ruft dort nur jumpToStart() auf, und das führt auf den
+	 * ersten Zug der Partie — das Brett zeigt also bereits den Zug von Weiß.
+	 * Beim Laden und beim Wechsel der Partie macht der Betrachter es selbst
+	 * richtig, sofern das Attribut dont-jump-start gesetzt ist: Dort hängt er
+	 * ein backMove() an. Genau das wird hier für den Knopf nachgeholt.
+	 *
+	 * Die Knopfleiste wirft ihre Knöpfe bei jedem Umhängen weg und baut sie neu
+	 * auf. Deshalb wird bei jedem Durchlauf geprüft, ob die Ersetzung noch am
+	 * aktuellen Knopf hängt; das Merkmal am Knopf verhindert, dass sie ohne Not
+	 * mehrfach gesetzt wird.
+	 *
+	 * @param {Element} knopfleiste Das Element board-controls
+	 */
+	function anfangKorrigieren(knopfleiste) {
+		var knoepfe = knopfleiste._buttonsByName;
+
+		if (!knoepfe || !knoepfe.jumpToStart || knoepfe.jumpToStart.ctAngepasst) {
+			return;
+		}
+
+		knoepfe.jumpToStart.action = function () {
+			var zugliste = this._board && this._board.moveList;
+
+			if (!zugliste) {
+				return;
+			}
+
+			zugliste.jumpToStart();
+
+			if (typeof zugliste.atStart === 'function' && !zugliste.atStart()) {
+				zugliste.backMove();
+			}
+		};
+
+		knoepfe.jumpToStart.ctAngepasst = true;
 	}
 
 	/**

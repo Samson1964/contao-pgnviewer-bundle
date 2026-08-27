@@ -285,3 +285,19 @@
 	opacity: 1;
 	font-weight: 700;
 }
+
+/* Das Ergebnis gehört hinter den letzten Zug.
+   Der Betrachter setzt es als eigenen Block mit clear:both ans Ende der
+   Zugliste. In der Anordnung „Zugliste umfließt das Brett“ rutscht es dadurch
+   unter das Brett: bei einer kurzen Partie gemessene 370 Pixel hinter dem
+   letzten Zug, weit weg von den Partiedaten. Als Teil des Textflusses steht es
+   dort, wo es hingehört. Der leere Behälter davor würde die Zeile trennen. */
+.ce_pgnviewer .ct-move-list-result {
+	display: inline;
+	clear: none;
+	margin-left: 0.4em;
+}
+
+.ce_pgnviewer .ct-move-list-empty-list-comment:empty {
+	display: none;
+}

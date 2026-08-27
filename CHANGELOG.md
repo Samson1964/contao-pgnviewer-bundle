@@ -1,5 +1,12 @@
 # PGN-Betrachter Changelog
 
+## Version 2.3.1 (2026-08-27)
+
+* Fix: **Jeder Klick auf „Ein Zug vor“ oder „Ein Zug zurück“ führte zwei Halbzüge aus** und übersprang damit immer den Zug des Gegners. Ursache war eine Regression aus Fassung 2.3.0: Die Knopfleiste ist ein eigenes HTML-Element, und als sie unter das Brett verschoben wurde, meldete der Betrachter seine Ereignisse ein zweites Mal an — sein `disconnectedCallback` ist leer und räumt nichts weg. Die Anmeldungen werden jetzt vor dem Verschieben abgemeldet. Nachgewiesen mit zwei Prüfständen, die sich nur darin unterscheiden, ob `js/ct-layout.js` geladen ist: ohne die Datei ein Halbzug je Klick, mit ihr zwei; jedes weitere Verschieben erhöhte um einen weiteren.
+* Fix: **Das Ergebnis der Partie stand weit unter dem letzten Zug**, in der Anordnung „Zugliste umfließt das Brett“ sogar unterhalb des Brettes — bei einer kurzen Partie gemessene 370 Pixel dahinter. Der Betrachter setzt es als eigenen Block mit `clear: both` ans Ende der Zugliste. Es steht jetzt im Textfluss unmittelbar hinter dem letzten Zug.
+* Fix: **Der Knopf „Zum Anfang“ blieb auf dem ersten Zug stehen**, statt davor: Das Brett zeigte bereits den Eröffnungszug von Weiß. Der Betrachter ruft dort nur `jumpToStart()` auf; ein `backMove()` fehlt.
+* Change: **Eine Partie beginnt jetzt vor ihrem ersten Zug** — beim Laden der Seite wie beim Wechsel der Partie in der Auswahlliste. Bisher stand das Brett schon nach dem Zug von Weiß, ohne dass sich dieser Zug noch einmal betrachten ließ. Dafür sorgt das Attribut `dont-jump-start` des Betrachters, dessen Name in die Irre führt: Er springt sehr wohl an den Anfang, nur eben einen Halbzug weiter zurück.
+
 ## Version 2.3.0 (2026-08-27)
 
 * Add: **Voreinstellungen für alle Inhaltselemente.** Unter *Einstellungen → PGNViewer* lassen sich Figurensatz, Figurengröße, Brettstil, Koordinaten, Partiedaten, Anordnung, Höhe der Zugliste, Pause zwischen den Zügen, der Hinweis auf Chess Tempo und der Download der PGN-Datei einmal für die ganze Installation festlegen. Ein neues Inhaltselement startet mit diesen Werten; eigene Voreinstellungen über eine projekteigene `tl_content.php` erübrigen sich damit.
