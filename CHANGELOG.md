@@ -1,5 +1,16 @@
 # PGN-Betrachter Changelog
 
+## Version 2.3.0 (2026-08-27)
+
+* Add: **Voreinstellungen für alle Inhaltselemente.** Unter *Einstellungen → PGNViewer* lassen sich Figurensatz, Figurengröße, Brettstil, Koordinaten, Partiedaten, Anordnung, Höhe der Zugliste, Pause zwischen den Zügen, der Hinweis auf Chess Tempo und der Download der PGN-Datei einmal für die ganze Installation festlegen. Ein neues Inhaltselement startet mit diesen Werten; eigene Voreinstellungen über eine projekteigene `tl_content.php` erübrigen sich damit.
+* Add: **Freigabe je Feld.** Das Kästchenfeld „Im Inhaltselement überschreibbar“ bestimmt, welche der zehn Angaben ein Redakteur im einzelnen Element überhaupt ändern darf. Ein nicht freigegebenes Feld verschwindet aus der Eingabemaske und richtet sich überall nach dem globalen Wert — es ließen sich sonst Werte eintragen, die nachher niemand beachtet. Sein gespeicherter Eintrag bleibt erhalten und gilt wieder, sobald das Feld erneut freigegeben wird. Solange in den Einstellungen nichts gespeichert wurde, sind alle zehn Felder frei; bestehende Websites verhalten sich nach der Aktualisierung also unverändert.
+* Change: Ist der **Download der PGN-Datei** gesperrt und eingeschaltet, bleiben Link-Text und Link-Title im Inhaltselement stehen — die Beschriftung gehört zur einzelnen Datei und lässt sich nicht sinnvoll global vorgeben. Ist er gesperrt und ausgeschaltet, entfällt der Downloadbereich der Eingabemaske ganz.
+* Change: **Die Partieauswahl steht jetzt unmittelbar über dem Brett** und ist genauso breit wie dieses. Bisher lief sie über die gesamte Breite des Elements und stand weit vom Brett entfernt.
+* Change: **Die Bedienknöpfe stehen jetzt unter dem Brett**, in allen drei Anordnungen. In der Anordnung „Zugliste umfließt das Brett“ lagen sie bisher über der Zugliste.
+* Fix: **Auf schmalen Bildschirmen standen die Bedienknöpfe untereinander** statt nebeneinander und beanspruchten dadurch die halbe Höhe des Bildschirms. Sie bleiben jetzt in einer Reihe, bis hinunter zu 320 Pixel Bildschirmbreite.
+* Add: Jedes Bedienelement trägt einen Hinweistext, der beim Verweilen mit der Maus erscheint. Der Betrachter liefert die Beschriftungen nur für Screenreader mit (`aria-label`); sie werden jetzt zusätzlich als `title` gesetzt. Das betrifft die vier Knöpfe unter dem Brett ebenso wie die zehn Einträge des Klappmenüs, die nichts als ein Symbol zeigen — von „Brett drehen“ bis „Automatisch abspielen“.
+* Change: Die Kopfzeile mit Turnier, Ort, Runde, ECO-Schlüssel und Jahr erscheint etwas kleiner und kursiv, damit sie sich von den Namen der Spieler abhebt.
+
 ## Version 2.2.0 (2026-08-09)
 
 * Fix: **In der Anordnung „Zugliste umfließt das Brett“ war das Brett unsichtbar.** Der Block mit der Zugliste ist positioniert und hat eine eigene Fläche; dadurch legte er sich über das umflossene Brett und verdeckte es vollständig. Sichtbar blieb es nur die ersten Augenblicke nach dem Laden, solange die Zugliste noch leer war — daher der Eindruck, es erscheine beim Neuladen kurz. Das Brett liegt jetzt oben auf.

@@ -105,13 +105,19 @@ Mehrere PGNViewer-Elemente auf derselben Seite sind möglich; jedes Brett arbeit
 | **Ton aktivieren** | Begleitet Züge und Schlagzüge mit einem Geräusch. Das Feld ist nur auswählbar, wenn der Ton in den Einstellungen freigegeben wurde (siehe unten). |
 | **Hinweis auf Chess Tempo anzeigen** | Blendet unter dem Brett den Hinweis „PGN Viewer powered by chesstempo.com“ ein. Der Betrachter steht unter einer Creative-Commons-Lizenz und darf auf nicht-kommerziellen Seiten nur mit diesem sichtbaren Link verwendet werden. |
 
+Zehn dieser Felder — Figurensatz, Figurengröße, Brettstil, Koordinaten, Partiedaten, Anordnung,
+Höhe der Zugliste, Pause zwischen den Zügen, Hinweis auf Chess Tempo und Download der PGN-Datei —
+lassen sich auch global vorgeben. Fehlt eines davon in der Eingabemaske, ist es in den Einstellungen
+nicht zum Überschreiben freigegeben; siehe
+[Voreinstellungen der Inhaltselemente](#voreinstellungen-der-inhaltselemente).
+
 ### Die drei Anordnungen
 
 | Auswahl | Darstellung |
 | --- | --- |
 | **Zugliste rechts neben dem Brett** | Die Voreinstellung. Brett und Zugliste stehen nebeneinander, die Zugliste scrollt in ihrem eigenen Bereich. Auf schmalen Bildschirmen rutscht sie unter das Brett. |
 | **Zugliste unter dem Brett** | Erst das Brett, darunter die Zugliste über die volle Breite. |
-| **Zugliste umfließt das Brett** | Das Brett steht rechts oben, die Zugliste beginnt links daneben und läuft unter dem Brett über die volle Breite weiter — wie Text um ein Bild. Geeignet für lange Partien: Die Züge brauchen weniger Höhe, und **das Brett bleibt beim Scrollen stehen**, so dass es beim Durchklicken im Bild bleibt. Die Bedienknöpfe stehen hier über der Zugliste, damit sie in der Nähe des Brettes bleiben. Die Angabe „Höhe der Zugliste“ hat in dieser Anordnung keine Wirkung, denn ein Bereich mit eigenem Bildlauf kann das Brett nicht umfließen. Auf Bildschirmen unter 600 Pixel Breite steht das Brett wieder über der Zugliste. |
+| **Zugliste umfließt das Brett** | Das Brett steht rechts oben, die Zugliste beginnt links daneben und läuft unter dem Brett über die volle Breite weiter — wie Text um ein Bild. Geeignet für lange Partien: Die Züge brauchen weniger Höhe, und **das Brett bleibt beim Scrollen stehen**, so dass es beim Durchklicken im Bild bleibt. Die Angabe „Höhe der Zugliste“ hat in dieser Anordnung keine Wirkung, denn ein Bereich mit eigenem Bildlauf kann das Brett nicht umfließen. Auf Bildschirmen unter 600 Pixel Breite steht das Brett wieder über der Zugliste. |
 
 ### Download-Einstellungen
 
@@ -135,11 +141,44 @@ Unter **Einstellungen → PGNViewer** gelten die folgenden Angaben für alle Ele
 | **Notationssprache** | Buchstaben der Figuren in der Zugliste: Englisch (Voreinstellung, KQRBNP), Deutsch (KDTLSB), Französisch, Niederländisch, Polnisch, Spanisch, Tschechisch sowie zwei Varianten mit Figurensymbolen (hell ♔♕♖♗♘♙ und dunkel ♚♛♜♝♞♟). Die Angabe betrifft nur die Anzeige – in der PGN-Datei stehen immer die englischen Buchstaben. Bei Deutsch sind zusätzlich die Beschriftungen der Bedienknöpfe übersetzt. |
 | **„Ton aktivieren“ freischalten** | Solange dies aus ist, lässt sich der Ton in keinem Inhaltselement anwählen und es werden grundsätzlich keine Geräusche abgespielt. |
 
+### Voreinstellungen der Inhaltselemente
+
+Zehn Angaben, die es auch im Inhaltselement gibt, lassen sich im Bereich
+**PGNViewer: Voreinstellungen der Inhaltselemente** einmal für die ganze Installation festlegen:
+Figurensatz, Figurengröße, Brettstil, Koordinaten, Partiedaten, Anordnung, Höhe der Zugliste, Pause
+zwischen den Zügen, Hinweis auf Chess Tempo und Download der PGN-Datei. Ihre Bedeutung ist dieselbe
+wie oben beschrieben.
+
+Ausgeliefert werden sie mit Merida, 46 Pixel, blauem Brett, sichtbaren Koordinaten und Partiedaten,
+der Anordnung „Zugliste umfließt das Brett“, 300 Pixel Zuglistenhöhe, 800 Millisekunden Pause,
+sichtbarem Chess-Tempo-Hinweis und abgeschaltetem Download.
+
+Darunter steht **„Im Inhaltselement überschreibbar“**. Nur die dort angehakten Felder erscheinen
+überhaupt im Inhaltselement und dürfen die Voreinstellung überstimmen; alle übrigen verschwinden aus
+der Eingabemaske und richten sich überall nach dem globalen Wert. So lässt sich ein einheitliches
+Erscheinungsbild durchsetzen und trotzdem einzelne Angaben freigeben — etwa den Figurensatz.
+
+Drei Punkte sind dabei zu beachten:
+
+* Solange in den Einstellungen **noch nichts gespeichert** wurde, sind alle zehn Felder freigegeben.
+  Bestehende Websites verhalten sich nach einer Aktualisierung also unverändert.
+* Ein gesperrtes Feld **behält seinen gespeicherten Wert** im Datensatz; er bleibt nur unbeachtet.
+  Wird das Feld später wieder freigegeben, gilt der alte Eintrag erneut.
+* Ist **„Download der PGN-Datei“ gesperrt und eingeschaltet**, bleiben Link-Text und Link-Title im
+  Inhaltselement stehen: Die Beschriftung gehört zur einzelnen Datei und lässt sich nicht sinnvoll
+  global vorgeben. Ist es gesperrt und ausgeschaltet, entfällt der Downloadbereich ganz.
+
+Beim **Anlegen** eines neuen Inhaltselements sind die freigegebenen Felder bereits mit dem globalen
+Wert vorbelegt. Damit erübrigen sich eigene Voreinstellungen über
+`$GLOBALS['TL_DCA']['tl_content']['fields'][…]['default']` in einer projekteigenen DCA-Datei.
+
 ## Bedienung im Frontend
 
 Unter dem Brett liegt eine Knopfleiste: an den Anfang, ein Zug zurück, ein Zug vor, ans Ende,
 automatisch abspielen sowie ein Menü mit weiteren Befehlen (Brett drehen, Vollbild, Varianten
-ein- und ausklappen, PGN anzeigen, Bretteinstellungen). Ein Klick auf einen Zug in der Liste
+ein- und ausklappen, PGN anzeigen, Bretteinstellungen). Jeder Knopf und jeder Menüeintrag trägt
+einen Hinweistext, der beim Verweilen mit der Maus erscheint. Enthält die PGN-Datei mehrere Partien, steht die
+Auswahlliste unmittelbar über dem Brett und ist genauso breit wie dieses. Ein Klick auf einen Zug in der Liste
 springt zu dieser Stellung, mit den Pfeiltasten lässt sich die Partie durchblättern, und Figuren
 können mit der Maus verschoben werden, um eigene Varianten auszuprobieren.
 
@@ -173,7 +212,7 @@ Für kleinere Anpassungen genügt eigenes CSS im Seitenlayout. Das Bundle bringt
 mit: `pgnviewer/pgnviewerext.vers1.css` von Chesstempo mit dem gesamten Aussehen des Betrachters
 und `css/pgnviewer.css` mit den Ergänzungen des Bundles.
 
-Die Stylesheets stehen im Seitenkopf, die drei Skripte dagegen **am Ende des Body**. Das muss so
+Die Stylesheets stehen im Seitenkopf, die Skripte dagegen **am Ende des Body**. Das muss so
 sein: Der Betrachter sucht beim Start die `<ct-pgn-viewer>`-Elemente im Dokument und bricht ab,
 wenn es sie noch nicht gibt. Wer ein eigenes Seitenlayout baut, sollte den Platzhalter für
 `TL_BODY` also nicht aus dem Template entfernen.

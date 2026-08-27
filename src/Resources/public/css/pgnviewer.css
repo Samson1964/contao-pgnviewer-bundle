@@ -91,13 +91,13 @@
 	margin: 0;
 }
 
-/* Partieauswahl, Knopfleiste und Kopfzeile sind einzelne Blöcke. In voller
-   Breite passen sie nicht neben das Brett und würden mitsamt der Zugliste
-   darunter rutschen — dann bliebe die Fläche links vom Brett leer. Sie
-   bekommen deshalb genau die Breite, die neben dem Brett übrig bleibt; das
-   Inhaltselement gibt dessen Kantenlänge als Variable mit. */
-.ce_pgnviewer.pgn_umfliessend .ct-pgn-viewer-multi-game-selector-panel,
-.ce_pgnviewer.pgn_umfliessend board-controls,
+/* Die Kopfzeile steht als einzelner Block über der Zugliste. In voller Breite
+   passt sie nicht neben das Brett und würde mitsamt der Zugliste darunter
+   rutschen — dann bliebe die Fläche links vom Brett leer. Sie bekommt deshalb
+   genau die Breite, die neben dem Brett übrig bleibt; das Inhaltselement gibt
+   dessen Kantenlänge als Variable mit.
+   Partieauswahl und Knopfleiste brauchen das nicht: ct-layout.js hängt sie an
+   das Brett, sie stehen also ohnehin in dessen Spalte. */
 .ce_pgnviewer.pgn_umfliessend game-header {
 	max-width: calc(100% - var(--pgn-board-size, 400px) - 1.5em);
 }
@@ -121,6 +121,52 @@
 	}
 }
 
+/* -------------------------------------------------------------------------
+ * Partieauswahl und Knopfleiste am Brett
+ * ------------------------------------------------------------------------- */
+
+/* ct-layout.js hängt beide in den Bereich des Brettes: die Auswahlliste
+   darüber, die Knöpfe darunter. Damit sie die Breite des Brettes annehmen,
+   bekommen sie hier die volle Breite ihres neuen Behälters. */
+.ce_pgnviewer .ct-pgn-viewer-board-holder .ct-pgn-viewer-multi-game-selector-panel,
+.ce_pgnviewer .ct-pgn-viewer-board-holder board-controls {
+	width: 100%;
+	max-width: 100%;
+	box-sizing: border-box;
+}
+
+.ce_pgnviewer .ct-pgn-viewer-board-holder .ct-pgn-viewer-multi-game-select {
+	width: 100%;
+	box-sizing: border-box;
+	margin-bottom: 0.4em;
+}
+
+/* Die Knöpfe stehen in einer Zeile — auch auf schmalen Bildschirmen, wo der
+   Betrachter sie sonst untereinander setzt. Sie dürfen dafür schrumpfen, aber
+   nicht unter die Größe, die sich mit dem Finger noch treffen lässt. */
+.ce_pgnviewer .ct-pgn-viewer-board-holder board-controls .ct-nav-buttons,
+.ce_pgnviewer .ct-pgn-viewer-board-holder board-controls > div {
+	display: flex;
+	flex-wrap: nowrap;
+	align-items: center;
+	justify-content: center;
+}
+
+.ce_pgnviewer .ct-pgn-viewer-board-holder board-controls button {
+	flex: 0 1 auto;
+	min-width: 40px;
+}
+
+/* -------------------------------------------------------------------------
+ * Kopfzeile der Partie
+ * ------------------------------------------------------------------------- */
+
+/* Turnier, Ort, Runde, ECO-Schlüssel und Jahr stehen unter den Namen. Diese
+   Zeile ist eine Nebenangabe und tritt deshalb etwas zurück. */
+.ce_pgnviewer .ct-game-header-event-site-round-eco-year {
+	font-size: 0.85em;
+	font-style: italic;
+}
 /* -------------------------------------------------------------------------
  * Bedienung mit der Tastatur
  * ------------------------------------------------------------------------- */

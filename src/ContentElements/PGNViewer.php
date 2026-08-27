@@ -25,6 +25,7 @@ use Contao\Input;
 use Contao\StringUtil;
 use Contao\System;
 use Contao\Template;
+use Schachbulle\ContaoPgnviewerBundle\Config\ViewerSettings;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
@@ -127,6 +128,8 @@ class PGNViewer extends ContentElement
 
 			return $objTemplate->parse();
 		}
+
+		$this->applyGlobalSettings();
 
 		if (!$this->pgn_file)
 		{
@@ -246,7 +249,9 @@ class PGNViewer extends ContentElement
 	 */
 	private function getLayoutData(): array
 	{
-		if ('wrap' === $this->pgn_boardfirst)
+		$strLayout = $this->pgn_boardfirst;
+
+		if ('wrap' === $strLayout)
 		{
 			return array
 			(
@@ -259,11 +264,40 @@ class PGNViewer extends ContentElement
 
 		return array
 		(
-			'movePosition' => $this->pgn_boardfirst ? 'under' : 'right',
+			'movePosition' => $strLayout ? 'under' : 'right',
 			'buttonsAboveMoves' => 'false',
 			'notationSize' => (int) $this->pgn_notationsize,
 			'layoutClass' => '',
 		);
+	}
+
+	/**
+	 * Setzt gesperrte Felder auf den global eingestellten Wert.
+	 *
+	 * Zehn Angaben lassen sich unter Einstellungen → PGNViewer für die ganze
+	 * Installation vorgeben. Dort steht zugleich, welche davon ein Redakteur im
+	 * einzelnen Element überschreiben darf. Ein freigegebenes Feld bleibt
+	 * unangetastet, auch wenn es leer ist — bei den Kästchen bedeutet leer
+	 * „nein“. Ein gesperrtes Feld bekommt hier den globalen Wert; sein
+	 * gespeicherter Inhalt bleibt in der Datenbank erhalten und gilt wieder,
+	 * sobald das Feld erneut freigegeben wird.
+	 *
+	 * Der Wert wird in die Daten des Elements geschrieben und nicht nur an den
+	 * Betrachter durchgereicht: Die Vorlage liest Felder wie pgn_backlink und
+	 * pgn_download unmittelbar, und beide Wege müssen dasselbe ergeben.
+	 *
+	 * Nebenwirkung: Ändert die Eigenschaften des Elements. Aufzurufen genau
+	 * einmal, zu Beginn von generate().
+	 */
+	private function applyGlobalSettings(): void
+	{
+		foreach (array_keys(ViewerSettings::FIELDS) as $strField)
+		{
+			if (!ViewerSettings::isOverridable($strField))
+			{
+				$this->$strField = ViewerSettings::getGlobal($strField);
+			}
+		}
 	}
 
 	/**
@@ -342,6 +376,9 @@ class PGNViewer extends ContentElement
 		}
 
 		$this->addBodyScript('contaopgnviewer', $strBase . 'pgnviewer/pgnviewerext.bundle.vers1.js');
+
+		// Nach dem Betrachter: hängt Partieauswahl und Knopfleiste ans Brett
+		$this->addBodyScript('contaopgnviewer_layout', $strBase . 'js/ct-layout.js');
 
 		$GLOBALS['TL_CSS']['contaopgnviewer_vendor'] = $strBase . 'pgnviewer/pgnviewerext.vers1.css';
 		$GLOBALS['TL_CSS']['contaopgnviewer'] = $strBase . 'css/pgnviewer.css';

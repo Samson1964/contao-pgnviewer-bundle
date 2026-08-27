@@ -9,15 +9,46 @@
  */
 
 use Contao\Config;
+use Schachbulle\ContaoPgnviewerBundle\Config\ViewerSettings;
 
 /**
  * Paletten
  */
 $GLOBALS['TL_DCA']['tl_content']['palettes']['__selector__'][] = 'pgn_download';
 
+// Zehn Angaben lassen sich global vorgeben. Ist eine davon in den Einstellungen
+// nicht zum Überschreiben freigegeben, erscheint sie hier gar nicht erst — sonst
+// ließen sich Werte eintragen, die nachher niemand beachtet.
+$arrPgnFields = array_filter
+(
+	array('pgn_file', 'pgn_pieceset', 'pgn_piecesize', 'pgn_boardstyle', 'pgn_coordinates', 'pgn_gamestat', 'pgn_boardfirst', 'pgn_moveformat', 'pgn_notationsize', 'pgn_pause', 'pgn_sound', 'pgn_backlink'),
+	static function (string $strField): bool
+	{
+		return !isset(ViewerSettings::FIELDS[$strField]) || ViewerSettings::isOverridable($strField);
+	}
+);
+
+// Der Downloadbereich braucht eine eigene Behandlung, weil an "pgn_download"
+// zwei weitere Felder hängen. Ist das Kästchen gesperrt und eingeschaltet,
+// bleiben Link-Text und Link-Title stehen: Ihre Beschriftung gehört zur
+// einzelnen Datei und lässt sich nicht global vorgeben. Ist es gesperrt und
+// ausgeschaltet, entfällt der ganze Bereich.
+if (ViewerSettings::isOverridable('pgn_download'))
+{
+	$strPgnDownload = ';{download_legend},pgn_download';
+}
+elseif (ViewerSettings::getGlobal('pgn_download'))
+{
+	$strPgnDownload = ';{download_legend},pgn_linkTitle,pgn_titleText';
+}
+else
+{
+	$strPgnDownload = '';
+}
+
 // Das Feld "guests" gibt es nur in Contao 4.13; in Contao 5 wird es von der
 // Palette stillschweigend übergangen
-$GLOBALS['TL_DCA']['tl_content']['palettes']['pgnviewer'] = '{type_legend},type,headline;{modul_config},pgn_file,pgn_pieceset,pgn_piecesize,pgn_boardstyle,pgn_coordinates,pgn_gamestat,pgn_boardfirst,pgn_moveformat,pgn_notationsize,pgn_pause,pgn_sound,pgn_backlink;{download_legend},pgn_download;{template_legend:hide},customTpl;{protected_legend:hide},protected;{expert_legend:hide},guests,cssID;{invisible_legend:hide},invisible,start,stop';
+$GLOBALS['TL_DCA']['tl_content']['palettes']['pgnviewer'] = '{type_legend},type,headline;{modul_config},' . implode(',', $arrPgnFields) . $strPgnDownload . ';{template_legend:hide},customTpl;{protected_legend:hide},protected;{expert_legend:hide},guests,cssID;{invisible_legend:hide},invisible,start,stop';
 $GLOBALS['TL_DCA']['tl_content']['subpalettes']['pgn_download'] = 'pgn_linkTitle,pgn_titleText';
 
 /**
@@ -44,12 +75,14 @@ $GLOBALS['TL_DCA']['tl_content']['fields']['pgn_file'] = array
 // Die Werte entsprechen den Figurensätzen des Chesstempo-Viewers. Bis auf
 // "merida-gradient" liegt zu jedem Satz eine eigene CSS-Datei im Bundle, die
 // das Inhaltselement nur bei Bedarf einbindet.
+// Ein neues Element startet mit dem global eingestellten Wert; das gilt für alle
+// acht Felder, die es auch in den Einstellungen gibt.
 $GLOBALS['TL_DCA']['tl_content']['fields']['pgn_pieceset'] = array
 (
 	'label'     => &$GLOBALS['TL_LANG']['tl_content']['pgn_pieceset'],
-	'default'   => 'merida',
+	'default'   => ViewerSettings::getGlobal('pgn_pieceset'),
 	'inputType' => 'select',
-	'options'   => array('merida', 'merida-gradient', 'leipzig', 'maya', 'case', 'kingdom', 'alpha', 'wiki', 'celtic', 'fantasy', 'goodcomp', 'goodcomp-gradient', 'kosal', 'spatial', 'eyes', 'skulls'),
+	'options'   => ViewerSettings::PIECE_SETS,
 	'reference' => &$GLOBALS['TL_LANG']['tl_content']['pgn_pieceset_option'],
 	'eval'      => array('mandatory' => true, 'tl_class' => 'w50'),
 	'sql'       => "varchar(255) NOT NULL default ''"
@@ -61,9 +94,9 @@ $GLOBALS['TL_DCA']['tl_content']['fields']['pgn_pieceset'] = array
 $GLOBALS['TL_DCA']['tl_content']['fields']['pgn_piecesize'] = array
 (
 	'label'     => &$GLOBALS['TL_LANG']['tl_content']['pgn_piecesize'],
-	'default'   => '46',
+	'default'   => ViewerSettings::getGlobal('pgn_piecesize'),
 	'inputType' => 'select',
-	'options'   => array('20', '24', '29', '35', '40', '46', '56', '64', '72', '80'),
+	'options'   => ViewerSettings::PIECE_SIZES,
 	'reference' => &$GLOBALS['TL_LANG']['tl_content']['pgn_piecesize_option'],
 	'eval'      => array('mandatory' => true, 'tl_class' => 'w50'),
 	'sql'       => "int(10) unsigned NOT NULL default '46'"
@@ -74,10 +107,10 @@ $GLOBALS['TL_DCA']['tl_content']['fields']['pgn_piecesize'] = array
 $GLOBALS['TL_DCA']['tl_content']['fields']['pgn_boardstyle'] = array
 (
 	'label'     => &$GLOBALS['TL_LANG']['tl_content']['pgn_boardstyle'],
-	'default'   => '',
+	'default'   => ViewerSettings::getGlobal('pgn_boardstyle'),
 	'inputType' => 'select',
 	// Erst die einfarbigen Bretter, dann die mit Bild
-	'options'   => array('blue', 'blue-gradient', 'cadet-grey-gradient', 'teal-gradient', 'green', 'green-white', 'brown', 'brown-cream', 'grey', 'grey-gradient', 'grey-diagonals', 'light-grey', 'white-grey', 'wood-light', 'wood-medium', 'wood-dark', 'wood-dark2', 'wood-pine', 'marble-brown', 'marble-green', 'granite', 'cracked-stone', 'stucco', 'sand-snow', 'metal', 'gold-silver', 'leather', 'fabric', 'grass', 'camouflage', 'green-plasma'),
+	'options'   => ViewerSettings::BOARD_STYLES,
 	'reference' => &$GLOBALS['TL_LANG']['tl_content']['pgn_boardstyle_option'],
 	'eval'      => array('includeBlankOption' => true, 'tl_class' => 'w50'),
 	'sql'       => "varchar(255) NOT NULL default ''"
@@ -86,7 +119,7 @@ $GLOBALS['TL_DCA']['tl_content']['fields']['pgn_boardstyle'] = array
 $GLOBALS['TL_DCA']['tl_content']['fields']['pgn_coordinates'] = array
 (
 	'label'     => &$GLOBALS['TL_LANG']['tl_content']['pgn_coordinates'],
-	'default'   => '',
+	'default'   => ViewerSettings::getGlobal('pgn_coordinates'),
 	'inputType' => 'checkbox',
 	'eval'      => array('tl_class' => 'w50 clr'),
 	'sql'       => "char(1) NOT NULL default ''"
@@ -98,7 +131,7 @@ $GLOBALS['TL_DCA']['tl_content']['fields']['pgn_coordinates'] = array
 $GLOBALS['TL_DCA']['tl_content']['fields']['pgn_gamestat'] = array
 (
 	'label'     => &$GLOBALS['TL_LANG']['tl_content']['pgn_gamestat'],
-	'default'   => '1',
+	'default'   => ViewerSettings::getGlobal('pgn_gamestat'),
 	'inputType' => 'checkbox',
 	'eval'      => array('tl_class' => 'w50'),
 	'sql'       => "varchar(255) NOT NULL default ''"
@@ -110,9 +143,9 @@ $GLOBALS['TL_DCA']['tl_content']['fields']['pgn_gamestat'] = array
 $GLOBALS['TL_DCA']['tl_content']['fields']['pgn_boardfirst'] = array
 (
 	'label'     => &$GLOBALS['TL_LANG']['tl_content']['pgn_boardfirst'],
-	'default'   => '',
+	'default'   => ViewerSettings::getGlobal('pgn_boardfirst'),
 	'inputType' => 'select',
-	'options'   => array('', '1', 'wrap'),
+	'options'   => ViewerSettings::LAYOUTS,
 	'reference' => &$GLOBALS['TL_LANG']['tl_content']['pgn_boardfirst_option'],
 	'eval'      => array('tl_class' => 'w50 clr'),
 	'sql'       => "varchar(8) NOT NULL default ''"
@@ -130,7 +163,7 @@ $GLOBALS['TL_DCA']['tl_content']['fields']['pgn_moveformat'] = array
 $GLOBALS['TL_DCA']['tl_content']['fields']['pgn_notationsize'] = array
 (
 	'label'     => &$GLOBALS['TL_LANG']['tl_content']['pgn_notationsize'],
-	'default'   => '0',
+	'default'   => ViewerSettings::getGlobal('pgn_notationsize'),
 	'inputType' => 'text',
 	'eval'      => array('mandatory' => true, 'rgxp' => 'digit', 'tl_class' => 'w50 clr'),
 	'sql'       => "int(10) unsigned NOT NULL default '0'"
@@ -139,7 +172,7 @@ $GLOBALS['TL_DCA']['tl_content']['fields']['pgn_notationsize'] = array
 $GLOBALS['TL_DCA']['tl_content']['fields']['pgn_pause'] = array
 (
 	'label'     => &$GLOBALS['TL_LANG']['tl_content']['pgn_pause'],
-	'default'   => '800',
+	'default'   => ViewerSettings::getGlobal('pgn_pause'),
 	'inputType' => 'text',
 	'eval'      => array('mandatory' => true, 'tl_class' => 'w50', 'rgxp' => 'digit'),
 	'sql'       => "int(10) unsigned NOT NULL default '800'"
@@ -159,7 +192,7 @@ $GLOBALS['TL_DCA']['tl_content']['fields']['pgn_sound'] = array
 $GLOBALS['TL_DCA']['tl_content']['fields']['pgn_backlink'] = array
 (
 	'label'     => &$GLOBALS['TL_LANG']['tl_content']['pgn_backlink'],
-	'default'   => '1',
+	'default'   => ViewerSettings::getGlobal('pgn_backlink'),
 	'inputType' => 'checkbox',
 	'eval'      => array('tl_class' => 'w50'),
 	'sql'       => "char(1) NOT NULL default ''"
@@ -168,7 +201,7 @@ $GLOBALS['TL_DCA']['tl_content']['fields']['pgn_backlink'] = array
 $GLOBALS['TL_DCA']['tl_content']['fields']['pgn_download'] = array
 (
 	'label'     => &$GLOBALS['TL_LANG']['tl_content']['pgn_download'],
-	'default'   => '',
+	'default'   => ViewerSettings::getGlobal('pgn_download'),
 	'inputType' => 'checkbox',
 	'eval'      => array('submitOnChange' => true),
 	'sql'       => "char(1) NOT NULL default ''"
