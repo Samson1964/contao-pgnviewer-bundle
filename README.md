@@ -25,6 +25,7 @@ Geprüft wurde mit PHP 8.3 gegen Contao 4.13.58 und Contao 5.7.7.
 * [Bedienung im Frontend](#bedienung-im-frontend)
 * [Farben](#farben)
 * [Eigenes Aussehen](#eigenes-aussehen)
+* [Schach960](#schach960)
 * [Wenn etwas nicht funktioniert](#wenn-etwas-nicht-funktioniert)
 * [Umstieg von Version 1](#umstieg-von-version-1)
 * [Änderungen an den Dateien von Chesstempo](#änderungen-an-den-dateien-von-chesstempo)
@@ -99,7 +100,7 @@ Mehrere PGNViewer-Elemente auf derselben Seite sind möglich; jedes Brett arbeit
 | **Koordinaten anzeigen** | Blendet die Linien- und Reihenbezeichnungen am linken und unteren Brettrand ein. |
 | **Partiedaten anzeigen** | Zeigt über der Zugliste die Kopfzeile mit Namen, Wertungszahlen, Ergebnis, Turnier, Ort, Runde, ECO-Schlüssel und Datum. |
 | **Anordnung** | Wie Brett und Zugliste zueinander stehen — siehe die Erläuterung unter der Tabelle. |
-| **Zugliste zweispaltig** | Stellt die Züge in zwei Spalten dar. Ohne Haken erscheinen die Hauptzüge untereinander, Varianten und Kommentare eingerückt. |
+| **Zugliste zweispaltig** | Stellt die Züge in zwei Spalten dar. Ohne Haken erscheinen die Hauptzüge untereinander, Varianten und Kommentare eingerückt. Zusammen mit der Anordnung „Zugliste umfließt das Brett“ gilt stattdessen „Zugliste unter dem Brett“, denn zwei Spalten können nichts umfließen. |
 | **Höhe der Zugliste** | Größte Höhe der Zugliste in Pixel; darüber hinaus wird gescrollt. `0` hebt die Beschränkung auf. |
 | **Pause zwischen den Zügen** | Wartezeit in Millisekunden beim automatischen Abspielen. Voreinstellung 800. |
 | **Ton aktivieren** | Begleitet Züge und Schlagzüge mit einem Geräusch. Das Feld ist nur auswählbar, wenn der Ton in den Einstellungen freigegeben wurde (siehe unten). |
@@ -117,7 +118,7 @@ nicht zum Überschreiben freigegeben; siehe
 | --- | --- |
 | **Zugliste rechts neben dem Brett** | Die Voreinstellung. Brett und Zugliste stehen nebeneinander, die Zugliste scrollt in ihrem eigenen Bereich. Auf schmalen Bildschirmen rutscht sie unter das Brett. |
 | **Zugliste unter dem Brett** | Erst das Brett, darunter die Zugliste über die volle Breite. |
-| **Zugliste umfließt das Brett** | Das Brett steht rechts oben, die Zugliste beginnt links daneben und läuft unter dem Brett über die volle Breite weiter — wie Text um ein Bild. Geeignet für lange Partien: Die Züge brauchen weniger Höhe, und **das Brett bleibt beim Scrollen stehen**, so dass es beim Durchklicken im Bild bleibt. Die Angabe „Höhe der Zugliste“ hat in dieser Anordnung keine Wirkung, denn ein Bereich mit eigenem Bildlauf kann das Brett nicht umfließen. Auf Bildschirmen unter 600 Pixel Breite steht das Brett wieder über der Zugliste. |
+| **Zugliste umfließt das Brett** | Das Brett steht rechts oben, die Zugliste beginnt links daneben und läuft unter dem Brett über die volle Breite weiter — wie Text um ein Bild. Geeignet für lange Partien: Die Züge brauchen weniger Höhe, und **das Brett bleibt beim Scrollen stehen**, so dass es beim Durchklicken im Bild bleibt. Die Angabe „Höhe der Zugliste“ hat in dieser Anordnung keine Wirkung, denn ein Bereich mit eigenem Bildlauf kann das Brett nicht umfließen. Auf Bildschirmen unter 600 Pixel Breite steht das Brett wieder über der Zugliste. Ist zusätzlich „Zugliste zweispaltig“ angehakt, gilt „Zugliste unter dem Brett“: Zwei Spalten können nichts umfließen, weil dort jeder Zug von Weiß eine neue Zeile beginnt. |
 
 ### Download-Einstellungen
 
@@ -234,6 +235,27 @@ Im Template steht das Element `<ct-pgn-viewer>`; alle Einstellungen werden ihm a
 übergeben. Der Betrachter kennt noch weitere Attribute, die das Bundle nicht anbietet, etwa
 `flip="true"` (Brett gedreht), `color-on-bottom="black"` (Schwarz unten) oder
 `move-list-useFigurineNotation="true"` (Figurensymbole statt Buchstaben in der Zugliste).
+
+## Schach960
+
+**Schach960 wird nicht unterstützt.** Der Betrachter von Chesstempo kennt diese Variante nicht: Das
+Merkmal `[Variant "Chess960"]` wird nicht gelesen, und die Rochade ist fest auf die Felder des
+klassischen Schachs verdrahtet (König von e1 nach c1 beziehungsweise g1). Es gibt auch keine neuere
+Fassung des Betrachters, die das könnte.
+
+Was trotzdem geht und was nicht — nachgemessen an vier Prüfpartien:
+
+| Partie | Ergebnis |
+| --- | --- |
+| Beliebige Stellung über `[SetUp "1"]` und `[FEN …]`, klassisches Schach | läuft vollständig, auch die Rochade |
+| Schach960, Rochaderechte im FEN als `KQkq`, **ohne** Rochade in der Partie | **läuft**: Die Grundstellung erscheint richtig, alle Züge lassen sich nachspielen |
+| Schach960 **mit** einer Rochade | Der Betrachter bleibt leer: `Error parsing:O-O, Illegal castling move` |
+| FEN mit Rochaderechten nach Shredder/X-FEN, etwa `HAha` statt `KQkq` | Der Betrachter bleibt leer, es erscheint nicht einmal ein Brett |
+
+Eine Schach960-Partie lässt sich also nur zeigen, solange darin nicht rochiert wird, und der FEN muss
+die Rochaderechte in der klassischen Schreibweise `KQkq` angeben. Da nahezu jede echte Partie eine
+Rochade enthält, ist das in der Praxis keine Unterstützung. Wer sie braucht, kommt um einen anderen
+Anzeige-Betrachter nicht herum.
 
 ## Wenn etwas nicht funktioniert
 

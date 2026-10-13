@@ -244,12 +244,26 @@ class PGNViewer extends ContentElement
 	 *           Umfließen darf die Liste keinen eigenen Bildlauf haben, sonst
 	 *           bliebe sie ein Kasten neben dem Brett, statt es zu umfließen.
 	 *
+	 * Eine zweispaltige Zugliste umfließt nichts, deshalb gilt für sie die
+	 * Anordnung „unter dem Brett“, auch wenn „umfließend“ eingestellt ist.
+	 *
 	 * @return array<string, string|integer> Die Angaben zur Anordnung für das
 	 *                                       Template
 	 */
 	private function getLayoutData(): array
 	{
 		$strLayout = $this->pgn_boardfirst;
+
+		// In der zweispaltigen Zugliste beginnt jeder weiße Zug über clear:both
+		// eine neue Zeile — genau das baut die beiden Spalten auf und lässt sich
+		// nicht abschalten. Ein umflossenes Brett wird davon abgeräumt: Die Liste
+		// begann erst darunter, und das Umfließen entfiel stillschweigend. Statt
+		// einer halben Anordnung gilt hier deshalb von vornherein „unter dem
+		// Brett“ — mit dem alten Wert „1“, damit unten nur ein Weg nötig ist.
+		if ('wrap' === $strLayout && $this->pgn_moveformat)
+		{
+			$strLayout = '1';
+		}
 
 		if ('wrap' === $strLayout)
 		{

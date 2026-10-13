@@ -301,3 +301,15 @@
 .ce_pgnviewer .ct-move-list-empty-list-comment:empty {
 	display: none;
 }
+
+/* Varianten brauchen beim Umfließen keinen freien Rand.
+   Eine Variante ist im Stylesheet von Chesstempo ein Block mit `clear: both`
+   (`.ct-move-list-style-indented .ct-variation`). Ohne Float ist das wirkungslos,
+   beim umflossenen Brett schiebt es die Variante aber unter das Brett und lässt
+   davor eine Lücke: auf https://www.schachbund.de/ddrpmm1959.html nach 3. Sc3
+   gemessene 234 Pixel, im Prüfstand mit 368er Brett 351 Pixel. Die Variante
+   bleibt ein eigener, eingerückter Block — sie beginnt nur gleich nach dem Zug.
+   Nur die umfließende Anordnung ist betroffen, denn nur dort gibt es den Float. */
+.ce_pgnviewer.pgn_umfliessend .ct-variation {
+	clear: none;
+}
